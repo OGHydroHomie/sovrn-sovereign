@@ -1,19 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import {
-  Crown,
-  Eye,
-  FlaskConical,
-  Heart,
-  GraduationCap,
-  ShieldAlert,
-  Zap,
-  Users,
-  TrendingUp,
-  Calendar,
-  Share2,
-  Download,
-} from 'lucide-react';
+import { Share2, Download } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import type { BlueprintResult, QuizData } from '../types';
 import { trackEvent } from '../utils/storage';
@@ -22,22 +9,6 @@ interface Props {
   blueprint: BlueprintResult;
   quizData: QuizData;
 }
-
-const ARCHETYPE_ICONS: Record<string, typeof Crown> = {
-  Leader: Crown,
-  Oracle: Eye,
-  Alchemist: FlaskConical,
-  Healer: Heart,
-  Teacher: GraduationCap,
-};
-
-const ARCHETYPE_COLORS: Record<string, string> = {
-  Leader: '#f59e0b',
-  Oracle: '#8b5cf6',
-  Alchemist: '#06b6d4',
-  Healer: '#ec4899',
-  Teacher: '#10b981',
-};
 
 function Section({
   children,
@@ -51,30 +22,46 @@ function Section({
       initial={{ opacity: 0, y: 40 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-50px' }}
-      transition={{ duration: 0.7, delay }}
+      transition={{ duration: 0.8, delay }}
     >
       {children}
     </motion.div>
   );
 }
 
+function ArchetypeBlock({ archetype }: { archetype: BlueprintResult['soulArchitecture']['sunArchetype'] }) {
+  return (
+    <div className="mb-10">
+      <div className="flex items-baseline gap-3 mb-3">
+        <h3 className="text-xl md:text-2xl font-bold gold-glow">
+          {archetype.name}
+        </h3>
+        <span style={{ color: 'rgba(245, 240, 232, 0.4)', fontFamily: "'Space Grotesk', sans-serif", fontSize: '0.75rem', letterSpacing: '0.1em' }}>
+          {archetype.sign} {archetype.degree}
+        </span>
+      </div>
+      <p style={{ color: 'rgba(245, 240, 232, 0.8)', lineHeight: '1.7' }}>
+        {archetype.description}
+      </p>
+    </div>
+  );
+}
+
 export default function BlueprintPage({ blueprint, quizData }: Props) {
   const [shared, setShared] = useState(false);
-  const ArchetypeIcon = ARCHETYPE_ICONS[blueprint.archetype.type] || Crown;
-  const archetypeColor =
-    ARCHETYPE_COLORS[blueprint.archetype.type] || '#f59e0b';
+  const [showBooking, setShowBooking] = useState(false);
 
   useEffect(() => {
     trackEvent('pageView', 'blueprint');
   }, []);
 
   const handleShare = async () => {
-    const text = `I just discovered I'm a ${blueprint.archetype.type} Archetype! Find your Cosmic Business Blueprint at SOVRN.`;
+    const text = `I just received my Sovereign Blueprint from SOVRN. Remember who you are.`;
     if (navigator.share) {
       try {
-        await navigator.share({ title: 'My SOVRN Blueprint', text });
+        await navigator.share({ title: 'My Sovereign Blueprint', text });
       } catch {
-        // User cancelled
+        // cancelled
       }
     } else {
       await navigator.clipboard.writeText(text);
@@ -86,114 +73,137 @@ export default function BlueprintPage({ blueprint, quizData }: Props) {
   const handleDownload = () => {
     const doc = new jsPDF({ unit: 'mm', format: 'a4' });
     const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
     const margin = 20;
     const contentWidth = pageWidth - margin * 2;
     let y = 20;
 
+    const fillBackground = () => {
+      doc.setFillColor(0, 0, 0);
+      doc.rect(0, 0, pageWidth, pageHeight, 'F');
+    };
+
+    fillBackground();
+
     const checkPage = (needed: number) => {
       if (y + needed > 270) {
         doc.addPage();
+        fillBackground();
         y = 20;
       }
     };
 
-    const addTitle = (text: string, size: number, color: [number, number, number]) => {
+    const gold: [number, number, number] = [212, 175, 55];
+    const bone: [number, number, number] = [245, 240, 232];
+    const boneDim: [number, number, number] = [160, 155, 145];
+
+    const addTitle = (text: string, size: number, color: [number, number, number] = gold) => {
       checkPage(15);
       doc.setFontSize(size);
       doc.setTextColor(...color);
-      doc.text(text, margin, y);
-      y += size * 0.5 + 2;
+      doc.text(text.toUpperCase(), margin, y);
+      y += size * 0.5 + 3;
     };
 
-    const addBody = (text: string) => {
+    const addBody = (text: string, color: [number, number, number] = boneDim) => {
       doc.setFontSize(10);
-      doc.setTextColor(60, 60, 60);
+      doc.setTextColor(...color);
       const lines = doc.splitTextToSize(text, contentWidth);
       checkPage(lines.length * 5);
       doc.text(lines, margin, y);
       y += lines.length * 5 + 4;
     };
 
+    const addQuote = (text: string) => {
+      checkPage(20);
+      doc.setFontSize(12);
+      doc.setTextColor(...gold);
+      const lines = doc.splitTextToSize(`"${text}"`, contentWidth - 20);
+      doc.text(lines, pageWidth / 2, y, { align: 'center' });
+      y += lines.length * 6 + 6;
+    };
+
     const addDivider = () => {
       checkPage(10);
-      y += 3;
-      doc.setDrawColor(200, 200, 200);
+      y += 4;
+      doc.setDrawColor(...gold);
+      doc.setLineWidth(0.2);
       doc.line(margin, y, pageWidth - margin, y);
       y += 8;
     };
 
     // Header
     doc.setFontSize(10);
-    doc.setTextColor(139, 92, 246);
+    doc.setTextColor(...gold);
     doc.text('SOVRN', pageWidth / 2, y, { align: 'center' });
-    y += 8;
-
-    doc.setFontSize(22);
-    doc.setTextColor(30, 30, 30);
-    doc.text('Cosmic Business Blueprint', pageWidth / 2, y, { align: 'center' });
     y += 10;
 
-    doc.setFontSize(12);
-    doc.setTextColor(100, 100, 100);
+    doc.setFontSize(20);
+    doc.setTextColor(...bone);
+    doc.text('SOVEREIGN BLUEPRINT', pageWidth / 2, y, { align: 'center' });
+    y += 10;
+
+    doc.setFontSize(11);
+    doc.setTextColor(...boneDim);
     doc.text(`Prepared for ${quizData.name}`, pageWidth / 2, y, { align: 'center' });
     y += 15;
 
     addDivider();
 
-    // Section 1: Archetype
-    addTitle(`Success Archetype: The ${blueprint.archetype.type}`, 16, [139, 92, 246]);
-    addBody(blueprint.archetype.description);
-    addTitle('Your Natural Business Model', 11, [245, 158, 11]);
-    addBody(blueprint.archetype.businessModel);
+    // Soul Architecture
+    addTitle('I. Soul Architecture', 14);
+    y += 2;
+
+    const { sunArchetype, risingArchetype, northNodeArchetype } = blueprint.soulArchitecture;
+
+    addTitle(`${sunArchetype.name} — ${sunArchetype.sign} ${sunArchetype.degree}`, 11, bone);
+    addBody(sunArchetype.description);
+
+    addTitle(`${risingArchetype.name} — ${risingArchetype.sign} ${risingArchetype.degree}`, 11, bone);
+    addBody(risingArchetype.description);
+
+    addTitle(`${northNodeArchetype.name} — ${northNodeArchetype.sign} ${northNodeArchetype.degree}`, 11, bone);
+    addBody(northNodeArchetype.description);
+
+    addTitle('The Sovereign Flame', 11, gold);
+    addBody(blueprint.soulArchitecture.sovereignFlame);
+
+    addQuote(blueprint.soulArchitecture.coreQuote);
     addDivider();
 
-    // Section 2: Cosmic Block
-    addTitle('Your #1 Cosmic Block', 16, [220, 60, 60]);
-    addBody(blueprint.cosmicBlock.block);
-    addTitle('How It Shows Up', 11, [180, 60, 60]);
-    addBody(blueprint.cosmicBlock.howItShows);
-    addTitle("What It's Costing You", 11, [180, 60, 60]);
-    addBody(blueprint.cosmicBlock.cost);
+    // Shadow Pattern
+    addTitle('II. Shadow Pattern', 14);
+    addBody(blueprint.shadowPattern.pattern);
+    addTitle('Root Cause', 11, bone);
+    addBody(blueprint.shadowPattern.rootCause);
+    addQuote(blueprint.shadowPattern.keyQuote);
     addDivider();
 
-    // Section 3: Cosmic Advantage
-    addTitle('Your Cosmic Advantage', 16, [139, 92, 246]);
-    addBody(blueprint.cosmicAdvantage.strengths);
-    addTitle('How to Leverage', 11, [139, 92, 246]);
-    addBody(blueprint.cosmicAdvantage.leverage);
-    addTitle('Path Forward', 11, [245, 158, 11]);
-    addBody(blueprint.cosmicAdvantage.pathForward);
+    // True North
+    addTitle('III. True North', 14);
+    addBody(blueprint.trueNorth.direction);
+    addTitle('Alignment', 11, bone);
+    addBody(blueprint.trueNorth.alignment);
+    addTitle('Destiny', 11, bone);
+    addBody(blueprint.trueNorth.destiny);
     addDivider();
 
-    // Section 4: Ideal Client
-    addTitle('Your Ideal Client Avatar', 16, [139, 92, 246]);
-    addBody(blueprint.idealClient.description);
-    addTitle('Demographics & Psychographics', 11, [100, 100, 100]);
-    addBody(blueprint.idealClient.demographics);
-    addTitle('Where to Find Them', 11, [100, 100, 100]);
-    addBody(blueprint.idealClient.whereToFind);
-    addDivider();
-
-    // Section 5: The Gap
-    addTitle('The Gap', 16, [245, 158, 11]);
-    addBody(blueprint.theGap.missing);
-    addTitle('Action Items', 11, [245, 158, 11]);
-    blueprint.theGap.actionItems.forEach((item, i) => {
-      addBody(`${i + 1}. ${item}`);
-    });
-    addBody(blueprint.theGap.bridge);
+    // First Sovereign Act
+    addTitle('IV. Your First Sovereign Act', 14);
+    addBody(blueprint.firstSovereignAct.instruction);
+    addTitle('Why This Act', 11, bone);
+    addBody(blueprint.firstSovereignAct.reason);
+    addQuote(blueprint.firstSovereignAct.declaration);
 
     // Footer
     checkPage(20);
-    y += 5;
-    doc.setFontSize(9);
-    doc.setTextColor(150, 150, 150);
-    doc.text('Generated by SOVRN — Your cosmic blueprint for business sovereignty', pageWidth / 2, y, { align: 'center' });
+    y += 8;
+    doc.setFontSize(8);
+    doc.setTextColor(100, 95, 85);
+    doc.text('Generated by SOVRN — Your Sovereign Blueprint', pageWidth / 2, y, { align: 'center' });
 
-    doc.save(`SOVRN-Blueprint-${quizData.name.replace(/\s+/g, '-')}.pdf`);
+    doc.save(`SOVRN-Sovereign-Blueprint-${quizData.name.replace(/\s+/g, '-')}.pdf`);
   };
-
-  const [showBooking, setShowBooking] = useState(false);
 
   const handleBookCall = () => {
     trackEvent('ctaClick');
@@ -211,258 +221,233 @@ export default function BlueprintPage({ blueprint, quizData }: Props) {
   }, [showBooking]);
 
   return (
-    <div className="relative min-h-screen px-4 py-12 md:py-20">
+    <div className="relative min-h-screen px-4 py-16 md:py-24">
       <div className="relative z-10 max-w-3xl mx-auto">
         {/* Header */}
         <Section>
-          <div className="text-center mb-16">
+          <div className="text-center mb-20">
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="text-sm tracking-[0.4em] uppercase text-cosmic-purple-light font-medium mb-6"
+              className="text-sm tracking-[0.4em] uppercase gold-glow font-medium mb-8"
+              style={{ fontFamily: "'Space Grotesk', sans-serif" }}
             >
               SOVRN
             </motion.p>
-            <h1 className="text-3xl md:text-5xl font-bold mb-4">
-              <span className="text-gradient">Your Cosmic Business Blueprint</span>
+            <h1 className="text-3xl md:text-5xl font-bold mb-4 gold-glow-strong">
+              Your Sovereign Blueprint
             </h1>
-            <p className="text-xl text-white/60">{quizData.name}</p>
+            <p className="text-xl" style={{ color: 'rgba(245, 240, 232, 0.5)' }}>
+              {quizData.name}
+            </p>
 
-            {/* Action buttons */}
-            <div className="flex items-center justify-center gap-4 mt-6">
+            <div className="flex items-center justify-center gap-4 mt-8">
               <button
                 onClick={handleShare}
-                className="flex items-center gap-2 text-sm text-white/50 hover:text-white transition-colors px-4 py-2 rounded-lg border border-white/10 hover:border-white/20"
+                className="flex items-center gap-2 text-sm transition-colors px-4 py-2"
+                style={{
+                  color: 'rgba(245, 240, 232, 0.4)',
+                  border: '1px solid rgba(212, 175, 55, 0.2)',
+                  fontFamily: "'Space Grotesk', sans-serif",
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase' as const,
+                  fontSize: '0.7rem',
+                }}
               >
-                <Share2 className="w-4 h-4" />
-                {shared ? 'Copied!' : 'Share'}
+                <Share2 className="w-3 h-3" />
+                {shared ? 'Copied' : 'Share'}
               </button>
               <button
                 onClick={handleDownload}
-                className="flex items-center gap-2 text-sm text-white/50 hover:text-white transition-colors px-4 py-2 rounded-lg border border-white/10 hover:border-white/20"
+                className="flex items-center gap-2 text-sm transition-colors px-4 py-2"
+                style={{
+                  color: 'rgba(245, 240, 232, 0.4)',
+                  border: '1px solid rgba(212, 175, 55, 0.2)',
+                  fontFamily: "'Space Grotesk', sans-serif",
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase' as const,
+                  fontSize: '0.7rem',
+                }}
               >
-                <Download className="w-4 h-4" />
+                <Download className="w-3 h-3" />
                 Download PDF
               </button>
             </div>
           </div>
         </Section>
 
-        {/* Archetype */}
+        {/* I. Soul Architecture */}
         <Section delay={0.1}>
-          <div className="glass-card-gold p-8 md:p-10 mb-8">
-            <div className="flex items-center gap-4 mb-6">
-              <div
-                className="w-16 h-16 rounded-2xl flex items-center justify-center"
-                style={{ backgroundColor: `${archetypeColor}20` }}
-              >
-                <ArchetypeIcon
-                  className="w-8 h-8"
-                  style={{ color: archetypeColor }}
-                />
-              </div>
-              <div>
-                <p className="text-sm text-white/50 uppercase tracking-wider">
-                  Your Success Archetype
-                </p>
-                <h2
-                  className="text-3xl font-bold"
-                  style={{ color: archetypeColor }}
-                >
-                  The {blueprint.archetype.type}
-                </h2>
-              </div>
-            </div>
-            <p className="text-white/80 leading-relaxed mb-6">
-              {blueprint.archetype.description}
-            </p>
-            <div className="bg-white/5 rounded-xl p-5 border border-white/5">
-              <p className="text-sm text-cosmic-gold font-medium mb-2">
-                Your Natural Business Model
-              </p>
-              <p className="text-white/70 text-sm leading-relaxed">
-                {blueprint.archetype.businessModel}
+          <div className="sovereign-section pt-12 pb-12">
+            <h2 className="text-2xl md:text-3xl font-bold gold-glow mb-12">
+              I. Soul Architecture
+            </h2>
+
+            <ArchetypeBlock archetype={blueprint.soulArchitecture.sunArchetype} />
+            <ArchetypeBlock archetype={blueprint.soulArchitecture.risingArchetype} />
+            <ArchetypeBlock archetype={blueprint.soulArchitecture.northNodeArchetype} />
+
+            <div className="mt-12 mb-12">
+              <h3 className="text-lg font-bold gold-glow mb-4"
+                  style={{ fontFamily: "'Space Grotesk', sans-serif", letterSpacing: '0.08em' }}>
+                THE SOVEREIGN FLAME
+              </h3>
+              <p style={{ color: 'rgba(245, 240, 232, 0.8)', lineHeight: '1.7' }}>
+                {blueprint.soulArchitecture.sovereignFlame}
               </p>
             </div>
+
+            {/* Core Quote — large pull quote */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 1 }}
+              className="py-12 text-center"
+            >
+              <p className="pull-quote text-2xl md:text-3xl max-w-2xl mx-auto">
+                "{blueprint.soulArchitecture.coreQuote}"
+              </p>
+            </motion.div>
           </div>
         </Section>
 
-        {/* Cosmic Block */}
+        {/* II. Shadow Pattern */}
         <Section delay={0.15}>
-          <div className="glass-card p-8 md:p-10 mb-8">
-            <div className="flex items-center gap-3 mb-6">
-              <ShieldAlert className="w-6 h-6 text-red-400" />
-              <h2 className="text-2xl font-bold">Your #1 Cosmic Block</h2>
-            </div>
-            <div className="space-y-6">
-              <div>
-                <p className="text-white/80 leading-relaxed">
-                  {blueprint.cosmicBlock.block}
-                </p>
-              </div>
-              <div className="bg-red-500/5 border border-red-500/10 rounded-xl p-5">
-                <p className="text-sm text-red-400 font-medium mb-2">
-                  How It Shows Up
-                </p>
-                <p className="text-white/70 text-sm leading-relaxed">
-                  {blueprint.cosmicBlock.howItShows}
-                </p>
-              </div>
-              <div className="bg-red-500/5 border border-red-500/10 rounded-xl p-5">
-                <p className="text-sm text-red-400 font-medium mb-2">
-                  What It's Costing You
-                </p>
-                <p className="text-white/70 text-sm leading-relaxed">
-                  {blueprint.cosmicBlock.cost}
-                </p>
-              </div>
-            </div>
-          </div>
-        </Section>
-
-        {/* Cosmic Advantage */}
-        <Section delay={0.2}>
-          <div className="glass-card p-8 md:p-10 mb-8">
-            <div className="flex items-center gap-3 mb-6">
-              <Zap className="w-6 h-6 text-cosmic-gold" />
-              <h2 className="text-2xl font-bold">Your Cosmic Advantage</h2>
-            </div>
-            <div className="space-y-6">
-              <div>
-                <p className="text-sm text-cosmic-purple-light font-medium mb-2">
-                  Your Unique Strengths
-                </p>
-                <p className="text-white/80 leading-relaxed">
-                  {blueprint.cosmicAdvantage.strengths}
-                </p>
-              </div>
-              <div className="bg-cosmic-purple/5 border border-cosmic-purple/10 rounded-xl p-5">
-                <p className="text-sm text-cosmic-purple-light font-medium mb-2">
-                  How to Leverage Them
-                </p>
-                <p className="text-white/70 text-sm leading-relaxed">
-                  {blueprint.cosmicAdvantage.leverage}
-                </p>
-              </div>
-              <div className="bg-cosmic-gold/5 border border-cosmic-gold/10 rounded-xl p-5">
-                <p className="text-sm text-cosmic-gold font-medium mb-2">
-                  Your Path Forward
-                </p>
-                <p className="text-white/70 text-sm leading-relaxed">
-                  {blueprint.cosmicAdvantage.pathForward}
-                </p>
-              </div>
-            </div>
-          </div>
-        </Section>
-
-        {/* Ideal Client */}
-        <Section delay={0.25}>
-          <div className="glass-card p-8 md:p-10 mb-8">
-            <div className="flex items-center gap-3 mb-6">
-              <Users className="w-6 h-6 text-cosmic-purple-light" />
-              <h2 className="text-2xl font-bold">Your Ideal Client Avatar</h2>
-            </div>
-            <div className="space-y-6">
-              <p className="text-white/80 leading-relaxed">
-                {blueprint.idealClient.description}
-              </p>
-              <div className="grid md:grid-cols-2 gap-4">
-                <div className="bg-white/5 rounded-xl p-5 border border-white/5">
-                  <p className="text-sm text-cosmic-purple-light font-medium mb-2">
-                    Demographics & Psychographics
-                  </p>
-                  <p className="text-white/70 text-sm leading-relaxed">
-                    {blueprint.idealClient.demographics}
-                  </p>
-                </div>
-                <div className="bg-white/5 rounded-xl p-5 border border-white/5">
-                  <p className="text-sm text-cosmic-gold font-medium mb-2">
-                    Where to Find Them
-                  </p>
-                  <p className="text-white/70 text-sm leading-relaxed">
-                    {blueprint.idealClient.whereToFind}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </Section>
-
-        {/* The Gap */}
-        <Section delay={0.3}>
-          <div className="glass-card p-8 md:p-10 mb-8">
-            <div className="flex items-center gap-3 mb-6">
-              <TrendingUp className="w-6 h-6 text-cosmic-gold" />
-              <h2 className="text-2xl font-bold">The Gap</h2>
-            </div>
-            <p className="text-white/80 leading-relaxed mb-6">
-              {blueprint.theGap.missing}
+          <div className="sovereign-section pt-12 pb-12">
+            <h2 className="text-2xl md:text-3xl font-bold gold-glow mb-8">
+              II. Shadow Pattern
+            </h2>
+            <p style={{ color: 'rgba(245, 240, 232, 0.8)', lineHeight: '1.7' }} className="mb-8">
+              {blueprint.shadowPattern.pattern}
             </p>
-            <div className="space-y-3 mb-6">
-              {blueprint.theGap.actionItems.map((item, i) => (
-                <div
-                  key={i}
-                  className="flex items-start gap-3 bg-white/5 rounded-xl p-4 border border-white/5"
-                >
-                  <span className="flex-shrink-0 w-7 h-7 rounded-full bg-cosmic-gold/20 text-cosmic-gold text-sm font-bold flex items-center justify-center mt-0.5">
-                    {i + 1}
-                  </span>
-                  <p className="text-white/80 text-sm leading-relaxed">
-                    {item}
-                  </p>
-                </div>
-              ))}
+            <div className="mb-8">
+              <h3 className="text-lg font-bold mb-4"
+                  style={{ color: 'rgba(245, 240, 232, 0.5)', fontFamily: "'Space Grotesk', sans-serif", letterSpacing: '0.08em', textTransform: 'uppercase' as const }}>
+                ROOT CAUSE
+              </h3>
+              <p style={{ color: 'rgba(245, 240, 232, 0.7)', lineHeight: '1.7' }}>
+                {blueprint.shadowPattern.rootCause}
+              </p>
             </div>
-            <p className="text-white/60 text-sm italic">{blueprint.theGap.bridge}</p>
+            <motion.div
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 1 }}
+              className="py-8 text-center"
+            >
+              <p className="pull-quote text-xl md:text-2xl max-w-2xl mx-auto">
+                "{blueprint.shadowPattern.keyQuote}"
+              </p>
+            </motion.div>
           </div>
         </Section>
 
-        {/* CTA */}
-        <Section delay={0.35}>
-          <div className="relative overflow-hidden rounded-2xl p-8 md:p-12 text-center mb-16">
-            {/* Background gradient */}
-            <div className="absolute inset-0 bg-gradient-to-br from-cosmic-purple/20 via-space-card to-cosmic-gold/10 border border-cosmic-purple/20 rounded-2xl" />
-            <div className="relative z-10">
-              <Calendar className="w-10 h-10 text-cosmic-gold mx-auto mb-4" />
-              <h2 className="text-2xl md:text-3xl font-bold mb-3">
-                Want me to build this system for you?
-              </h2>
-              <p className="text-white/60 mb-8 max-w-lg mx-auto">
-                15 qualified calls with your dream clients in 30 days —
-                guaranteed.
+        {/* III. True North */}
+        <Section delay={0.2}>
+          <div className="sovereign-section pt-12 pb-12">
+            <h2 className="text-2xl md:text-3xl font-bold gold-glow mb-8">
+              III. True North
+            </h2>
+            <p style={{ color: 'rgba(245, 240, 232, 0.8)', lineHeight: '1.7' }} className="mb-8">
+              {blueprint.trueNorth.direction}
+            </p>
+            <div className="mb-8">
+              <h3 className="text-lg font-bold mb-4"
+                  style={{ color: 'rgba(245, 240, 232, 0.5)', fontFamily: "'Space Grotesk', sans-serif", letterSpacing: '0.08em', textTransform: 'uppercase' as const }}>
+                ALIGNMENT
+              </h3>
+              <p style={{ color: 'rgba(245, 240, 232, 0.7)', lineHeight: '1.7' }}>
+                {blueprint.trueNorth.alignment}
               </p>
-              {!showBooking ? (
-                <>
-                  <button onClick={handleBookCall} className="glow-button text-lg">
-                    Book Your Cosmic Business Strategy Call
-                  </button>
-                  <p className="text-white/30 text-xs mt-4">
-                    Free 30-minute strategy session. No obligation.
-                  </p>
-                </>
-              ) : (
-                <div
-                  className="iclosed-widget mt-4"
-                  data-url="https://app.iclosed.io/e/sovrngrowth/strategy-call"
-                  title="Strategy Call"
-                  style={{ width: '100%', height: '620px' }}
-                />
-              )}
             </div>
+            <div>
+              <h3 className="text-lg font-bold mb-4"
+                  style={{ color: 'rgba(245, 240, 232, 0.5)', fontFamily: "'Space Grotesk', sans-serif", letterSpacing: '0.08em', textTransform: 'uppercase' as const }}>
+                DESTINY
+              </h3>
+              <p style={{ color: 'rgba(245, 240, 232, 0.7)', lineHeight: '1.7' }}>
+                {blueprint.trueNorth.destiny}
+              </p>
+            </div>
+          </div>
+        </Section>
+
+        {/* IV. First Sovereign Act */}
+        <Section delay={0.25}>
+          <div className="sovereign-section pt-12 pb-12">
+            <h2 className="text-2xl md:text-3xl font-bold gold-glow mb-8">
+              IV. Your First Sovereign Act
+            </h2>
+            <p style={{ color: 'rgba(245, 240, 232, 0.8)', lineHeight: '1.7' }} className="mb-8">
+              {blueprint.firstSovereignAct.instruction}
+            </p>
+            <div className="mb-8">
+              <h3 className="text-lg font-bold mb-4"
+                  style={{ color: 'rgba(245, 240, 232, 0.5)', fontFamily: "'Space Grotesk', sans-serif", letterSpacing: '0.08em', textTransform: 'uppercase' as const }}>
+                WHY THIS ACT
+              </h3>
+              <p style={{ color: 'rgba(245, 240, 232, 0.7)', lineHeight: '1.7' }}>
+                {blueprint.firstSovereignAct.reason}
+              </p>
+            </div>
+            <motion.div
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 1 }}
+              className="py-8 text-center"
+            >
+              <p className="pull-quote text-xl md:text-2xl max-w-2xl mx-auto">
+                "{blueprint.firstSovereignAct.declaration}"
+              </p>
+            </motion.div>
+          </div>
+        </Section>
+
+        {/* CTA — Death Module */}
+        <Section delay={0.3}>
+          <div className="sovereign-section pt-16 pb-16 text-center">
+            <p className="pull-quote text-2xl md:text-3xl mb-8 max-w-xl mx-auto">
+              Your blueprint is a map. The Death Module is the journey.
+            </p>
+            <p style={{ color: 'rgba(245, 240, 232, 0.5)', lineHeight: '1.7' }} className="mb-2">
+              The first SOVRN cohort opens July 2026. Twelve people. Eight weeks.
+            </p>
+            <p className="gold-glow text-xl mb-10"
+               style={{ fontFamily: "'Space Grotesk', sans-serif", letterSpacing: '0.05em' }}>
+              Investment: $1,000
+            </p>
+
+            {!showBooking ? (
+              <>
+                <button onClick={handleBookCall} className="sovereign-button mb-4">
+                  Apply for the Founding Cohort
+                </button>
+                <div className="sovereign-divider max-w-xs mx-auto my-8" />
+                <button onClick={handleBookCall} className="sovereign-button"
+                        style={{ background: 'transparent', color: '#D4AF37', border: '1px solid rgba(212, 175, 55, 0.3)' }}>
+                  Book a Sovereign Strategy Call
+                </button>
+              </>
+            ) : (
+              <div
+                className="iclosed-widget mt-4"
+                data-url="https://app.iclosed.io/e/sovrngrowth/strategy-call"
+                title="Strategy Call"
+                style={{ width: '100%', height: '620px' }}
+              />
+            )}
           </div>
         </Section>
 
         {/* Footer */}
-        <Section delay={0.4}>
+        <Section delay={0.35}>
           <div className="text-center pb-12">
-            <div className="w-12 h-px bg-gradient-to-r from-transparent via-cosmic-purple/50 to-transparent mx-auto mb-6" />
-            <p className="text-sm text-white/30">
-              Join 500+ spiritual entrepreneurs who've discovered their cosmic
-              advantage
-            </p>
-            <p className="text-xs text-white/20 mt-2">
-              SOVRN — Your cosmic blueprint for business sovereignty
+            <div className="sovereign-divider max-w-xs mx-auto mb-8" />
+            <p style={{ color: 'rgba(245, 240, 232, 0.2)', fontSize: '0.75rem', fontFamily: "'Space Grotesk', sans-serif", letterSpacing: '0.1em', textTransform: 'uppercase' as const }}>
+              SOVRN — Your Sovereign Blueprint
             </p>
           </div>
         </Section>

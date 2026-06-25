@@ -74,8 +74,9 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-space-black">
+    <div className="min-h-screen" style={{ backgroundColor: '#000000' }}>
       <StarField />
+      <div className="vignette" />
 
       {/* Error banner */}
       {error && (
@@ -125,7 +126,15 @@ export default function App() {
       {page === 'hero' && blueprint && quizData && (
         <button
           onClick={() => setPage('blueprint')}
-          className="fixed bottom-6 right-6 z-20 text-sm text-cosmic-purple-light/60 hover:text-cosmic-purple-light transition-colors bg-space-dark/80 backdrop-blur-sm px-4 py-2 rounded-lg border border-cosmic-purple/10"
+          className="fixed bottom-6 right-6 z-20 text-sm transition-colors px-4 py-2"
+          style={{
+            color: 'rgba(212, 175, 55, 0.5)',
+            border: '1px solid rgba(212, 175, 55, 0.15)',
+            fontFamily: "'Space Grotesk', sans-serif",
+            letterSpacing: '0.1em',
+            textTransform: 'uppercase' as const,
+            fontSize: '0.7rem',
+          }}
         >
           View Your Blueprint
         </button>
