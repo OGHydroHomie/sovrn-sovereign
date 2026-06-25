@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SOVRN</title>
+  <meta name="description" content="SOVRN — Remember who you are. Enter your birth data and receive your Sovereign Blueprint." />
+
+  <!-- Fonts: Space Grotesk + Cormorant Garamond -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ------------------------------------------------------------------ *
+     *  RESET / FOUNDATION
+     * ------------------------------------------------------------------ */
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --void: #000000;
+      --bone: #F5F0E8;
+      --gold: #D4AF37;
+      --crimson: #8B2500;
+
+      --glow-text: 0 0 20px rgba(212, 175, 55, 0.3);
+      --glow-interactive: 0 0 30px rgba(212, 175, 55, 0.15);
+
+      --space: 'Space Grotesk', sans-serif;
+      --cormorant: 'Cormorant Garamond', serif;
+    }
+
+    html {
+      -webkit-text-size-adjust: 100%;
+    }
+
+    body {
+      background: var(--void);
+      color: var(--bone);
+      font-family: var(--cormorant);
+      min-height: 100vh;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* ------------------------------------------------------------------ *
+     *  THE BLACK CURTAIN — page loads to pure void for 1.5s
+     * ------------------------------------------------------------------ */
+    #curtain {
+      position: fixed;
+      inset: 0;
+      background: var(--void);
+      z-index: 9999;
+      opacity: 1;
+      transition: opacity 1200ms ease-in-out;
+      pointer-events: none;
+    }
+    #curtain.lifted {
+      opacity: 0;
+    }
+
+    /* ------------------------------------------------------------------ *
+     *  WORDMARK
+     * ------------------------------------------------------------------ */
+    .wordmark {
+      position: absolute;
+      top: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: var(--space);
+      font-weight: 700;
+      font-size: 14px;
+      letter-spacing: 0.3em;
+      color: var(--gold);
+      text-shadow: var(--glow-text);
+      opacity: 0;
+      transition: opacity 1000ms ease-in-out;
+      z-index: 10;
+    }
+
+    /* ------------------------------------------------------------------ *
+     *  STAGGERED ARRIVAL ELEMENTS (controlled by JS)
+     * ------------------------------------------------------------------ */
+    .arrive {
+      opacity: 0;
+      transition: opacity 1000ms ease-in-out;
+    }
+    .arrive.visible {
+      opacity: 1;
+    }
+
+    /* Sections that fade in on scroll via IntersectionObserver */
+    .reveal {
+      opacity: 0;
+      transition: opacity 1000ms ease-in-out;
+    }
+    .reveal.visible {
+      opacity: 1;
+    }
+
+    /* ------------------------------------------------------------------ *
+     *  LAYOUT
+     * ------------------------------------------------------------------ */
+    main {
+      transition: opacity 600ms ease-in-out;
+    }
+    main.dissolved {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* SECTION 1 — THE ARRIVAL */
+    .arrival {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 0 24px;
+      position: relative;
+    }
+
+    .headline {
+      font-family: var(--space);
+      font-weight: 700;
+      font-size: 56px;
+      letter-spacing: 0.08em;
+      color: var(--bone);
+      max-width: 700px;
+      line-height: 1.15;
+    }
+
+    .subheadline {
+      font-family: var(--cormorant);
+      font-weight: 400;
+      font-size: 20px;
+      line-height: 1.8;
+      color: rgba(245, 240, 232, 0.7);
+      max-width: 560px;
+      margin-top: 32px;
+    }
+
+    /* The golden thread — scroll indicator */
+    .scroll-indicator {
+      width: 1px;
+      height: 40px;
+      background: var(--gold);
+      box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
+      margin-top: 60px;
+      animation: pulse 2.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.3; }
+      50%      { opacity: 0.8; }
+    }
+
+    /* SECTION 2 — THE THRESHOLD */
+    .threshold {
+      padding-top: 120px;
+      padding-left: 24px;
+      padding-right: 24px;
+    }
+
+    .threshold-intro {
+      font-family: var(--space);
+      font-weight: 500;
+      font-size: 13px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--gold);
+      text-shadow: var(--glow-text);
+      text-align: center;
+      margin-bottom: 60px;
+    }
+
+    form {
+      max-width: 520px;
+      margin: 0 auto;
+    }
+
+    .field {
+      margin-bottom: 48px;
+    }
+    .field:last-of-type {
+      margin-bottom: 0;
+    }
+
+    label {
+      display: block;
+      font-family: var(--cormorant);
+      font-style: italic;
+      font-weight: 400;
+      font-size: 18px;
+      color: var(--gold);
+      text-shadow: var(--glow-text);
+      margin-bottom: 12px;
+      line-height: 1.4;
+    }
+
+    input,
+    textarea {
+      width: 100%;
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid rgba(245, 240, 232, 0.2);
+      border-radius: 0;
+      font-family: var(--cormorant);
+      font-weight: 400;
+      font-size: 18px;
+      color: var(--bone);
+      padding: 12px 0;
+      line-height: 1.6;
+      transition: border-color 400ms ease-in-out, box-shadow 400ms ease-in-out;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+
+    textarea {
+      height: 120px;
+      resize: vertical;
+      font-family: var(--cormorant);
+    }
+
+    input:focus,
+    textarea:focus {
+      outline: none;
+      border-bottom-color: var(--gold);
+      box-shadow: 0 0 10px rgba(212, 175, 55, 0.15);
+    }
+
+    input::placeholder,
+    textarea::placeholder {
+      color: rgba(245, 240, 232, 0.25);
+      font-family: var(--cormorant);
+      font-style: normal;
+    }
+
+    /* Tame native date/time pickers in the void */
+    input[type="date"],
+    input[type="time"] {
+      color-scheme: dark;
+    }
+    input[type="date"]::-webkit-calendar-picker-indicator,
+    input[type="time"]::-webkit-calendar-picker-indicator {
+      filter: invert(0.7) sepia(1) saturate(2) hue-rotate(5deg);
+      cursor: pointer;
+      opacity: 0.5;
+    }
+
+    .helper {
+      font-family: var(--cormorant);
+      font-weight: 400;
+      font-size: 13px;
+      line-height: 1.6;
+      color: rgba(245, 240, 232, 0.4);
+      margin-top: 6px;
+    }
+
+    /* CTA Button */
+    .cta {
+      display: block;
+      width: 100%;
+      margin-top: 48px;
+      font-family: var(--space);
+      font-weight: 700;
+      font-size: 15px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--void);
+      background: var(--gold);
+      border: none;
+      border-radius: 0;
+      padding: 20px 48px;
+      cursor: pointer;
+      text-align: center;
+      text-decoration: none;
+      box-shadow: 0 0 30px rgba(212, 175, 55, 0.15);
+      animation: breathe 3s ease-in-out infinite;
+      transition: background 400ms ease-in-out, box-shadow 400ms ease-in-out;
+    }
+
+    @keyframes breathe {
+      0%, 100% { box-shadow: 0 0 30px rgba(212, 175, 55, 0.12); }
+      50%      { box-shadow: 0 0 30px rgba(212, 175, 55, 0.18); }
+    }
+
+    .cta:hover {
+      background: var(--bone);
+      box-shadow: 0 0 40px rgba(212, 175, 55, 0.25);
+      animation: none;
+    }
+    .cta:disabled {
+      cursor: wait;
+      opacity: 0.6;
+    }
+
+    .reassurance {
+      font-family: var(--cormorant);
+      font-weight: 400;
+      font-size: 13px;
+      line-height: 1.6;
+      color: rgba(245, 240, 232, 0.4);
+      text-align: center;
+      margin-top: 24px;
+      max-width: 520px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    /* SECTION 3 — FOOTER */
+    footer {
+      margin-top: 160px;
+      text-align: center;
+      padding-bottom: 40px;
+    }
+    footer p {
+      font-family: var(--space);
+      font-weight: 400;
+      font-size: 11px;
+      letter-spacing: 0.25em;
+      color: rgba(245, 240, 232, 0.25);
+    }
+
+    /* ------------------------------------------------------------------ *
+     *  POST-SUBMISSION VIEW
+     * ------------------------------------------------------------------ */
+    #threshold-crossed {
+      display: none;
+      position: fixed;
+      inset: 0;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 40px 24px;
+      overflow-y: auto;
+    }
+    #threshold-crossed.active {
+      display: flex;
+    }
+
+    .crossed-headline {
+      font-family: var(--space);
+      font-weight: 700;
+      font-size: 42px;
+      color: var(--bone);
+      line-height: 1.2;
+      opacity: 0;
+      transition: opacity 800ms ease-in-out;
+    }
+
+    .crossed-body {
+      font-family: var(--cormorant);
+      font-weight: 400;
+      font-size: 18px;
+      line-height: 1.8;
+      color: rgba(245, 240, 232, 0.7);
+      max-width: 480px;
+      margin-top: 28px;
+      opacity: 0;
+      transition: opacity 800ms ease-in-out;
+    }
+
+    /* The cohort offer */
+    .cohort {
+      margin-top: 64px;
+      max-width: 440px;
+      opacity: 0;
+      transition: opacity 800ms ease-in-out;
+    }
+
+    .cohort-intro {
+      font-family: var(--cormorant);
+      font-style: italic;
+      font-weight: 400;
+      font-size: 16px;
+      color: var(--gold);
+      text-shadow: var(--glow-text);
+      margin-bottom: 20px;
+    }
+
+    .cohort-body {
+      font-family: var(--cormorant);
+      font-weight: 400;
+      font-size: 17px;
+      line-height: 1.8;
+      color: var(--bone);
+    }
+
+    .cohort-price {
+      font-family: var(--space);
+      font-weight: 700;
+      font-size: 20px;
+      color: var(--gold);
+      text-shadow: var(--glow-text);
+      margin: 24px 0;
+    }
+
+    .cohort-decline {
+      display: inline-block;
+      margin-top: 24px;
+      font-family: var(--cormorant);
+      font-weight: 400;
+      font-size: 14px;
+      color: rgba(245, 240, 232, 0.4);
+      cursor: pointer;
+      text-decoration: none;
+      background: none;
+      border: none;
+    }
+    .cohort-decline:hover {
+      text-decoration: underline;
+    }
+
+    /* ------------------------------------------------------------------ *
+     *  MOBILE — below 768px, ~30% smaller, tighter rhythm
+     * ------------------------------------------------------------------ */
+    @media (max-width: 767px) {
+      .headline      { font-size: 36px; }
+      .subheadline   { font-size: 17px; }
+
+      .threshold     { padding-top: 80px; }
+      .threshold-intro { font-size: 12px; margin-bottom: 48px; }
+
+      form           { max-width: 100%; padding: 0; }
+      .field         { margin-bottom: 40px; }
+
+      label          { font-size: 17px; }
+      input, textarea { font-size: 16px; }   /* 16px keeps iOS from zooming on focus */
+      .helper        { font-size: 12px; }
+
+      footer         { margin-top: 120px; }
+
+      .crossed-headline { font-size: 28px; }
+      .crossed-body     { font-size: 16px; }
+      .cohort-body      { font-size: 16px; }
+    }
+
+    /* Honor reduced-motion preferences without breaking visibility */
+    @media (prefers-reduced-motion: reduce) {
+      .scroll-indicator,
+      .cta {
+        animation: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- The void that lifts after 1.5s -->
+  <div id="curtain"></div>
+
+  <main id="main-content">
+    <!-- The wordmark floating in the void -->
+    <div class="wordmark" id="wordmark">SOVRN</div>
+
+    <!-- SECTION 1 — THE ARRIVAL -->
+    <section class="arrival">
+      <h1 class="headline arrive" id="headline">Remember who you are.</h1>
+      <p class="subheadline arrive" id="subheadline">
+        Enter your birth data. Receive your Sovereign Blueprint — a personalized
+        decode of your soul architecture, shadow pattern, and true north written
+        into your natal chart before you were born.
+      </p>
+      <div class="scroll-indicator arrive" id="scroll-indicator" aria-hidden="true"></div>
+    </section>
+
+    <!-- SECTION 2 — THE THRESHOLD -->
+    <section class="threshold reveal">
+      <p class="threshold-intro">Seven questions. One blueprint. No two are the same.</p>
+
+      <!--
+        FORM SUBMISSION:
+        Submissions are sent to Formspree via fetch (AJAX) so the page can
+        transform in place instead of redirecting.
+        >>> REPLACE the form id below with your real Formspree endpoint. <<<
+        Get one at https://formspree.io  ->  https://formspree.io/f/XXXXXXXX
+      -->
+      <form id="blueprint-form" action="https://formspree.io/f/your-form-id" method="POST">
+
+        <!-- Field 1 -->
+        <div class="field">
+          <label for="f-birthdate">When did you arrive?</label>
+          <input type="text" id="f-birthdate" name="When did you arrive" placeholder="Month / Day / Year" required />
+        </div>
+
+        <!-- Field 2 -->
+        <div class="field">
+          <label for="f-birthtime">What hour did you enter the world?</label>
+          <input type="text" id="f-birthtime" name="What hour did you enter the world" placeholder="Hour : Minute AM/PM" required />
+          <p class="helper">As exact as you know. Check your birth certificate if unsure.</p>
+        </div>
+
+        <!-- Field 3 -->
+        <div class="field">
+          <label for="f-birthplace">Where were you born?</label>
+          <input type="text" id="f-birthplace" name="Where were you born" placeholder="City, State, Country" required />
+        </div>
+
+        <!-- Field 4 -->
+        <div class="field">
+          <label for="f-fear">Name the fear that runs your life — the one you've never said out loud.</label>
+          <textarea id="f-fear" name="The fear that runs your life" required></textarea>
+          <p class="helper">
+            Be specific. Not 'failure' — but what failure would look like. Not
+            'rejection' — but whose rejection would break you and why. The more
+            honest you are here, the more precisely your blueprint can name what's
+            actually holding you back. Write 2-3 sentences.
+          </p>
+        </div>
+
+        <!-- Field 5 -->
+        <div class="field">
+          <label for="f-day">Describe a single day in the life you know you're meant to live.</label>
+          <textarea id="f-day" name="A single day in the life you are meant to live" required></textarea>
+          <p class="helper">
+            Not the vision board. The Tuesday. What do you wake up to? What work
+            are you doing? Who is around you? What does the afternoon feel like?
+            Describe it like you're remembering it, not imagining it. Write 3-4 sentences.
+          </p>
+        </div>
+
+        <!-- Field 6 -->
+        <div class="field">
+          <label for="f-pattern">What is the one pattern you keep repeating no matter how many times you swear you've broken it?</label>
+          <textarea id="f-pattern" name="The pattern you keep repeating" required></textarea>
+          <p class="helper">
+            Describe the cycle, not the label. What triggers it? What do you do
+            when it starts? How does it end? Example: 'Every time I get close to a
+            breakthrough, I find a reason to pivot to something new and start over
+            from scratch.' Be honest about the loop — that's where your blueprint
+            finds the exit.
+          </p>
+        </div>
+
+        <!-- Field 7 -->
+        <div class="field">
+          <label for="f-email">Where do we send your blueprint?</label>
+          <input type="email" id="f-email" name="email" placeholder="your@email.com" required />
+          <p class="helper">Your Sovereign Blueprint will be delivered here within 24 hours.</p>
+        </div>
+
+        <button type="submit" class="cta" id="submit-btn">Enter the Threshold</button>
+
+        <p class="reassurance">
+          Your blueprint is generated in real time. No two are identical.
+          Delivered to your inbox within 24 hours.
+        </p>
+      </form>
+
+      <!-- SECTION 3 — THE FOOTER -->
+      <footer>
+        <p>SOVRN — 2026</p>
+      </footer>
+    </section>
+  </main>
+
+  <!-- POST-SUBMISSION VIEW -->
+  <div id="threshold-crossed">
+    <h2 class="crossed-headline" id="crossed-headline">You've crossed the threshold.</h2>
+
+    <p class="crossed-body" id="crossed-body">
+      Your Sovereign Blueprint is being generated. It will arrive in your inbox within 24 hours.
+      <br /><br />
+      What was written in your chart before you were born is now being translated into language you can use.
+    </p>
+
+    <div class="cohort" id="cohort">
+      <p class="cohort-intro">While your blueprint is being prepared —</p>
+      <p class="cohort-body">
+        The first SOVRN cohort opens July 2026. Twelve people. Eight weeks.
+        Full initiation with weekly live sessions and personal chart analysis.
+      </p>
+      <p class="cohort-price">Investment: $1,000</p>
+      <a class="cta" href="https://forms.gle/placeholder" target="_blank" rel="noopener">Apply for the Founding Cohort</a>
+      <br />
+      <button type="button" class="cohort-decline" id="decline-cohort">No thanks — I'll wait for the blueprint.</button>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      /* ---------------------------------------------------------------- *
+       *  THE ARRIVAL — black curtain, then staggered fade-ins
+       * ---------------------------------------------------------------- */
+      var curtain     = document.getElementById('curtain');
+      var wordmark    = document.getElementById('wordmark');
+      var headline    = document.getElementById('headline');
+      var subheadline = document.getElementById('subheadline');
+      var scrollInd   = document.getElementById('scroll-indicator');
+
+      // Page sits in pure black for 1.5s, then the transmission begins.
+      window.setTimeout(function () {
+        curtain.classList.add('lifted');
+        wordmark.style.opacity = '1';          // wordmark fades in first
+
+        // headline 400ms after the wordmark
+        window.setTimeout(function () {
+          headline.classList.add('visible');
+        }, 400);
+
+        // subheadline 600ms after the headline
+        window.setTimeout(function () {
+          subheadline.classList.add('visible');
+        }, 1000);
+
+        // the golden thread, settling in last
+        window.setTimeout(function () {
+          scrollInd.classList.add('visible');
+        }, 1600);
+      }, 1500);
+
+      /* ---------------------------------------------------------------- *
+       *  SCROLL-TRIGGERED FADE-INS — each section arrives as you reach it
+       * ---------------------------------------------------------------- */
+      var revealEls = document.querySelectorAll('.reveal');
+
+      if ('IntersectionObserver' in window) {
+        var observer = new IntersectionObserver(function (entries) {
+          entries.forEach(function (entry) {
+            if (entry.isIntersecting) {
+              entry.target.classList.add('visible');
+              observer.unobserve(entry.target);
+            }
+          });
+        }, { threshold: 0.15 });
+
+        revealEls.forEach(function (el) { observer.observe(el); });
+      } else {
+        // No IO support — reveal everything rather than hide it.
+        revealEls.forEach(function (el) { el.classList.add('visible'); });
+      }
+
+      /* ---------------------------------------------------------------- *
+       *  THE TRANSFORMATION — submit, then cross the threshold
+       * ---------------------------------------------------------------- */
+      var form       = document.getElementById('blueprint-form');
+      var main       = document.getElementById('main-content');
+      var crossed    = document.getElementById('threshold-crossed');
+      var submitBtn  = document.getElementById('submit-btn');
+
+      var crossedHeadline = document.getElementById('crossed-headline');
+      var crossedBody     = document.getElementById('crossed-body');
+      var cohort          = document.getElementById('cohort');
+      var declineCohort   = document.getElementById('decline-cohort');
+
+      function crossThreshold() {
+        // Dissolve the page content.
+        main.classList.add('dissolved');
+
+        // After the content has faded (600ms), bring up the new view.
+        window.setTimeout(function () {
+          main.style.display = 'none';
+          crossed.classList.add('active');
+          window.scrollTo(0, 0);
+
+          // Staggered fade-ins for the new transmission.
+          window.requestAnimationFrame(function () {
+            window.setTimeout(function () { crossedHeadline.style.opacity = '1'; }, 50);
+            window.setTimeout(function () { crossedBody.style.opacity = '1'; }, 850);   // 800ms after headline
+            window.setTimeout(function () { cohort.style.opacity = '1'; }, 1650);       // 800ms later
+          });
+        }, 600);
+      }
+
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Crossing…';
+
+        var data = new FormData(form);
+
+        // Submit to Formspree in the background; transform regardless so the
+        // visitor's experience is never interrupted by a network hiccup.
+        fetch(form.action, {
+          method: 'POST',
+          body: data,
+          headers: { 'Accept': 'application/json' }
+        }).then(function () {
+          crossThreshold();
+        }).catch(function () {
+          // Even on failure we honor the threshold; submission can be retried server-side.
+          crossThreshold();
+        });
+      });
+
+      // "No thanks" simply hides the cohort offer.
+      declineCohort.addEventListener('click', function () {
+        cohort.style.transition = 'opacity 600ms ease-in-out';
+        cohort.style.opacity = '0';
+        window.setTimeout(function () { cohort.style.display = 'none'; }, 600);
+      });
+    })();
+  </script>
+</body>
+</html>
