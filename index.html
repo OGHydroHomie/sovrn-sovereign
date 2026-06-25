@@ -417,6 +417,79 @@
     #threshold-crossed.active {
       display: flex;
     }
+    /* When the archetype reveal is present, anchor to top so the taller
+       column never clips on shorter viewports; it still reads as centered. */
+    #threshold-crossed.has-archetype {
+      justify-content: flex-start;
+      padding-top: 12vh;
+      padding-bottom: 80px;
+    }
+
+    /* ------------------------------------------------------------------ *
+     *  THE ARCHETYPE REVEAL — a card turned over in the void
+     * ------------------------------------------------------------------ */
+    .archetype {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 40px; /* 40px of void before "You've crossed the threshold." */
+    }
+
+    /* Thin gold line that draws itself from center outward */
+    .arch-line {
+      width: 0;
+      height: 1px;
+      background: var(--gold);
+      box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
+      transition: width 800ms ease-in-out;
+    }
+    .arch-line.drawn {
+      width: 200px;
+    }
+
+    .arch-name {
+      font-family: var(--space);
+      font-weight: 700;
+      font-size: 36px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--gold);
+      text-shadow: var(--glow-text);
+      line-height: 1.2;
+      margin-top: 32px;
+      opacity: 0;
+      transition: opacity 800ms ease-in-out;
+    }
+
+    .arch-sign {
+      font-family: var(--cormorant);
+      font-style: italic;
+      font-weight: 400;
+      font-size: 15px;
+      color: rgba(245, 240, 232, 0.5);
+      margin-top: 14px;
+      opacity: 0;
+      transition: opacity 600ms ease-in-out;
+    }
+
+    .arch-desc {
+      font-family: var(--cormorant);
+      font-weight: 400;
+      font-size: 18px;
+      line-height: 1.8;
+      color: var(--bone);
+      max-width: 480px;
+      margin-top: 28px;
+      margin-bottom: 40px;
+      opacity: 0;
+      transition: opacity 800ms ease-in-out;
+    }
+
+    .arch-name.visible,
+    .arch-sign.visible,
+    .arch-desc.visible {
+      opacity: 1;
+    }
 
     .crossed-headline {
       font-family: var(--space);
@@ -513,6 +586,10 @@
       .crossed-headline { font-size: 28px; }
       .crossed-body     { font-size: 16px; }
       .cohort-body      { font-size: 16px; }
+
+      .arch-name        { font-size: 26px; }
+      .arch-desc        { font-size: 16px; }
+      .arch-line.drawn  { width: 140px; }
     }
 
     /* Honor reduced-motion preferences without breaking visibility */
@@ -643,6 +720,15 @@
 
   <!-- POST-SUBMISSION VIEW -->
   <div id="threshold-crossed">
+    <!-- Archetype reveal (populated + revealed on submit; hidden if birth date can't be read) -->
+    <div class="archetype" id="archetype" style="display:none">
+      <div class="arch-line" id="arch-line-top" aria-hidden="true"></div>
+      <h3 class="arch-name" id="arch-name"></h3>
+      <p class="arch-sign" id="arch-sign"></p>
+      <p class="arch-desc" id="arch-desc"></p>
+      <div class="arch-line" id="arch-line-bottom" aria-hidden="true"></div>
+    </div>
+
     <h2 class="crossed-headline" id="crossed-headline">You've crossed the threshold.</h2>
 
     <p class="crossed-body" id="crossed-body">
@@ -812,7 +898,93 @@
       var cohort          = document.getElementById('cohort');
       var declineCohort   = document.getElementById('decline-cohort');
 
-      function crossThreshold() {
+      // Archetype reveal elements
+      var birthDateInput = document.getElementById('f-birthdate');
+      var archetypeEl    = document.getElementById('archetype');
+      var archLineTop    = document.getElementById('arch-line-top');
+      var archName       = document.getElementById('arch-name');
+      var archSign       = document.getElementById('arch-sign');
+      var archDesc       = document.getElementById('arch-desc');
+      var archLineBot    = document.getElementById('arch-line-bottom');
+
+      /* ---------------------------------------------------------------- *
+       *  SUN SIGN ARCHETYPE — name + initiation per Western tropical sign
+       * ---------------------------------------------------------------- */
+      var ARCHETYPES = {
+        Aries:       { name: 'The Pioneer',           desc: 'You arrived to begin what others cannot. Your initiation is learning that starting is not the same as finishing — and that both require equal fire.' },
+        Taurus:      { name: 'The Sovereign Builder',  desc: 'You arrived to build what lasts. Your initiation is learning that true security comes from within, not from what you accumulate.' },
+        Gemini:      { name: 'The Oracle of Tongues',  desc: 'You arrived to translate between worlds. Your initiation is learning that your many voices are not distraction — they are range.' },
+        Cancer:      { name: 'The Guardian',           desc: 'You arrived to hold what others cannot carry. Your initiation is learning that nurturing yourself is the source of everything you give.' },
+        Leo:         { name: 'The Sovereign Flame',    desc: 'You arrived to perform the truth others are afraid to embody. Your initiation is learning that your light does not need an audience to be real.' },
+        Virgo:       { name: 'The Architect of Order', desc: 'You arrived to refine the raw material of existence into something sacred. Your initiation is learning that perfection is not the goal — devotion is.' },
+        Libra:       { name: 'The Emissary',           desc: 'You arrived to restore balance where it has been lost. Your initiation is learning that harmony does not require your self-erasure.' },
+        Scorpio:     { name: 'The Initiator',          desc: 'You arrived to see what is hidden and name what others will not. Your initiation is learning that your intensity is medicine, not damage.' },
+        Sagittarius: { name: 'The Torch Bearer',       desc: 'You arrived to carry the torch into unknown territory. Your initiation is learning that freedom without depth is just running.' },
+        Capricorn:   { name: 'The Ancient Authority',  desc: 'You arrived to build structures that outlive you. Your initiation is learning that authority earned through integrity cannot be taken.' },
+        Aquarius:    { name: 'The Pattern Breaker',    desc: 'You arrived to break patterns that have calcified into prisons. Your initiation is learning that rebellion without vision is just noise.' },
+        Pisces:      { name: 'The Mystic Channel',     desc: 'You arrived to dissolve the boundaries between the visible and invisible. Your initiation is learning that your sensitivity is your superpower, not your wound.' }
+      };
+
+      var MONTHS = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6,
+                     jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 };
+
+      // Western tropical Sun sign from month (1-12) + day-of-month.
+      function sunSign(month, day) {
+        var lastDay = [19, 18, 20, 19, 20, 20, 22, 22, 22, 22, 21, 21];
+        var signs = ['Capricorn', 'Aquarius', 'Pisces', 'Aries', 'Taurus',
+                     'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra',
+                     'Scorpio', 'Sagittarius', 'Capricorn'];
+        return day > lastDay[month - 1] ? signs[month] : signs[month - 1];
+      }
+
+      function clampMD(month, day) {
+        if (!month || month < 1 || month > 12) return null;
+        if (!day || day < 1 || day > 31) return null;
+        return { month: month, day: day };
+      }
+
+      // Best-effort parse of the free-text birth date into { month, day }.
+      function parseBirthDate(raw) {
+        if (!raw) return null;
+        var s = String(raw).toLowerCase().trim();
+        var nameKeys = 'jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec';
+
+        // Day + month name, e.g. "15 july 1990" — checked first so the day
+        // isn't mistaken for the leading digits of a trailing year.
+        var dm = s.match(new RegExp('(\\d{1,2})\\s+(' + nameKeys + ')'));
+        if (dm) return clampMD(MONTHS[dm[2]], parseInt(dm[1], 10));
+
+        // Month name + day, e.g. "july 15, 1990"
+        var md = s.match(new RegExp('(' + nameKeys + ')[a-z]*\\.?\\s+(\\d{1,2})'));
+        if (md) return clampMD(MONTHS[md[1]], parseInt(md[2], 10));
+
+        // Numeric, honoring the placeholder's Month / Day / Year order.
+        var num = s.match(/(\d{1,2})\s*[\/\-.]\s*(\d{1,2})(?:\s*[\/\-.]\s*(\d{2,4}))?/);
+        if (num) {
+          var month = parseInt(num[1], 10), day = parseInt(num[2], 10);
+          // If the first value can't be a month but the second can, it was Day/Month.
+          if (month > 12 && day <= 12) { var t = month; month = day; day = t; }
+          return clampMD(month, day);
+        }
+        return null;
+      }
+
+      // Populate + show the archetype block. Returns true if one was resolved.
+      function prepareArchetype() {
+        var parsed = parseBirthDate(birthDateInput && birthDateInput.value);
+        if (!parsed) return false;
+        var sign = sunSign(parsed.month, parsed.day);
+        var arc = ARCHETYPES[sign];
+        if (!arc) return false;
+        archName.textContent = arc.name;   // CSS renders it uppercase
+        archSign.textContent = sign + ' Sun';
+        archDesc.textContent = arc.desc;
+        archetypeEl.style.display = 'flex';
+        crossed.classList.add('has-archetype');
+        return true;
+      }
+
+      function crossThreshold(hasArchetype) {
         // Dissolve the page content.
         main.classList.add('dissolved');
 
@@ -822,11 +994,23 @@
           crossed.classList.add('active');
           window.scrollTo(0, 0);
 
-          // Staggered fade-ins for the new transmission.
           window.requestAnimationFrame(function () {
-            window.setTimeout(function () { crossedHeadline.style.opacity = '1'; }, 50);
-            window.setTimeout(function () { crossedBody.style.opacity = '1'; }, 850);   // 800ms after headline
-            window.setTimeout(function () { cohort.style.opacity = '1'; }, 1650);       // 800ms later
+            var base = 50; // when the "You've crossed the threshold." content begins
+
+            if (hasArchetype) {
+              // The card turns over in the void — the moment of recognition.
+              window.setTimeout(function () { archLineTop.classList.add('drawn'); }, 100);
+              window.setTimeout(function () { archName.classList.add('visible'); }, 750);   // 600ms after the line
+              window.setTimeout(function () { archSign.classList.add('visible'); }, 1150);  // 400ms after the name
+              window.setTimeout(function () { archDesc.classList.add('visible'); }, 1550);
+              window.setTimeout(function () { archLineBot.classList.add('drawn'); }, 1950);
+              base = 2400; // the rest of the page continues below the reveal
+            }
+
+            // Staggered fade-ins for the existing transmission.
+            window.setTimeout(function () { crossedHeadline.style.opacity = '1'; }, base);
+            window.setTimeout(function () { crossedBody.style.opacity = '1'; }, base + 800);
+            window.setTimeout(function () { cohort.style.opacity = '1'; }, base + 1600);
           });
         }, 600);
       }
@@ -837,6 +1021,9 @@
         submitBtn.disabled = true;
         submitBtn.textContent = 'Crossing…';
 
+        // Resolve the Sun sign archetype from the birth date before transforming.
+        var hasArchetype = prepareArchetype();
+
         var data = new FormData(form);
 
         // Submit to Formspree in the background; transform regardless so the
@@ -846,10 +1033,10 @@
           body: data,
           headers: { 'Accept': 'application/json' }
         }).then(function () {
-          crossThreshold();
+          crossThreshold(hasArchetype);
         }).catch(function () {
           // Even on failure we honor the threshold; submission can be retried server-side.
-          crossThreshold();
+          crossThreshold(hasArchetype);
         });
       });
 
