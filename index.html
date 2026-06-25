@@ -46,8 +46,45 @@
       font-family: var(--cormorant);
       min-height: 100vh;
       overflow-x: hidden;
+      position: relative;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* ------------------------------------------------------------------ *
+     *  THE STARFIELD — a slowly drifting canvas behind everything
+     * ------------------------------------------------------------------ */
+    #starfield {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+      display: block;
+    }
+
+    /* ------------------------------------------------------------------ *
+     *  THE VIGNETTE — darkens edges/corners, pulls the eye to center
+     * ------------------------------------------------------------------ */
+    #vignette {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      background: radial-gradient(
+        ellipse at center,
+        rgba(0, 0, 0, 0) 45%,
+        rgba(0, 0, 0, 0.45) 80%,
+        rgba(0, 0, 0, 0.8) 100%
+      );
+    }
+
+    /* Lift all real content above the starfield + vignette */
+    #main-content,
+    #threshold-crossed {
+      position: relative;
+      z-index: 2;
     }
 
     /* ------------------------------------------------------------------ *
@@ -131,11 +168,12 @@
     .headline {
       font-family: var(--space);
       font-weight: 700;
-      font-size: 56px;
+      font-size: 64px;
       letter-spacing: 0.08em;
       color: var(--bone);
       max-width: 700px;
       line-height: 1.15;
+      text-shadow: 0 0 60px rgba(212, 175, 55, 0.08);
     }
 
     .subheadline {
@@ -165,10 +203,42 @@
 
     /* SECTION 2 — THE THRESHOLD */
     .threshold {
-      padding-top: 120px;
+      padding-top: 72px; /* reduced 40% from 120px — the descent feels purposeful */
       padding-left: 24px;
       padding-right: 24px;
+      position: relative;
     }
+
+    /* A faint warm glow pooling behind the form — a lit alcove in the dark */
+    .threshold::before {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 900px;
+      height: 900px;
+      max-width: 140vw;
+      pointer-events: none;
+      z-index: -1;
+      background: radial-gradient(
+        ellipse at center,
+        rgba(212, 175, 55, 0.03) 0%,
+        rgba(212, 175, 55, 0) 60%
+      );
+    }
+
+    /* Thin gold hairline dividers framing the form */
+    .divider {
+      width: 100%;
+      max-width: 520px;
+      height: 1px;
+      margin: 0 auto;
+      background: rgba(212, 175, 55, 0.1);
+      border: none;
+    }
+    .divider--top    { margin-bottom: 60px; }
+    .divider--bottom { margin-top: 48px; }
 
     .threshold-intro {
       font-family: var(--space);
@@ -279,18 +349,18 @@
       background: var(--gold);
       border: none;
       border-radius: 0;
-      padding: 20px 48px;
+      padding: 24px 56px;
       cursor: pointer;
       text-align: center;
       text-decoration: none;
-      box-shadow: 0 0 30px rgba(212, 175, 55, 0.15);
+      box-shadow: 0 0 40px rgba(212, 175, 55, 0.2);
       animation: breathe 3s ease-in-out infinite;
       transition: background 400ms ease-in-out, box-shadow 400ms ease-in-out;
     }
 
     @keyframes breathe {
-      0%, 100% { box-shadow: 0 0 30px rgba(212, 175, 55, 0.12); }
-      50%      { box-shadow: 0 0 30px rgba(212, 175, 55, 0.18); }
+      0%, 100% { box-shadow: 0 0 40px rgba(212, 175, 55, 0.17); }
+      50%      { box-shadow: 0 0 40px rgba(212, 175, 55, 0.23); }
     }
 
     .cta:hover {
@@ -428,7 +498,7 @@
       .headline      { font-size: 36px; }
       .subheadline   { font-size: 17px; }
 
-      .threshold     { padding-top: 80px; }
+      .threshold     { padding-top: 48px; }
       .threshold-intro { font-size: 12px; margin-bottom: 48px; }
 
       form           { max-width: 100%; padding: 0; }
@@ -456,6 +526,11 @@
 </head>
 
 <body>
+  <!-- Slowly drifting starfield — the inhabited void -->
+  <canvas id="starfield" aria-hidden="true"></canvas>
+  <!-- Vignette darkening the edges, drawing the eye to center -->
+  <div id="vignette" aria-hidden="true"></div>
+
   <!-- The void that lifts after 1.5s -->
   <div id="curtain"></div>
 
@@ -476,6 +551,7 @@
 
     <!-- SECTION 2 — THE THRESHOLD -->
     <section class="threshold reveal">
+      <hr class="divider divider--top" aria-hidden="true" />
       <p class="threshold-intro">Seven questions. One blueprint. No two are the same.</p>
 
       <!--
@@ -548,6 +624,8 @@
           <p class="helper">Your Sovereign Blueprint will be delivered here within 24 hours.</p>
         </div>
 
+        <hr class="divider divider--bottom" aria-hidden="true" />
+
         <button type="submit" class="cta" id="submit-btn">Enter the Threshold</button>
 
         <p class="reassurance">
@@ -589,6 +667,86 @@
   <script>
     (function () {
       'use strict';
+
+      /* ---------------------------------------------------------------- *
+       *  THE STARFIELD — tiny dots drifting slowly through the void
+       * ---------------------------------------------------------------- */
+      (function starfield() {
+        var canvas = document.getElementById('starfield');
+        if (!canvas || !canvas.getContext) return;
+
+        var prefersReduced =
+          window.matchMedia &&
+          window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        var ctx = canvas.getContext('2d');
+        var dpr = Math.min(window.devicePixelRatio || 1, 2);
+        var stars = [];
+        var w = 0, h = 0;
+
+        function seed() {
+          // ~1 star per 9000px² of viewport, kept modest so text stays dominant
+          var count = Math.min(220, Math.round((w * h) / 9000));
+          stars = [];
+          for (var i = 0; i < count; i++) {
+            stars.push({
+              x: Math.random() * w,
+              y: Math.random() * h,
+              r: Math.random() * 1 + 0.5,                 // 0.5–1.5px radius (1–2px dots)
+              o: Math.random() * 0.3 + 0.3,               // 0.3–0.6 opacity
+              vx: (Math.random() - 0.5) * 0.04,           // very slow horizontal drift
+              vy: (Math.random() - 0.5) * 0.04            // very slow vertical drift
+            });
+          }
+        }
+
+        function resize() {
+          w = window.innerWidth;
+          h = window.innerHeight;
+          canvas.width = w * dpr;
+          canvas.height = h * dpr;
+          canvas.style.width = w + 'px';
+          canvas.style.height = h + 'px';
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+          seed();
+        }
+
+        function draw() {
+          ctx.clearRect(0, 0, w, h);
+          for (var i = 0; i < stars.length; i++) {
+            var s = stars[i];
+            s.x += s.vx;
+            s.y += s.vy;
+
+            // Wrap around the edges so the field feels endless
+            if (s.x < 0) s.x = w; else if (s.x > w) s.x = 0;
+            if (s.y < 0) s.y = h; else if (s.y > h) s.y = 0;
+
+            ctx.beginPath();
+            ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(245, 240, 232, ' + s.o + ')';
+            ctx.fill();
+          }
+          window.requestAnimationFrame(draw);
+        }
+
+        resize();
+        window.addEventListener('resize', resize);
+
+        if (prefersReduced) {
+          // Honor reduced-motion: paint a still field, no drift loop.
+          ctx.clearRect(0, 0, w, h);
+          for (var i = 0; i < stars.length; i++) {
+            var s = stars[i];
+            ctx.beginPath();
+            ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(245, 240, 232, ' + s.o + ')';
+            ctx.fill();
+          }
+        } else {
+          window.requestAnimationFrame(draw);
+        }
+      })();
 
       /* ---------------------------------------------------------------- *
        *  THE ARRIVAL — black curtain, then staggered fade-ins
