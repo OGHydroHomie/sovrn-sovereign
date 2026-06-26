@@ -38,7 +38,7 @@ export async function generateBlueprint(
   const client = new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
 
   const message = await client.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-sonnet-4-6',
     max_tokens: 6000,
     system: buildSystemPrompt(chartData),
     messages: [{ role: 'user', content: buildUserMessage(data, chartData) }],
