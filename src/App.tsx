@@ -126,14 +126,12 @@ export default function App() {
       {page === 'hero' && blueprint && quizData && (
         <button
           onClick={() => setPage('blueprint')}
-          className="fixed bottom-6 right-6 z-20 text-sm transition-colors px-4 py-2"
+          className="fixed bottom-6 right-6 z-20 text-xs tracking-widest uppercase px-4 py-2 rounded-lg backdrop-blur-sm transition-all hover:border-cosmic-gold/30 hover:text-cosmic-gold/80"
           style={{
+            background: 'rgba(22, 22, 31, 0.8)',
             color: 'rgba(212, 175, 55, 0.5)',
             border: '1px solid rgba(212, 175, 55, 0.15)',
             fontFamily: "'Space Grotesk', sans-serif",
-            letterSpacing: '0.1em',
-            textTransform: 'uppercase' as const,
-            fontSize: '0.7rem',
           }}
         >
           View Your Blueprint

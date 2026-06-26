@@ -30,14 +30,14 @@ export default function StarField() {
     }
 
     function initStars() {
-      const count = Math.floor((canvas!.width * canvas!.height) / 12000);
+      const count = Math.floor((canvas!.width * canvas!.height) / 8000);
       stars = Array.from({ length: count }, () => ({
         x: Math.random() * canvas!.width,
         y: Math.random() * canvas!.height,
-        size: Math.random() * 1.5 + 0.3,
-        opacity: Math.random() * 0.4 + 0.05,
-        speed: Math.random() * 0.08 + 0.01,
-        twinkleSpeed: Math.random() * 0.01 + 0.003,
+        size: Math.random() * 2 + 0.5,
+        opacity: Math.random() * 0.8 + 0.2,
+        speed: Math.random() * 0.15 + 0.02,
+        twinkleSpeed: Math.random() * 0.02 + 0.005,
         twinklePhase: Math.random() * Math.PI * 2,
       }));
     }
@@ -54,6 +54,23 @@ export default function StarField() {
         ctx!.arc(star.x, star.y, star.size, 0, Math.PI * 2);
         ctx!.fillStyle = `rgba(255, 255, 255, ${alpha})`;
         ctx!.fill();
+
+        if (star.size > 1.2) {
+          ctx!.beginPath();
+          ctx!.arc(star.x, star.y, star.size * 3, 0, Math.PI * 2);
+          const gradient = ctx!.createRadialGradient(
+            star.x,
+            star.y,
+            0,
+            star.x,
+            star.y,
+            star.size * 3
+          );
+          gradient.addColorStop(0, `rgba(212, 175, 55, ${alpha * 0.3})`);
+          gradient.addColorStop(1, 'rgba(212, 175, 55, 0)');
+          ctx!.fillStyle = gradient;
+          ctx!.fill();
+        }
 
         star.y -= star.speed;
         if (star.y < -5) {

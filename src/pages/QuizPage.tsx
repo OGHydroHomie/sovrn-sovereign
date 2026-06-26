@@ -11,6 +11,13 @@ interface Props {
 
 const TOTAL_STEPS = 4;
 
+const STEP_TITLES = [
+  'Birth Data',
+  'Your Shadow',
+  'Your Vision',
+  'Deliver',
+];
+
 export default function QuizPage({ onComplete, onBack }: Props) {
   const [step, setStep] = useState(0);
   const [direction, setDirection] = useState(1);
@@ -66,46 +73,54 @@ export default function QuizPage({ onComplete, onBack }: Props) {
   };
 
   const variants = {
-    enter: (dir: number) => ({ y: dir > 0 ? 40 : -40, opacity: 0 }),
-    center: { y: 0, opacity: 1 },
-    exit: (dir: number) => ({ y: dir > 0 ? -40 : 40, opacity: 0 }),
+    enter: (dir: number) => ({ x: dir > 0 ? 300 : -300, opacity: 0 }),
+    center: { x: 0, opacity: 1 },
+    exit: (dir: number) => ({ x: dir > 0 ? -300 : 300, opacity: 0 }),
   };
 
   return (
-    <div className="relative min-h-screen flex flex-col items-center justify-center px-4 py-12">
-      <div className="relative z-10 w-full max-w-2xl mx-auto">
+    <div className="relative min-h-screen flex flex-col items-center justify-center px-4 py-8">
+      <div className="relative z-10 w-full max-w-xl mx-auto">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-12"
+          className="text-center mb-8"
         >
-          <p className="text-sm tracking-[0.4em] uppercase gold-glow font-medium mb-8"
-             style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+          <h2 className="text-sm tracking-[0.4em] uppercase gold-glow font-medium mb-6">
             SOVRN
-          </p>
+          </h2>
 
-          {/* Progress */}
-          <div className="flex items-center gap-3 mb-4 max-w-xs mx-auto">
+          {/* Progress bar */}
+          <div className="flex items-center gap-2 mb-4">
             {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
-              <div key={i} className="flex-1 h-px overflow-hidden"
-                   style={{ background: 'rgba(245, 240, 232, 0.1)' }}>
+              <div key={i} className="flex-1 h-1 rounded-full overflow-hidden bg-white/10">
                 <motion.div
-                  className="h-full"
+                  className="h-full rounded-full"
                   initial={{ width: '0%' }}
                   animate={{
                     width: i < step ? '100%' : i === step ? '50%' : '0%',
                   }}
-                  style={{ background: '#D4AF37' }}
+                  style={{
+                    background:
+                      i <= step
+                        ? 'linear-gradient(135deg, #8b5cf6, #D4AF37)'
+                        : 'transparent',
+                  }}
                   transition={{ duration: 0.5 }}
                 />
               </div>
             ))}
           </div>
+
+          <div className="flex items-center justify-between text-xs text-white/40">
+            <span>Step {step + 1} of {TOTAL_STEPS}</span>
+            <span>{STEP_TITLES[step]}</span>
+          </div>
         </motion.div>
 
         {/* Step content */}
-        <div className="min-h-[450px] flex flex-col">
+        <div className="glass-card p-8 md:p-10 min-h-[450px] flex flex-col">
           <AnimatePresence mode="wait" custom={direction}>
             <motion.div
               key={step}
@@ -114,8 +129,8 @@ export default function QuizPage({ onComplete, onBack }: Props) {
               initial="enter"
               animate="center"
               exit="exit"
-              transition={{ duration: 0.4 }}
-              className="flex-1 flex flex-col gap-8"
+              transition={{ duration: 0.3 }}
+              className="flex-1 flex flex-col gap-6"
             >
               {step === 0 && (
                 <>
@@ -156,8 +171,7 @@ export default function QuizPage({ onComplete, onBack }: Props) {
                     <p className="sovereign-helper mt-2">
                       As exact as you know. Check your birth certificate if unsure.
                     </p>
-                    <label className="flex items-center gap-2 mt-3 cursor-pointer"
-                           style={{ color: 'rgba(245, 240, 232, 0.4)', fontSize: '0.875rem' }}>
+                    <label className="flex items-center gap-2 mt-3 cursor-pointer text-white/40 text-sm">
                       <input
                         type="checkbox"
                         checked={data.birthTimeUnknown}
@@ -197,9 +211,8 @@ export default function QuizPage({ onComplete, onBack }: Props) {
                   <textarea
                     value={data.deepestFear}
                     onChange={(e) => update('deepestFear', e.target.value)}
-                    rows={5}
+                    rows={6}
                     className="sovereign-input resize-none"
-                    style={{ lineHeight: '1.7' }}
                   />
                 </div>
               )}
@@ -220,7 +233,6 @@ export default function QuizPage({ onComplete, onBack }: Props) {
                       onChange={(e) => update('desiredReality', e.target.value)}
                       rows={5}
                       className="sovereign-input resize-none"
-                      style={{ lineHeight: '1.7' }}
                     />
                   </div>
                   <div>
@@ -230,17 +242,14 @@ export default function QuizPage({ onComplete, onBack }: Props) {
                     </label>
                     <p className="sovereign-helper mb-4">
                       Describe the cycle, not the label. What triggers it? What do you do
-                      when it starts? How does it end? Example: "Every time I get close to
-                      a breakthrough, I find a reason to pivot to something new and start
-                      over from scratch." Be honest about the loop — that's where your
-                      blueprint finds the exit.
+                      when it starts? How does it end? Be honest about the loop — that's
+                      where your blueprint finds the exit.
                     </p>
                     <textarea
                       value={data.repeatingPattern}
                       onChange={(e) => update('repeatingPattern', e.target.value)}
                       rows={5}
                       className="sovereign-input resize-none"
-                      style={{ lineHeight: '1.7' }}
                     />
                   </div>
                 </>
@@ -267,18 +276,10 @@ export default function QuizPage({ onComplete, onBack }: Props) {
           </AnimatePresence>
 
           {/* Navigation */}
-          <div className="flex items-center justify-between mt-12 pt-8"
-               style={{ borderTop: '1px solid rgba(212, 175, 55, 0.15)' }}>
+          <div className="flex items-center justify-between mt-8 pt-6 border-t border-white/5">
             <button
               onClick={prev}
-              className="flex items-center gap-2 transition-colors text-sm"
-              style={{
-                color: 'rgba(245, 240, 232, 0.4)',
-                fontFamily: "'Space Grotesk', sans-serif",
-                letterSpacing: '0.1em',
-                textTransform: 'uppercase' as const,
-                fontSize: '0.75rem',
-              }}
+              className="flex items-center gap-2 text-white/50 hover:text-white transition-colors text-sm"
             >
               <ArrowLeft className="w-4 h-4" />
               Back

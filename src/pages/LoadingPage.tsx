@@ -19,14 +19,14 @@ export default function LoadingPage() {
         if (prev < MESSAGES.length - 1) return prev + 1;
         return prev;
       });
-    }, 4000);
+    }, 3500);
 
     const progressInterval = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 95) return 95;
-        return prev + Math.random() * 6 + 1;
+        return prev + Math.random() * 8 + 2;
       });
-    }, 600);
+    }, 500);
 
     return () => {
       clearInterval(messageInterval);
@@ -41,11 +41,11 @@ export default function LoadingPage() {
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 1 }}
-          className="mb-16"
+          className="mb-12"
         >
           <svg
             viewBox="0 0 200 200"
-            className="w-32 h-32 mx-auto"
+            className="w-48 h-48 mx-auto"
             xmlns="http://www.w3.org/2000/svg"
           >
             {[
@@ -63,7 +63,7 @@ export default function LoadingPage() {
                 y1={y1}
                 x2={x2}
                 y2={y2}
-                stroke="rgba(212, 175, 55, 0.3)"
+                stroke="rgba(139, 92, 246, 0.4)"
                 strokeWidth="1"
                 initial={{ pathLength: 0 }}
                 animate={{ pathLength: 1 }}
@@ -83,7 +83,7 @@ export default function LoadingPage() {
                 key={i}
                 cx={cx}
                 cy={cy}
-                r="2"
+                r="3"
                 fill="#D4AF37"
                 initial={{ opacity: 0, scale: 0 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -91,7 +91,7 @@ export default function LoadingPage() {
               >
                 <animate
                   attributeName="opacity"
-                  values="0.3;1;0.3"
+                  values="0.5;1;0.5"
                   dur={`${2 + i * 0.3}s`}
                   repeatCount="indefinite"
                 />
@@ -102,7 +102,7 @@ export default function LoadingPage() {
               cy="105"
               r="25"
               fill="none"
-              stroke="rgba(212, 175, 55, 0.15)"
+              stroke="rgba(139, 92, 246, 0.2)"
               strokeWidth="1"
               initial={{ scale: 0 }}
               animate={{ scale: [1, 1.3, 1] }}
@@ -117,23 +117,26 @@ export default function LoadingPage() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 0.5 }}
-          className="mb-10"
+          className="mb-8"
         >
-          <p className="pull-quote" style={{ fontSize: '1.25rem' }}>
-            {MESSAGES[messageIndex]}
-          </p>
+          <p className="text-lg text-white/80">{MESSAGES[messageIndex]}</p>
         </motion.div>
 
-        <div className="w-full max-w-xs mx-auto h-px overflow-hidden"
-             style={{ background: 'rgba(245, 240, 232, 0.1)' }}>
+        <div className="w-full max-w-xs mx-auto h-1 rounded-full bg-white/10 overflow-hidden">
           <motion.div
-            className="h-full"
-            style={{ background: '#D4AF37' }}
+            className="h-full rounded-full"
+            style={{
+              background: 'linear-gradient(135deg, #8b5cf6, #D4AF37)',
+            }}
             initial={{ width: '0%' }}
             animate={{ width: `${Math.min(progress, 95)}%` }}
             transition={{ duration: 0.3 }}
           />
         </div>
+
+        <p className="text-xs text-white/30 mt-4">
+          Crafting your sovereign blueprint...
+        </p>
       </div>
     </div>
   );

@@ -22,7 +22,7 @@ function Section({
       initial={{ opacity: 0, y: 40 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-50px' }}
-      transition={{ duration: 0.8, delay }}
+      transition={{ duration: 0.7, delay }}
     >
       {children}
     </motion.div>
@@ -31,16 +31,16 @@ function Section({
 
 function ArchetypeBlock({ archetype }: { archetype: BlueprintResult['soulArchitecture']['sunArchetype'] }) {
   return (
-    <div className="mb-10">
+    <div className="bg-white/5 rounded-xl p-5 border border-white/5 mb-4">
       <div className="flex items-baseline gap-3 mb-3">
         <h3 className="text-xl md:text-2xl font-bold gold-glow">
           {archetype.name}
         </h3>
-        <span style={{ color: 'rgba(245, 240, 232, 0.4)', fontFamily: "'Space Grotesk', sans-serif", fontSize: '0.75rem', letterSpacing: '0.1em' }}>
+        <span className="text-cosmic-purple-light text-xs tracking-wider">
           {archetype.sign} {archetype.degree}
         </span>
       </div>
-      <p style={{ color: 'rgba(245, 240, 232, 0.8)', lineHeight: '1.7' }}>
+      <p className="text-white/80 leading-relaxed">
         {archetype.description}
       </p>
     </div>
@@ -79,7 +79,7 @@ export default function BlueprintPage({ blueprint, quizData }: Props) {
     let y = 20;
 
     const fillBackground = () => {
-      doc.setFillColor(0, 0, 0);
+      doc.setFillColor(10, 10, 15);
       doc.rect(0, 0, pageWidth, pageHeight, 'F');
     };
 
@@ -132,7 +132,6 @@ export default function BlueprintPage({ blueprint, quizData }: Props) {
       y += 8;
     };
 
-    // Header
     doc.setFontSize(10);
     doc.setTextColor(...gold);
     doc.text('SOVRN', pageWidth / 2, y, { align: 'center' });
@@ -150,7 +149,6 @@ export default function BlueprintPage({ blueprint, quizData }: Props) {
 
     addDivider();
 
-    // Soul Architecture
     addTitle('I. Soul Architecture', 14);
     y += 2;
 
@@ -171,7 +169,6 @@ export default function BlueprintPage({ blueprint, quizData }: Props) {
     addQuote(blueprint.soulArchitecture.coreQuote);
     addDivider();
 
-    // Shadow Pattern
     addTitle('II. Shadow Pattern', 14);
     addBody(blueprint.shadowPattern.pattern);
     addTitle('Root Cause', 11, bone);
@@ -179,7 +176,6 @@ export default function BlueprintPage({ blueprint, quizData }: Props) {
     addQuote(blueprint.shadowPattern.keyQuote);
     addDivider();
 
-    // True North
     addTitle('III. True North', 14);
     addBody(blueprint.trueNorth.direction);
     addTitle('Alignment', 11, bone);
@@ -188,14 +184,12 @@ export default function BlueprintPage({ blueprint, quizData }: Props) {
     addBody(blueprint.trueNorth.destiny);
     addDivider();
 
-    // First Sovereign Act
     addTitle('IV. Your First Sovereign Act', 14);
     addBody(blueprint.firstSovereignAct.instruction);
     addTitle('Why This Act', 11, bone);
     addBody(blueprint.firstSovereignAct.reason);
     addQuote(blueprint.firstSovereignAct.declaration);
 
-    // Footer
     checkPage(20);
     y += 8;
     doc.setFontSize(8);
@@ -221,55 +215,36 @@ export default function BlueprintPage({ blueprint, quizData }: Props) {
   }, [showBooking]);
 
   return (
-    <div className="relative min-h-screen px-4 py-16 md:py-24">
+    <div className="relative min-h-screen px-4 py-12 md:py-20">
       <div className="relative z-10 max-w-3xl mx-auto">
         {/* Header */}
         <Section>
-          <div className="text-center mb-20">
+          <div className="text-center mb-16">
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="text-sm tracking-[0.4em] uppercase gold-glow font-medium mb-8"
-              style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+              className="text-sm tracking-[0.4em] uppercase gold-glow font-medium mb-6"
             >
               SOVRN
             </motion.p>
-            <h1 className="text-3xl md:text-5xl font-bold mb-4 gold-glow-strong">
-              Your Sovereign Blueprint
+            <h1 className="text-3xl md:text-5xl font-bold mb-4">
+              <span className="text-gradient">Your Sovereign Blueprint</span>
             </h1>
-            <p className="text-xl" style={{ color: 'rgba(245, 240, 232, 0.5)' }}>
-              {quizData.name}
-            </p>
+            <p className="text-xl text-white/60">{quizData.name}</p>
 
-            <div className="flex items-center justify-center gap-4 mt-8">
+            <div className="flex items-center justify-center gap-4 mt-6">
               <button
                 onClick={handleShare}
-                className="flex items-center gap-2 text-sm transition-colors px-4 py-2"
-                style={{
-                  color: 'rgba(245, 240, 232, 0.4)',
-                  border: '1px solid rgba(212, 175, 55, 0.2)',
-                  fontFamily: "'Space Grotesk', sans-serif",
-                  letterSpacing: '0.1em',
-                  textTransform: 'uppercase' as const,
-                  fontSize: '0.7rem',
-                }}
+                className="flex items-center gap-2 text-sm text-white/50 hover:text-white transition-colors px-4 py-2 rounded-lg border border-white/10 hover:border-white/20"
               >
-                <Share2 className="w-3 h-3" />
-                {shared ? 'Copied' : 'Share'}
+                <Share2 className="w-4 h-4" />
+                {shared ? 'Copied!' : 'Share'}
               </button>
               <button
                 onClick={handleDownload}
-                className="flex items-center gap-2 text-sm transition-colors px-4 py-2"
-                style={{
-                  color: 'rgba(245, 240, 232, 0.4)',
-                  border: '1px solid rgba(212, 175, 55, 0.2)',
-                  fontFamily: "'Space Grotesk', sans-serif",
-                  letterSpacing: '0.1em',
-                  textTransform: 'uppercase' as const,
-                  fontSize: '0.7rem',
-                }}
+                className="flex items-center gap-2 text-sm text-white/50 hover:text-white transition-colors px-4 py-2 rounded-lg border border-white/10 hover:border-white/20"
               >
-                <Download className="w-3 h-3" />
+                <Download className="w-4 h-4" />
                 Download PDF
               </button>
             </div>
@@ -278,8 +253,8 @@ export default function BlueprintPage({ blueprint, quizData }: Props) {
 
         {/* I. Soul Architecture */}
         <Section delay={0.1}>
-          <div className="sovereign-section pt-12 pb-12">
-            <h2 className="text-2xl md:text-3xl font-bold gold-glow mb-12">
+          <div className="glass-card-gold p-8 md:p-10 mb-8">
+            <h2 className="text-2xl md:text-3xl font-bold gold-glow mb-8">
               I. Soul Architecture
             </h2>
 
@@ -287,26 +262,24 @@ export default function BlueprintPage({ blueprint, quizData }: Props) {
             <ArchetypeBlock archetype={blueprint.soulArchitecture.risingArchetype} />
             <ArchetypeBlock archetype={blueprint.soulArchitecture.northNodeArchetype} />
 
-            <div className="mt-12 mb-12">
-              <h3 className="text-lg font-bold gold-glow mb-4"
-                  style={{ fontFamily: "'Space Grotesk', sans-serif", letterSpacing: '0.08em' }}>
-                THE SOVEREIGN FLAME
-              </h3>
-              <p style={{ color: 'rgba(245, 240, 232, 0.8)', lineHeight: '1.7' }}>
+            <div className="bg-white/5 rounded-xl p-5 border border-cosmic-gold/10 mt-6">
+              <p className="text-sm text-cosmic-gold font-medium mb-2">
+                The Sovereign Flame
+              </p>
+              <p className="text-white/80 text-sm leading-relaxed">
                 {blueprint.soulArchitecture.sovereignFlame}
               </p>
             </div>
 
-            {/* Core Quote — large pull quote */}
             <motion.div
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1 }}
               viewport={{ once: true }}
               transition={{ duration: 1 }}
-              className="py-12 text-center"
+              className="py-10 text-center"
             >
               <p className="pull-quote text-2xl md:text-3xl max-w-2xl mx-auto">
-                "{blueprint.soulArchitecture.coreQuote}"
+                &ldquo;{blueprint.soulArchitecture.coreQuote}&rdquo;
               </p>
             </motion.div>
           </div>
@@ -314,19 +287,16 @@ export default function BlueprintPage({ blueprint, quizData }: Props) {
 
         {/* II. Shadow Pattern */}
         <Section delay={0.15}>
-          <div className="sovereign-section pt-12 pb-12">
+          <div className="glass-card p-8 md:p-10 mb-8">
             <h2 className="text-2xl md:text-3xl font-bold gold-glow mb-8">
               II. Shadow Pattern
             </h2>
-            <p style={{ color: 'rgba(245, 240, 232, 0.8)', lineHeight: '1.7' }} className="mb-8">
+            <p className="text-white/80 leading-relaxed mb-6">
               {blueprint.shadowPattern.pattern}
             </p>
-            <div className="mb-8">
-              <h3 className="text-lg font-bold mb-4"
-                  style={{ color: 'rgba(245, 240, 232, 0.5)', fontFamily: "'Space Grotesk', sans-serif", letterSpacing: '0.08em', textTransform: 'uppercase' as const }}>
-                ROOT CAUSE
-              </h3>
-              <p style={{ color: 'rgba(245, 240, 232, 0.7)', lineHeight: '1.7' }}>
+            <div className="bg-red-500/5 border border-red-500/10 rounded-xl p-5 mb-6">
+              <p className="text-sm text-red-400 font-medium mb-2">Root Cause</p>
+              <p className="text-white/70 text-sm leading-relaxed">
                 {blueprint.shadowPattern.rootCause}
               </p>
             </div>
@@ -335,10 +305,10 @@ export default function BlueprintPage({ blueprint, quizData }: Props) {
               whileInView={{ opacity: 1 }}
               viewport={{ once: true }}
               transition={{ duration: 1 }}
-              className="py-8 text-center"
+              className="py-6 text-center"
             >
               <p className="pull-quote text-xl md:text-2xl max-w-2xl mx-auto">
-                "{blueprint.shadowPattern.keyQuote}"
+                &ldquo;{blueprint.shadowPattern.keyQuote}&rdquo;
               </p>
             </motion.div>
           </div>
@@ -346,49 +316,42 @@ export default function BlueprintPage({ blueprint, quizData }: Props) {
 
         {/* III. True North */}
         <Section delay={0.2}>
-          <div className="sovereign-section pt-12 pb-12">
+          <div className="glass-card p-8 md:p-10 mb-8">
             <h2 className="text-2xl md:text-3xl font-bold gold-glow mb-8">
               III. True North
             </h2>
-            <p style={{ color: 'rgba(245, 240, 232, 0.8)', lineHeight: '1.7' }} className="mb-8">
+            <p className="text-white/80 leading-relaxed mb-6">
               {blueprint.trueNorth.direction}
             </p>
-            <div className="mb-8">
-              <h3 className="text-lg font-bold mb-4"
-                  style={{ color: 'rgba(245, 240, 232, 0.5)', fontFamily: "'Space Grotesk', sans-serif", letterSpacing: '0.08em', textTransform: 'uppercase' as const }}>
-                ALIGNMENT
-              </h3>
-              <p style={{ color: 'rgba(245, 240, 232, 0.7)', lineHeight: '1.7' }}>
-                {blueprint.trueNorth.alignment}
-              </p>
-            </div>
-            <div>
-              <h3 className="text-lg font-bold mb-4"
-                  style={{ color: 'rgba(245, 240, 232, 0.5)', fontFamily: "'Space Grotesk', sans-serif", letterSpacing: '0.08em', textTransform: 'uppercase' as const }}>
-                DESTINY
-              </h3>
-              <p style={{ color: 'rgba(245, 240, 232, 0.7)', lineHeight: '1.7' }}>
-                {blueprint.trueNorth.destiny}
-              </p>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="bg-cosmic-purple/5 border border-cosmic-purple/10 rounded-xl p-5">
+                <p className="text-sm text-cosmic-purple-light font-medium mb-2">Alignment</p>
+                <p className="text-white/70 text-sm leading-relaxed">
+                  {blueprint.trueNorth.alignment}
+                </p>
+              </div>
+              <div className="bg-cosmic-gold/5 border border-cosmic-gold/10 rounded-xl p-5">
+                <p className="text-sm text-cosmic-gold font-medium mb-2">Destiny</p>
+                <p className="text-white/70 text-sm leading-relaxed">
+                  {blueprint.trueNorth.destiny}
+                </p>
+              </div>
             </div>
           </div>
         </Section>
 
         {/* IV. First Sovereign Act */}
         <Section delay={0.25}>
-          <div className="sovereign-section pt-12 pb-12">
+          <div className="glass-card p-8 md:p-10 mb-8">
             <h2 className="text-2xl md:text-3xl font-bold gold-glow mb-8">
               IV. Your First Sovereign Act
             </h2>
-            <p style={{ color: 'rgba(245, 240, 232, 0.8)', lineHeight: '1.7' }} className="mb-8">
+            <p className="text-white/80 leading-relaxed mb-6">
               {blueprint.firstSovereignAct.instruction}
             </p>
-            <div className="mb-8">
-              <h3 className="text-lg font-bold mb-4"
-                  style={{ color: 'rgba(245, 240, 232, 0.5)', fontFamily: "'Space Grotesk', sans-serif", letterSpacing: '0.08em', textTransform: 'uppercase' as const }}>
-                WHY THIS ACT
-              </h3>
-              <p style={{ color: 'rgba(245, 240, 232, 0.7)', lineHeight: '1.7' }}>
+            <div className="bg-cosmic-gold/5 border border-cosmic-gold/10 rounded-xl p-5 mb-6">
+              <p className="text-sm text-cosmic-gold font-medium mb-2">Why This Act</p>
+              <p className="text-white/70 text-sm leading-relaxed">
                 {blueprint.firstSovereignAct.reason}
               </p>
             </div>
@@ -397,10 +360,10 @@ export default function BlueprintPage({ blueprint, quizData }: Props) {
               whileInView={{ opacity: 1 }}
               viewport={{ once: true }}
               transition={{ duration: 1 }}
-              className="py-8 text-center"
+              className="py-6 text-center"
             >
               <p className="pull-quote text-xl md:text-2xl max-w-2xl mx-auto">
-                "{blueprint.firstSovereignAct.declaration}"
+                &ldquo;{blueprint.firstSovereignAct.declaration}&rdquo;
               </p>
             </motion.div>
           </div>
@@ -408,45 +371,47 @@ export default function BlueprintPage({ blueprint, quizData }: Props) {
 
         {/* CTA — Death Module */}
         <Section delay={0.3}>
-          <div className="sovereign-section pt-16 pb-16 text-center">
-            <p className="pull-quote text-2xl md:text-3xl mb-8 max-w-xl mx-auto">
-              Your blueprint is a map. The Death Module is the journey.
-            </p>
-            <p style={{ color: 'rgba(245, 240, 232, 0.5)', lineHeight: '1.7' }} className="mb-2">
-              The first SOVRN cohort opens July 2026. Twelve people. Eight weeks.
-            </p>
-            <p className="gold-glow text-xl mb-10"
-               style={{ fontFamily: "'Space Grotesk', sans-serif", letterSpacing: '0.05em' }}>
-              Investment: $1,000
-            </p>
+          <div className="relative overflow-hidden rounded-2xl p-8 md:p-12 text-center mb-16">
+            <div className="absolute inset-0 bg-gradient-to-br from-cosmic-purple/20 via-space-card to-cosmic-gold/10 border border-cosmic-gold/20 rounded-2xl" />
+            <div className="relative z-10">
+              <p className="pull-quote text-2xl md:text-3xl mb-8 max-w-xl mx-auto">
+                Your blueprint is a map. The Death Module is the journey.
+              </p>
+              <p className="text-white/60 mb-2">
+                The first SOVRN cohort opens July 2026. Twelve people. Eight weeks.
+              </p>
+              <p className="gold-glow text-xl font-bold mb-10">
+                Investment: $1,000
+              </p>
 
-            {!showBooking ? (
-              <>
-                <button onClick={handleBookCall} className="sovereign-button mb-4">
-                  Apply for the Founding Cohort
-                </button>
-                <div className="sovereign-divider max-w-xs mx-auto my-8" />
-                <button onClick={handleBookCall} className="sovereign-button"
-                        style={{ background: 'transparent', color: '#D4AF37', border: '1px solid rgba(212, 175, 55, 0.3)' }}>
-                  Book a Sovereign Strategy Call
-                </button>
-              </>
-            ) : (
-              <div
-                className="iclosed-widget mt-4"
-                data-url="https://app.iclosed.io/e/sovrngrowth/strategy-call"
-                title="Strategy Call"
-                style={{ width: '100%', height: '620px' }}
-              />
-            )}
+              {!showBooking ? (
+                <>
+                  <button onClick={handleBookCall} className="sovereign-button text-lg mb-4">
+                    Apply for the Founding Cohort
+                  </button>
+                  <div className="sovereign-divider max-w-xs mx-auto my-8" />
+                  <button onClick={handleBookCall} className="sovereign-button"
+                          style={{ background: 'transparent', color: '#D4AF37', border: '1px solid rgba(212, 175, 55, 0.3)', borderRadius: '0.75rem' }}>
+                    Book a Sovereign Strategy Call
+                  </button>
+                </>
+              ) : (
+                <div
+                  className="iclosed-widget mt-4"
+                  data-url="https://app.iclosed.io/e/sovrngrowth/strategy-call"
+                  title="Strategy Call"
+                  style={{ width: '100%', height: '620px' }}
+                />
+              )}
+            </div>
           </div>
         </Section>
 
         {/* Footer */}
         <Section delay={0.35}>
           <div className="text-center pb-12">
-            <div className="sovereign-divider max-w-xs mx-auto mb-8" />
-            <p style={{ color: 'rgba(245, 240, 232, 0.2)', fontSize: '0.75rem', fontFamily: "'Space Grotesk', sans-serif", letterSpacing: '0.1em', textTransform: 'uppercase' as const }}>
+            <div className="w-12 h-px bg-gradient-to-r from-transparent via-cosmic-gold/50 to-transparent mx-auto mb-6" />
+            <p className="text-sm text-white/30">
               SOVRN — Your Sovereign Blueprint
             </p>
           </div>
