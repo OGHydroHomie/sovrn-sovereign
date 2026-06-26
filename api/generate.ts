@@ -93,30 +93,30 @@ Return valid JSON matching this exact structure:
       "name": "An evocative archetype title (not the sign name)",
       "sign": "The Sun sign from chart data",
       "degree": "Exact degree from chart data, e.g. 24.3°",
-      "description": "150-200 words. Decode this Sun placement as their core identity architecture. Reference exact degree and sign. Connect to their stated desired reality. Bold, precise, personal."
+      "description": "75-100 words. Decode this Sun placement as their core identity architecture. Reference exact degree and sign. Connect to their stated desired reality. Bold, precise, personal."
     },
     "risingArchetype": {
       "name": "An evocative archetype title",
       "sign": "The Rising/Ascendant sign from chart data",
       "degree": "Exact degree from chart data",
-      "description": "150-200 words. Decode the Rising sign as the mask they wear and the first energy others encounter. Reference exact degree. Connect to how they show up in the world vs. who they are underneath."
+      "description": "75-100 words. Decode the Rising sign as the mask they wear and the first energy others encounter. Reference exact degree. Connect to how they show up in the world vs. who they are underneath."
     },
     "northNodeArchetype": {
       "name": "An evocative archetype title",
       "sign": "The North Node sign from chart data",
       "degree": "Exact degree from chart data",
-      "description": "150-200 words. Decode the North Node as their evolutionary direction — the soul curriculum they enrolled in. Reference exact degree. Connect to their stated desired reality."
+      "description": "75-100 words. Decode the North Node as their evolutionary direction — the soul curriculum they enrolled in. Reference exact degree. Connect to their stated desired reality."
     },
     "sovereignFlame": "200 words. The synthesis — what happens when Sun + Rising + North Node activate together. Their unique gift to the world, stated as fact, not potential. Name the specific quality that no one else on earth carries in exactly this configuration.",
     "coreQuote": "One devastating line of recognition. Not an affirmation. A truth."
   },
   "shadowPattern": {
-    "pattern": "200-250 words. Decode their specific shadow/block through South Node sign + degree + Saturn sign + degree + any hard aspects to these points. Weave in their stated fear and repeating pattern. Name the exact mechanism: what triggers it, how it operates, what it protects them from. Be surgical.",
+    "pattern": "200-100 words. Decode their specific shadow/block through South Node sign + degree + Saturn sign + degree + any hard aspects to these points. Weave in their stated fear and repeating pattern. Name the exact mechanism: what triggers it, how it operates, what it protects them from. Be surgical.",
     "rootCause": "150 words. Where this pattern originates in the chart. Name the specific placements and aspects that created this loop. Connect to their stated fear — show them that the fear is not random, it is architecturally encoded.",
     "keyQuote": "One bold line that names their specific pattern with precision. Should sting with accuracy."
   },
   "trueNorth": {
-    "direction": "200-250 words. North Node decoded as their evolutionary path. Synthesize with their stated desired reality. Show them the specific trajectory their chart is pulling them toward. Name the exact qualities they must develop (from North Node sign) and the exact qualities they must release (from South Node sign).",
+    "direction": "200-100 words. North Node decoded as their evolutionary path. Synthesize with their stated desired reality. Show them the specific trajectory their chart is pulling them toward. Name the exact qualities they must develop (from North Node sign) and the exact qualities they must release (from South Node sign).",
     "alignment": "150 words. How their stated desired reality aligns with (or conflicts with) their chart's trajectory. If it aligns, name exactly how. If it conflicts, name the specific tension and what adjustment would bring alignment.",
     "destiny": "100 words. The MC/career destiny decoded. What they are here to build, create, or become in the world. State it as inevitable, not aspirational."
   },
@@ -168,7 +168,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 6000,
+        max_tokens: 4000,
         system: buildSystemPrompt(chartData),
         messages: [{ role: 'user', content: buildUserMessage(data) }],
       }),
