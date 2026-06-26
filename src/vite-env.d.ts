@@ -1,1 +1,1 @@
-404: Not Found
+/// <reference types="vite/client" />
