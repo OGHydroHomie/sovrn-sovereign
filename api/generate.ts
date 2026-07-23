@@ -167,7 +167,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
+        model: 'claude-sonnet-4-6',
         max_tokens: 4000,
         system: buildSystemPrompt(chartData),
         messages: [{ role: 'user', content: buildUserMessage(data) }],
