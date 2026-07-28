@@ -248,6 +248,15 @@
   50% { opacity: 0; }
 }
 
+@keyframes cta-glow {
+  0%, 100% { box-shadow: 0 0 30px rgba(212, 175, 55, 0.4); }
+  50% { box-shadow: 0 0 60px rgba(212, 175, 55, 0.7), 0 0 120px rgba(212, 175, 55, 0.3); }
+}
+
+.cta-pulse {
+  animation: cta-glow 2.5s ease-in-out infinite;
+}
+
 .stream-cursor {
   display: inline-block;
   width: 2px;

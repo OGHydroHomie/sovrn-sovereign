@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import StarField from './components/StarField';
+import ThreeBackground from './components/ThreeBackground';
 import ApiKeyModal from './components/ApiKeyModal';
 import HeroPage from './pages/HeroPage';
 import QuizPage from './pages/QuizPage';
@@ -88,7 +88,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#000000' }}>
-      <StarField />
+      <ThreeBackground currentPage={page} />
       <div className="vignette" />
 
       {/* Error banner */}
@@ -126,6 +126,7 @@ export default function App() {
             <HeroPage
               onStart={() => {
                 trackEvent('pageView', 'quiz');
+                window.scrollTo(0, 0);
                 setPage('quiz');
               }}
             />
