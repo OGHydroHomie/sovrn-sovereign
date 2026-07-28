@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import StarField from './components/StarField';
 import ApiKeyModal from './components/ApiKeyModal';
 import HeroPage from './pages/HeroPage';
 import QuizPage from './pages/QuizPage';
 import LoadingPage from './pages/LoadingPage';
 import BlueprintPage from './pages/BlueprintPage';
-import type { AppPage, QuizData, BlueprintResult } from './types';
+import type { AppPage, QuizData } from './types';
 import { generateBlueprint } from './utils/api';
 import { saveBlueprint, getBlueprint, getQuizData, trackEvent } from './utils/storage';
 
@@ -15,7 +15,8 @@ const API_KEY_STORAGE = 'sovrn_api_key';
 export default function App() {
   const [page, setPage] = useState<AppPage>('hero');
   const [quizData, setQuizData] = useState<QuizData | null>(null);
-  const [blueprint, setBlueprint] = useState<BlueprintResult | null>(null);
+  const [streamingText, setStreamingText] = useState('');
+  const [streamDone, setStreamDone] = useState(false);
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pendingQuizData, setPendingQuizData] = useState<QuizData | null>(null);
@@ -25,41 +26,53 @@ export default function App() {
     const existing = getBlueprint();
     const existingQuiz = getQuizData();
     if (existing && existingQuiz) {
-      setBlueprint(existing);
+      setStreamingText(existing.text);
+      setStreamDone(true);
       setQuizData(existingQuiz);
     }
   }, []);
 
-  const handleGenerate = useCallback(async (data: QuizData, apiKey?: string) => {
+  const handleGenerate = useCallback((data: QuizData, apiKey?: string) => {
     setPage('loading');
     setError(null);
+    setStreamingText('');
+    setStreamDone(false);
+    setQuizData(data);
     trackEvent('quizComplete');
 
-    try {
-      const result = await generateBlueprint(data, apiKey);
-      saveBlueprint(result);
-      setBlueprint(result);
-      setQuizData(data);
-      setPage('blueprint');
-    } catch (err) {
-      console.error('Blueprint generation failed:', err);
-      const message = err instanceof Error ? err.message : 'Failed to generate blueprint.';
+    generateBlueprint(
+      data,
+      {
+        onFirstChunk: () => {
+          setPage('blueprint');
+        },
+        onChunk: (text) => {
+          setStreamingText((prev) => prev + text);
+        },
+        onDone: (fullText) => {
+          saveBlueprint({ text: fullText });
+          setStreamDone(true);
+        },
+        onError: (err) => {
+          console.error('Blueprint generation failed:', err);
+          const message = err.message;
 
-      // If proxy failed (no backend), fall back to asking for API key
-      if (!apiKey && (message.includes('404') || message.includes('Failed to fetch'))) {
-        setPage('quiz');
-        setPendingQuizData(data);
-        setShowApiKeyModal(true);
-        return;
-      }
+          if (!apiKey && (message.includes('404') || message.includes('Failed to fetch'))) {
+            setPage('quiz');
+            setPendingQuizData(data);
+            setShowApiKeyModal(true);
+            return;
+          }
 
-      setError(message);
-      setPage('quiz');
-    }
+          setError(message);
+          setPage('quiz');
+        },
+      },
+      apiKey
+    );
   }, []);
 
   const handleQuizComplete = (data: QuizData) => {
-    // Try proxy first (production). If it fails, the error handler will show the API key modal.
     const localKey = localStorage.getItem(API_KEY_STORAGE);
     handleGenerate(data, localKey || undefined);
   };
@@ -101,29 +114,68 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {page === 'hero' && (
-        <HeroPage
-          onStart={() => {
-            trackEvent('pageView', 'quiz');
-            setPage('quiz');
-          }}
-        />
-      )}
+      <AnimatePresence mode="wait">
+        {page === 'hero' && (
+          <motion.div
+            key="hero"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <HeroPage
+              onStart={() => {
+                trackEvent('pageView', 'quiz');
+                setPage('quiz');
+              }}
+            />
+          </motion.div>
+        )}
 
-      {page === 'quiz' && (
-        <QuizPage
-          onComplete={handleQuizComplete}
-          onBack={() => setPage('hero')}
-        />
-      )}
+        {page === 'quiz' && (
+          <motion.div
+            key="quiz"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <QuizPage
+              onComplete={handleQuizComplete}
+              onBack={() => setPage('hero')}
+            />
+          </motion.div>
+        )}
 
-      {page === 'loading' && <LoadingPage />}
+        {page === 'loading' && (
+          <motion.div
+            key="loading"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.8 }}
+          >
+            <LoadingPage />
+          </motion.div>
+        )}
 
-      {page === 'blueprint' && blueprint && quizData && (
-        <BlueprintPage blueprint={blueprint} quizData={quizData} />
-      )}
+        {page === 'blueprint' && quizData && (
+          <motion.div
+            key="blueprint"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.8 }}
+          >
+            <BlueprintPage
+              text={streamingText}
+              isDone={streamDone}
+              quizData={quizData}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {page === 'hero' && blueprint && quizData && (
+      {page === 'hero' && streamDone && streamingText && quizData && (
         <button
           onClick={() => setPage('blueprint')}
           className="fixed bottom-6 right-6 z-20 text-xs tracking-widest uppercase px-4 py-2 rounded-lg backdrop-blur-sm transition-all hover:border-cosmic-gold/30 hover:text-cosmic-gold/80"

@@ -242,3 +242,19 @@
   0%, 100% { opacity: 0.4; }
   50% { opacity: 1; }
 }
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.stream-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1.1em;
+  background: #D4AF37;
+  margin-left: 3px;
+  vertical-align: text-bottom;
+  animation: blink 0.8s step-end infinite;
+  box-shadow: 0 0 8px rgba(212, 175, 55, 0.6);
+}
