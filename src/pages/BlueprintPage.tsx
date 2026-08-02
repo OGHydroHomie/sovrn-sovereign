@@ -4,6 +4,7 @@ import { Share2, Download } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import type { QuizData } from '../types';
 import { trackEvent } from '../utils/storage';
+import { getSunArchetype } from '../utils/sunSign';
 
 interface Props {
   text: string;
@@ -29,11 +30,7 @@ function renderLines(text: string, isDone: boolean) {
 
     if (SECTION_HEADERS.has(trimmed)) {
       elements.push(
-        <h2
-          key={i}
-          className="text-2xl md:text-3xl font-bold gold-glow mt-12 mb-6 first:mt-0"
-          style={{ fontFamily: "'Space Grotesk', sans-serif" }}
-        >
+        <h2 key={i} className="blueprint-section-head">
           {trimmed}
         </h2>
       );
@@ -41,11 +38,7 @@ function renderLines(text: string, isDone: boolean) {
       elements.push(<div key={i} className="h-4" />);
     } else {
       elements.push(
-        <p
-          key={i}
-          className="text-white/85 leading-relaxed mb-1"
-          style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '1.1rem', lineHeight: '1.8' }}
-        >
+        <p key={i} className="blueprint-body">
           {line}
           {isLast && !isDone && <span className="stream-cursor" />}
         </p>
@@ -190,42 +183,43 @@ export default function BlueprintPage({ text, isDone, quizData }: Props) {
     setShowBooking(true);
   };
 
-  return (
-    <div className="relative min-h-screen px-4 py-12 md:py-20">
-      <div className="relative z-10 max-w-3xl mx-auto">
+  const archetype = getSunArchetype(quizData.birthDate);
 
-        {/* Header */}
-        <div className="text-center mb-12">
-          <motion.p
+  return (
+    <div className="blueprint-shell">
+      <div className="blueprint-inner">
+
+        {/* Threshold confirmation header */}
+        <div className="text-center mb-10">
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="text-sm tracking-[0.4em] uppercase gold-glow font-medium mb-4"
+            className="brand-mark mb-5"
           >
             SOVRN
-          </motion.p>
-          <h1 className="text-3xl md:text-5xl font-bold mb-2">
-            <span className="text-gradient">Your Sovereign Blueprint</span>
-          </h1>
-          <p className="text-lg text-white/50">{quizData.name}</p>
+          </motion.div>
+          <h1 className="threshold-eyebrow">YOU'VE CROSSED THE THRESHOLD</h1>
+          <p className="mt-3" style={{ fontFamily: 'Georgia, serif', color: '#4A4A4A' }}>
+            {quizData.name}
+          </p>
+          {archetype && (
+            <p className="threshold-archetype">
+              {archetype.sign} · {archetype.archetype}
+            </p>
+          )}
 
           {isDone && (
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
-              className="flex items-center justify-center gap-4 mt-6"
+              className="flex items-center justify-center gap-4 mt-7"
             >
-              <button
-                onClick={handleShare}
-                className="flex items-center gap-2 text-sm text-white/50 hover:text-white transition-colors px-4 py-2 rounded-lg border border-white/10 hover:border-white/20"
-              >
+              <button onClick={handleShare} className="result-ghost-btn">
                 <Share2 className="w-4 h-4" />
                 {shared ? 'Copied!' : 'Share'}
               </button>
-              <button
-                onClick={handleDownload}
-                className="flex items-center gap-2 text-sm text-white/50 hover:text-white transition-colors px-4 py-2 rounded-lg border border-white/10 hover:border-white/20"
-              >
+              <button onClick={handleDownload} className="result-ghost-btn">
                 <Download className="w-4 h-4" />
                 Download PDF
               </button>
@@ -236,7 +230,7 @@ export default function BlueprintPage({ text, isDone, quizData }: Props) {
         {/* Streaming text canvas */}
         <div
           ref={scrollRef}
-          className="glass-card-gold p-8 md:p-10 mb-8"
+          className="blueprint-card mb-8"
           style={{ minHeight: '200px' }}
         >
           {renderLines(text, isDone)}
@@ -249,47 +243,58 @@ export default function BlueprintPage({ text, isDone, quizData }: Props) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.3 }}
           >
-            <div className="relative overflow-hidden rounded-2xl p-8 md:p-12 text-center mb-16">
-              <div className="absolute inset-0 bg-gradient-to-br from-cosmic-purple/20 via-space-card to-cosmic-gold/10 border border-cosmic-gold/20 rounded-2xl" />
-              <div className="relative z-10">
-                <p className="pull-quote text-2xl md:text-3xl mb-8 max-w-xl mx-auto">
-                  Your blueprint is a map. The Death Module is the journey.
-                </p>
-                <p className="text-white/60 mb-2">
-                  The first SOVRN cohort opens July 2026. Twelve people. Eight weeks.
-                </p>
-                <p className="gold-glow text-xl font-bold mb-10">
-                  Investment: $1,000
-                </p>
+            <div
+              className="rounded-lg p-8 md:p-12 text-center mb-16"
+              style={{ background: '#FFFFFF', border: '1px solid #E5E5E5', boxShadow: '0 12px 40px rgba(0,0,0,0.05)' }}
+            >
+              <p className="pull-quote mb-8 max-w-xl mx-auto">
+                Your blueprint is a map. The Death Module is the journey.
+              </p>
+              <p className="mb-2" style={{ fontFamily: 'Georgia, serif', color: '#4A4A4A' }}>
+                The first SOVRN cohort opens July 2026. Twelve people. Eight weeks.
+              </p>
+              <p className="mb-10" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: '20px', color: '#DC2626' }}>
+                Investment: $1,000
+              </p>
 
-                {!showBooking ? (
-                  <>
-                    <button onClick={handleBookCall} className="sovereign-button text-lg mb-4">
-                      Apply for the Founding Cohort
-                    </button>
-                    <div className="sovereign-divider max-w-xs mx-auto my-8" />
-                    <button
-                      onClick={handleBookCall}
-                      className="sovereign-button"
-                      style={{ background: 'transparent', color: '#D4AF37', border: '1px solid rgba(212, 175, 55, 0.3)', borderRadius: '0.75rem' }}
-                    >
-                      Book a Sovereign Strategy Call
-                    </button>
-                  </>
-                ) : (
-                  <div
-                    className="iclosed-widget mt-4"
-                    data-url="https://app.iclosed.io/e/sovrngrowth/strategy-call"
-                    title="Strategy Call"
-                    style={{ width: '100%', height: '620px' }}
-                  />
-                )}
-              </div>
+              {!showBooking ? (
+                <>
+                  <button onClick={handleBookCall} className="btn-sovereign mb-6">
+                    Apply for the Founding Cohort
+                  </button>
+                  <div className="hairline-divider max-w-xs mx-auto my-8" />
+                  <button
+                    onClick={handleBookCall}
+                    style={{
+                      fontFamily: "'Inter', sans-serif",
+                      fontWeight: 700,
+                      fontSize: '14px',
+                      letterSpacing: '0.1em',
+                      textTransform: 'uppercase',
+                      background: 'transparent',
+                      color: '#DC2626',
+                      border: '1px solid rgba(220,38,38,0.4)',
+                      borderRadius: '4px',
+                      padding: '16px 40px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Book a Sovereign Strategy Call
+                  </button>
+                </>
+              ) : (
+                <div
+                  className="iclosed-widget mt-4"
+                  data-url="https://app.iclosed.io/e/sovrngrowth/strategy-call"
+                  title="Strategy Call"
+                  style={{ width: '100%', height: '620px' }}
+                />
+              )}
             </div>
 
             <div className="text-center pb-12">
-              <div className="w-12 h-px bg-gradient-to-r from-transparent via-cosmic-gold/50 to-transparent mx-auto mb-6" />
-              <p className="text-sm text-white/30">SOVRN — Your Sovereign Blueprint</p>
+              <div className="hairline-divider max-w-[3rem] mx-auto mb-6" />
+              <p className="site-footer" style={{ padding: 0 }}>SOVRN — 2026</p>
             </div>
           </motion.div>
         )}

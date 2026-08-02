@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import ThreeBackground from './components/ThreeBackground';
+import InkField from './components/InkField';
 import ApiKeyModal from './components/ApiKeyModal';
 import HeroPage from './pages/HeroPage';
 import QuizPage from './pages/QuizPage';
@@ -87,17 +87,20 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#000000' }}>
-      <ThreeBackground currentPage={page} />
-      <div className="vignette" />
+    <div className="min-h-screen" style={{ backgroundColor: '#FFFFFF' }}>
+      <InkField />
 
       {/* Error banner */}
       {error && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-red-500/10 border border-red-500/20 rounded-xl px-6 py-3 max-w-md text-center">
-          <p className="text-red-400 text-sm">{error}</p>
+        <div
+          className="fixed top-4 left-1/2 -translate-x-1/2 z-50 rounded-md px-6 py-3 max-w-md text-center"
+          style={{ background: '#FFFFFF', border: '1px solid rgba(220,38,38,0.3)', boxShadow: '0 8px 30px rgba(0,0,0,0.08)' }}
+        >
+          <p className="text-sm" style={{ color: '#DC2626' }}>{error}</p>
           <button
             onClick={() => setError(null)}
-            className="text-red-400/60 text-xs mt-1 hover:text-red-400"
+            className="text-xs mt-1"
+            style={{ color: '#9A9A9A' }}
           >
             Dismiss
           </button>
@@ -179,12 +182,13 @@ export default function App() {
       {page === 'hero' && streamDone && streamingText && quizData && (
         <button
           onClick={() => setPage('blueprint')}
-          className="fixed bottom-6 right-6 z-20 text-xs tracking-widest uppercase px-4 py-2 rounded-lg backdrop-blur-sm transition-all hover:border-cosmic-gold/30 hover:text-cosmic-gold/80"
+          className="fixed bottom-6 right-6 z-20 text-xs tracking-widest uppercase px-4 py-2 rounded transition-all"
           style={{
-            background: 'rgba(22, 22, 31, 0.8)',
-            color: 'rgba(212, 175, 55, 0.5)',
-            border: '1px solid rgba(212, 175, 55, 0.15)',
-            fontFamily: "'Space Grotesk', sans-serif",
+            background: '#FFFFFF',
+            color: '#DC2626',
+            border: '1px solid #E5E5E5',
+            fontFamily: "'Inter', -apple-system, sans-serif",
+            boxShadow: '0 6px 24px rgba(0,0,0,0.08)',
           }}
         >
           View Your Blueprint

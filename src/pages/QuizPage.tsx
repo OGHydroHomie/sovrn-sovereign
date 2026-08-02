@@ -78,8 +78,10 @@ export default function QuizPage({ onComplete, onBack }: Props) {
     exit: (dir: number) => ({ x: dir > 0 ? -300 : 300, opacity: 0 }),
   };
 
+  const progressPct = ((step + 1) / TOTAL_STEPS) * 100;
+
   return (
-    <div className="relative min-h-screen flex flex-col items-center justify-center px-4 py-8">
+    <div className="quiz-shell">
       <div className="relative z-10 w-full max-w-xl mx-auto">
         {/* Header */}
         <motion.div
@@ -87,40 +89,21 @@ export default function QuizPage({ onComplete, onBack }: Props) {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-8"
         >
-          <h2 className="text-sm tracking-[0.4em] uppercase gold-glow font-medium mb-6">
-            SOVRN
-          </h2>
+          <div className="brand-mark mb-6">SOVRN</div>
 
-          {/* Progress bar */}
-          <div className="flex items-center gap-2 mb-4">
-            {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
-              <div key={i} className="flex-1 h-1 rounded-full overflow-hidden bg-white/10">
-                <motion.div
-                  className="h-full rounded-full"
-                  initial={{ width: '0%' }}
-                  animate={{
-                    width: i < step ? '100%' : i === step ? '50%' : '0%',
-                  }}
-                  style={{
-                    background:
-                      i <= step
-                        ? 'linear-gradient(135deg, #8b5cf6, #D4AF37)'
-                        : 'transparent',
-                  }}
-                  transition={{ duration: 0.5 }}
-                />
-              </div>
-            ))}
+          {/* Progress — thin red line filling left to right */}
+          <div className="progress-track mb-3">
+            <div className="progress-fill" style={{ width: `${progressPct}%` }} />
           </div>
 
-          <div className="flex items-center justify-between text-xs text-white/40">
-            <span>Step {step + 1} of {TOTAL_STEPS}</span>
-            <span>{STEP_TITLES[step]}</span>
+          <div className="flex items-center justify-between">
+            <span className="quiz-meta">Step {step + 1} of {TOTAL_STEPS}</span>
+            <span className="quiz-meta">{STEP_TITLES[step]}</span>
           </div>
         </motion.div>
 
         {/* Step content */}
-        <div className="glass-card p-8 md:p-10 min-h-[450px] flex flex-col">
+        <div className="quiz-card min-h-[450px] flex flex-col">
           <AnimatePresence mode="wait" custom={direction}>
             <motion.div
               key={step}
@@ -135,7 +118,7 @@ export default function QuizPage({ onComplete, onBack }: Props) {
               {step === 0 && (
                 <>
                   <div>
-                    <label className="sovereign-label block mb-3">
+                    <label className="field-label">
                       What is your name?
                     </label>
                     <input
@@ -143,22 +126,22 @@ export default function QuizPage({ onComplete, onBack }: Props) {
                       value={data.name}
                       onChange={(e) => update('name', e.target.value)}
                       placeholder="Your full name"
-                      className="sovereign-input"
+                      className="field-input"
                     />
                   </div>
                   <div>
-                    <label className="sovereign-label block mb-3">
+                    <label className="field-label">
                       When did you arrive?
                     </label>
                     <input
                       type="date"
                       value={data.birthDate}
                       onChange={(e) => update('birthDate', e.target.value)}
-                      className="sovereign-input"
+                      className="field-input"
                     />
                   </div>
                   <div>
-                    <label className="sovereign-label block mb-3">
+                    <label className="field-label">
                       What hour did you enter the world?
                     </label>
                     <input
@@ -166,12 +149,12 @@ export default function QuizPage({ onComplete, onBack }: Props) {
                       value={data.birthTime}
                       onChange={(e) => update('birthTime', e.target.value)}
                       disabled={data.birthTimeUnknown}
-                      className="sovereign-input disabled:opacity-30"
+                      className="field-input"
                     />
-                    <p className="sovereign-helper mt-2">
+                    <p className="field-helper mt-2">
                       As exact as you know. Check your birth certificate if unsure.
                     </p>
-                    <label className="flex items-center gap-2 mt-3 cursor-pointer text-white/40 text-sm">
+                    <label className="flex items-center gap-2 mt-3 cursor-pointer quiz-meta">
                       <input
                         type="checkbox"
                         checked={data.birthTimeUnknown}
@@ -179,13 +162,13 @@ export default function QuizPage({ onComplete, onBack }: Props) {
                           update('birthTimeUnknown', e.target.checked);
                           if (e.target.checked) update('birthTime', '');
                         }}
-                        style={{ accentColor: '#D4AF37' }}
+                        style={{ accentColor: '#DC2626' }}
                       />
                       I don't know my exact birth time
                     </label>
                   </div>
                   <div>
-                    <label className="sovereign-label block mb-3">
+                    <label className="field-label">
                       Where were you born?
                     </label>
                     <input
@@ -193,7 +176,7 @@ export default function QuizPage({ onComplete, onBack }: Props) {
                       value={data.birthPlace}
                       onChange={(e) => update('birthPlace', e.target.value)}
                       placeholder="City, State or Country"
-                      className="sovereign-input"
+                      className="field-input"
                     />
                   </div>
                 </>
@@ -201,10 +184,10 @@ export default function QuizPage({ onComplete, onBack }: Props) {
 
               {step === 1 && (
                 <div>
-                  <label className="sovereign-label block mb-3">
+                  <label className="field-label">
                     Name the fear that runs your life — the one you've never said out loud.
                   </label>
-                  <p className="sovereign-helper mb-4">
+                  <p className="field-helper mb-4">
                     Be specific. Not "failure" — but what failure would look like. Not
                     "rejection" — but whose rejection would break you and why. Write 2-3 sentences.
                   </p>
@@ -212,7 +195,7 @@ export default function QuizPage({ onComplete, onBack }: Props) {
                     value={data.deepestFear}
                     onChange={(e) => update('deepestFear', e.target.value)}
                     rows={6}
-                    className="sovereign-input resize-none"
+                    className="field-input resize-none"
                   />
                 </div>
               )}
@@ -220,10 +203,10 @@ export default function QuizPage({ onComplete, onBack }: Props) {
               {step === 2 && (
                 <>
                   <div>
-                    <label className="sovereign-label block mb-3">
+                    <label className="field-label">
                       Describe a single day in the life you know you're meant to live.
                     </label>
-                    <p className="sovereign-helper mb-4">
+                    <p className="field-helper mb-4">
                       Not the vision board. The Tuesday. What do you wake up to? What
                       work are you doing? Who is around you? Describe it like you're
                       remembering it, not imagining it. Write 3-4 sentences.
@@ -232,15 +215,15 @@ export default function QuizPage({ onComplete, onBack }: Props) {
                       value={data.desiredReality}
                       onChange={(e) => update('desiredReality', e.target.value)}
                       rows={5}
-                      className="sovereign-input resize-none"
+                      className="field-input resize-none"
                     />
                   </div>
                   <div>
-                    <label className="sovereign-label block mb-3">
+                    <label className="field-label">
                       What is the one pattern you keep repeating no matter how many times
                       you swear you've broken it?
                     </label>
-                    <p className="sovereign-helper mb-4">
+                    <p className="field-helper mb-4">
                       Describe the cycle, not the label. What triggers it? What do you do
                       when it starts? How does it end? Be honest about the loop — that's
                       where your blueprint finds the exit.
@@ -249,7 +232,7 @@ export default function QuizPage({ onComplete, onBack }: Props) {
                       value={data.repeatingPattern}
                       onChange={(e) => update('repeatingPattern', e.target.value)}
                       rows={5}
-                      className="sovereign-input resize-none"
+                      className="field-input resize-none"
                     />
                   </div>
                 </>
@@ -257,7 +240,7 @@ export default function QuizPage({ onComplete, onBack }: Props) {
 
               {step === 3 && (
                 <div>
-                  <label className="sovereign-label block mb-3">
+                  <label className="field-label">
                     Where do we send your blueprint?
                   </label>
                   <input
@@ -265,9 +248,9 @@ export default function QuizPage({ onComplete, onBack }: Props) {
                     value={data.email}
                     onChange={(e) => update('email', e.target.value)}
                     placeholder="your@email.com"
-                    className="sovereign-input"
+                    className="field-input"
                   />
-                  <p className="sovereign-helper mt-3">
+                  <p className="field-helper mt-3">
                     Your Sovereign Blueprint will also be delivered here.
                   </p>
                 </div>
@@ -276,20 +259,17 @@ export default function QuizPage({ onComplete, onBack }: Props) {
           </AnimatePresence>
 
           {/* Navigation */}
-          <div className="flex items-center justify-between mt-8 pt-6 border-t border-white/5">
-            <button
-              onClick={prev}
-              className="flex items-center gap-2 text-white/50 hover:text-white transition-colors text-sm"
-            >
+          <div className="flex items-center justify-between mt-8 pt-6" style={{ borderTop: '1px solid #E5E5E5' }}>
+            <button onClick={prev} className="quiz-back">
               <ArrowLeft className="w-4 h-4" />
               Back
             </button>
             <button
               onClick={next}
               disabled={!canProceed()}
-              className="sovereign-button flex items-center gap-2"
+              className="btn-sovereign inline-flex items-center gap-2"
             >
-              {step === TOTAL_STEPS - 1 ? 'Reveal My Blueprint' : 'Continue'}
+              {step === TOTAL_STEPS - 1 ? 'Enter the Threshold' : 'Continue'}
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>

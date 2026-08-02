@@ -63,7 +63,7 @@ export default function LoadingPage() {
                 y1={y1}
                 x2={x2}
                 y2={y2}
-                stroke="rgba(139, 92, 246, 0.4)"
+                stroke="rgba(220, 38, 38, 0.3)"
                 strokeWidth="1"
                 initial={{ pathLength: 0 }}
                 animate={{ pathLength: 1 }}
@@ -84,7 +84,7 @@ export default function LoadingPage() {
                 cx={cx}
                 cy={cy}
                 r="3"
-                fill="#D4AF37"
+                fill="#DC2626"
                 initial={{ opacity: 0, scale: 0 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.5, delay: i * 0.3 + 0.2 }}
@@ -102,7 +102,7 @@ export default function LoadingPage() {
               cy="105"
               r="25"
               fill="none"
-              stroke="rgba(139, 92, 246, 0.2)"
+              stroke="rgba(212, 175, 55, 0.3)"
               strokeWidth="1"
               initial={{ scale: 0 }}
               animate={{ scale: [1, 1.3, 1] }}
@@ -119,22 +119,20 @@ export default function LoadingPage() {
           transition={{ duration: 0.5 }}
           className="mb-8"
         >
-          <p className="text-lg text-white/80">{MESSAGES[messageIndex]}</p>
+          <p className="text-lg" style={{ fontFamily: 'Georgia, serif', color: '#4A4A4A' }}>{MESSAGES[messageIndex]}</p>
         </motion.div>
 
-        <div className="w-full max-w-xs mx-auto h-1 rounded-full bg-white/10 overflow-hidden">
+        <div className="w-full max-w-xs mx-auto h-1 rounded-full overflow-hidden" style={{ background: '#E5E5E5' }}>
           <motion.div
             className="h-full rounded-full"
-            style={{
-              background: 'linear-gradient(135deg, #8b5cf6, #D4AF37)',
-            }}
+            style={{ background: '#DC2626' }}
             initial={{ width: '0%' }}
             animate={{ width: `${Math.min(progress, 95)}%` }}
             transition={{ duration: 0.3 }}
           />
         </div>
 
-        <p className="text-xs text-white/30 mt-4">
+        <p className="text-xs mt-4" style={{ fontFamily: "'Inter', sans-serif", color: '#9A9A9A' }}>
           Crafting your sovereign blueprint...
         </p>
       </div>
