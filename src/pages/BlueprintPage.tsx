@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Share2, Download } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import type { QuizData } from '../types';
 import { trackEvent } from '../utils/storage';
@@ -11,74 +10,127 @@ interface Props {
   quizData: QuizData;
 }
 
-const SECTION_HEADERS = new Set([
+const SECTION_HEADERS = [
   'SOUL ARCHITECTURE',
+  'HIDDEN GIFTS',
   'SHADOW PATTERN',
   'TRUE NORTH',
   'FIRST SOVEREIGN ACT',
-]);
+  'RELATIONSHIP BLUEPRINT',
+  'CAREER DESTINY',
+];
+const HEADER_SET = new Set(SECTION_HEADERS);
 
-function renderLines(text: string, isDone: boolean) {
+interface Block {
+  title: string | null; // null for intro/pre-header content
+  lines: string[];
+}
+
+// Parse the streamed prose into ordered blocks, one per section header.
+function parseBlocks(text: string): Block[] {
   const lines = text.split('\n');
-  const elements: React.ReactNode[] = [];
+  const blocks: Block[] = [];
+  let current: Block = { title: null, lines: [] };
 
+  for (const line of lines) {
+    if (HEADER_SET.has(line.trim())) {
+      if (current.title !== null || current.lines.some((l) => l.trim() !== '')) {
+        blocks.push(current);
+      }
+      current = { title: line.trim(), lines: [] };
+    } else {
+      current.lines.push(line);
+    }
+  }
+  blocks.push(current);
+
+  // Drop a leading empty intro block
+  return blocks.filter(
+    (b) => b.title !== null || b.lines.some((l) => l.trim() !== '')
+  );
+}
+
+// A "quote" line: wrapped in quotation marks or em-dashes on its own line.
+function isQuoteLine(trimmed: string): boolean {
+  if (trimmed.length < 12) return false;
+  const quoted =
+    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+    (trimmed.startsWith('“') && trimmed.endsWith('”'));
+  const dashed = trimmed.startsWith('—') && trimmed.endsWith('—');
+  return quoted || dashed;
+}
+
+function renderBody(lines: string[], attachCursor: boolean) {
+  // Find the last non-empty line index (where the cursor should sit)
+  let lastTextIdx = -1;
+  for (let i = lines.length - 1; i >= 0; i--) {
+    if (lines[i].trim() !== '') {
+      lastTextIdx = i;
+      break;
+    }
+  }
+
+  const out: React.ReactNode[] = [];
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const trimmed = line.trim();
-    const isLast = i === lines.length - 1;
+    const showCursorHere = attachCursor && i === lastTextIdx;
 
-    if (SECTION_HEADERS.has(trimmed)) {
-      elements.push(
-        <h2
-          key={i}
-          className="text-2xl md:text-3xl font-bold gold-glow mt-12 mb-6 first:mt-0"
-          style={{ fontFamily: "'Space Grotesk', sans-serif" }}
-        >
-          {trimmed}
-        </h2>
-      );
-    } else if (trimmed === '') {
-      elements.push(<div key={i} className="h-4" />);
-    } else {
-      elements.push(
+    if (trimmed === '') {
+      out.push(<div key={i} style={{ height: 12 }} />);
+      continue;
+    }
+
+    if (isQuoteLine(trimmed)) {
+      out.push(
         <p
           key={i}
-          className="text-white/85 leading-relaxed mb-1"
-          style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '1.1rem', lineHeight: '1.8' }}
+          style={{
+            color: '#DC2626',
+            fontSize: 18,
+            fontWeight: 600,
+            fontStyle: 'italic',
+            lineHeight: 1.5,
+            margin: '8px 0',
+          }}
         >
           {line}
-          {isLast && !isDone && <span className="stream-cursor" />}
+          {showCursorHere && <span className="stream-cursor" />}
+        </p>
+      );
+    } else {
+      out.push(
+        <p
+          key={i}
+          style={{ color: '#4A4A4A', fontSize: 16, lineHeight: 1.7, marginBottom: 4 }}
+        >
+          {line}
+          {showCursorHere && <span className="stream-cursor" />}
         </p>
       );
     }
   }
 
-  // If last line was a header or blank, append floating cursor
-  if (!isDone && lines.length > 0) {
-    const lastTrimmed = lines[lines.length - 1].trim();
-    if (SECTION_HEADERS.has(lastTrimmed) || lastTrimmed === '') {
-      elements.push(
-        <span key="cursor-standalone" className="stream-cursor inline-block mt-2" />
-      );
-    }
+  // If cursor belongs to this block but the last line is empty/header-only, float it
+  if (attachCursor && lastTextIdx === -1) {
+    out.push(<span key="cursor" className="stream-cursor" style={{ marginTop: 4 }} />);
   }
 
-  return elements;
+  return out;
 }
 
 export default function BlueprintPage({ text, isDone, quizData }: Props) {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [shared, setShared] = useState(false);
+  const endRef = useRef<HTMLDivElement>(null);
   const [showBooking, setShowBooking] = useState(false);
 
   useEffect(() => {
     trackEvent('pageView', 'blueprint');
   }, []);
 
-  // Auto-scroll to bottom while streaming
+  // Auto-scroll to keep the current streaming text visible
   useEffect(() => {
-    if (!isDone && scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    if (!isDone && endRef.current) {
+      endRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
     }
   }, [text, isDone]);
 
@@ -88,87 +140,69 @@ export default function BlueprintPage({ text, isDone, quizData }: Props) {
       script.src = 'https://app.iclosed.io/assets/widget.js';
       script.async = true;
       document.body.appendChild(script);
-      return () => { document.body.removeChild(script); };
+      return () => {
+        document.body.removeChild(script);
+      };
     }
   }, [showBooking]);
-
-  const handleShare = async () => {
-    const shareText = `I just received my Sovereign Blueprint from SOVRN. Remember who you are.`;
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: 'My Sovereign Blueprint', text: shareText });
-      } catch {
-        // cancelled
-      }
-    } else {
-      await navigator.clipboard.writeText(shareText);
-      setShared(true);
-      setTimeout(() => setShared(false), 2000);
-    }
-  };
 
   const handleDownload = () => {
     const doc = new jsPDF({ unit: 'mm', format: 'a4' });
     const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
     const margin = 20;
     const contentWidth = pageWidth - margin * 2;
-    let y = 20;
+    let y = 22;
 
-    const fillBackground = () => {
-      doc.setFillColor(10, 10, 15);
-      doc.rect(0, 0, pageWidth, pageHeight, 'F');
-    };
-
-    fillBackground();
+    const red: [number, number, number] = [220, 38, 38];
+    const ink: [number, number, number] = [26, 26, 26];
+    const body: [number, number, number] = [74, 74, 74];
+    const subtle: [number, number, number] = [154, 154, 154];
 
     const checkPage = (needed: number) => {
-      if (y + needed > 270) {
+      if (y + needed > 275) {
         doc.addPage();
-        fillBackground();
-        y = 20;
+        y = 22;
       }
     };
 
-    const gold: [number, number, number] = [212, 175, 55];
-    const bone: [number, number, number] = [245, 240, 232];
-    const boneDim: [number, number, number] = [160, 155, 145];
-
+    doc.setFont('helvetica', 'bold');
     doc.setFontSize(10);
-    doc.setTextColor(...gold);
+    doc.setTextColor(...subtle);
     doc.text('SOVRN', pageWidth / 2, y, { align: 'center' });
     y += 10;
 
     doc.setFontSize(20);
-    doc.setTextColor(...bone);
+    doc.setTextColor(...red);
     doc.text('SOVEREIGN BLUEPRINT', pageWidth / 2, y, { align: 'center' });
     y += 10;
 
+    doc.setFont('helvetica', 'normal');
     doc.setFontSize(11);
-    doc.setTextColor(...boneDim);
+    doc.setTextColor(...body);
     doc.text(`Prepared for ${quizData.name}`, pageWidth / 2, y, { align: 'center' });
     y += 12;
 
-    doc.setDrawColor(...gold);
-    doc.setLineWidth(0.2);
+    doc.setDrawColor(...red);
+    doc.setLineWidth(0.3);
     doc.line(margin, y, pageWidth - margin, y);
     y += 10;
 
     for (const line of text.split('\n')) {
       const trimmed = line.trim();
-
-      if (SECTION_HEADERS.has(trimmed)) {
+      if (HEADER_SET.has(trimmed)) {
         checkPage(18);
         y += 4;
-        doc.setFontSize(14);
-        doc.setTextColor(...gold);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(13);
+        doc.setTextColor(...ink);
         doc.text(trimmed, margin, y);
-        y += 10;
+        y += 9;
       } else if (trimmed === '') {
         y += 3;
       } else {
+        doc.setFont('helvetica', 'normal');
         doc.setFontSize(10);
-        doc.setTextColor(...boneDim);
+        doc.setTextColor(...body);
         const wrapped = doc.splitTextToSize(line, contentWidth);
         checkPage(wrapped.length * 5 + 2);
         doc.text(wrapped, margin, y);
@@ -179,121 +213,141 @@ export default function BlueprintPage({ text, isDone, quizData }: Props) {
     checkPage(10);
     y += 8;
     doc.setFontSize(8);
-    doc.setTextColor(100, 95, 85);
+    doc.setTextColor(...subtle);
     doc.text('Generated by SOVRN — Your Sovereign Blueprint', pageWidth / 2, y, { align: 'center' });
 
     doc.save(`SOVRN-Sovereign-Blueprint-${quizData.name.replace(/\s+/g, '-')}.pdf`);
   };
 
-  const handleBookCall = () => {
+  const handleTransformation = () => {
     trackEvent('ctaClick');
     setShowBooking(true);
   };
 
-  return (
-    <div className="relative min-h-screen px-4 py-12 md:py-20">
-      <div className="relative z-10 max-w-3xl mx-auto">
+  const blocks = parseBlocks(text);
+  const lastBlockIdx = blocks.length - 1;
+  let sectionNumber = 0;
 
-        {/* Header */}
-        <div className="text-center mb-12">
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-sm tracking-[0.4em] uppercase gold-glow font-medium mb-4"
+  return (
+    <div className="app-screen px-6 pt-8 pb-16" style={{ maxWidth: 480, margin: '0 auto' }}>
+      {/* Header */}
+      <div className="text-center" style={{ marginBottom: 24 }}>
+        <p className="sovrn-wordmark">SOVRN</p>
+        <h1 style={{ color: '#DC2626', fontSize: 24, fontWeight: 700, marginTop: 8 }}>
+          Your Sovereign Blueprint
+        </h1>
+      </div>
+
+      {/* Section cards */}
+      <div className="flex flex-col">
+        {blocks.map((block, i) => {
+          const isLast = i === lastBlockIdx;
+          const attachCursor = !isDone && isLast;
+
+          if (block.title === null) {
+            // Pre-header intro prose — render plainly, no card
+            return (
+              <div key={i} style={{ marginBottom: 16 }}>
+                {renderBody(block.lines, attachCursor)}
+              </div>
+            );
+          }
+
+          sectionNumber += 1;
+          const accent = sectionNumber % 2 === 1 ? '#DC2626' : '#1A1A1A';
+          const numLabel = String(sectionNumber).padStart(2, '0');
+
+          return (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+              style={{
+                position: 'relative',
+                background: '#FAFAFA',
+                border: '1px solid #E5E5E5',
+                borderLeft: `3px solid ${accent}`,
+                borderRadius: 12,
+                padding: 24,
+                marginBottom: 16,
+              }}
+            >
+              <span
+                style={{
+                  position: 'absolute',
+                  top: 20,
+                  right: 20,
+                  fontSize: 12,
+                  fontWeight: 700,
+                  color: '#E5E5E5',
+                }}
+              >
+                {numLabel}
+              </span>
+              <h2
+                style={{
+                  color: '#1A1A1A',
+                  fontSize: 12,
+                  fontWeight: 700,
+                  letterSpacing: '0.12em',
+                  textTransform: 'uppercase',
+                  marginBottom: 14,
+                  paddingRight: 28,
+                }}
+              >
+                {block.title}
+              </h2>
+              {renderBody(block.lines, attachCursor)}
+            </motion.div>
+          );
+        })}
+      </div>
+
+      <div ref={endRef} />
+
+      {/* Completion CTAs */}
+      {isDone && (
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          style={{ marginTop: 24 }}
+        >
+          {!showBooking ? (
+            <>
+              <p
+                className="text-center"
+                style={{ color: '#4A4A4A', fontSize: 15, lineHeight: 1.6, marginBottom: 20, maxWidth: 340, marginLeft: 'auto', marginRight: 'auto' }}
+              >
+                Your blueprint is the map. The transformation is the journey.
+              </p>
+
+              <button onClick={handleDownload} className="app-button-outline" style={{ marginBottom: 14 }}>
+                Download Blueprint
+              </button>
+
+              <button onClick={handleTransformation} className="app-button breathe">
+                Begin Your Transformation
+              </button>
+            </>
+          ) : (
+            <div
+              className="iclosed-widget"
+              data-url="https://app.iclosed.io/e/sovrngrowth/strategy-call"
+              title="Strategy Call"
+              style={{ width: '100%', height: 620 }}
+            />
+          )}
+
+          <p
+            className="text-center"
+            style={{ color: '#9A9A9A', fontSize: 12, letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: 28 }}
           >
             SOVRN
-          </motion.p>
-          <h1 className="text-3xl md:text-5xl font-bold mb-2">
-            <span className="text-gradient">Your Sovereign Blueprint</span>
-          </h1>
-          <p className="text-lg text-white/50">{quizData.name}</p>
-
-          {isDone && (
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="flex items-center justify-center gap-4 mt-6"
-            >
-              <button
-                onClick={handleShare}
-                className="flex items-center gap-2 text-sm text-white/50 hover:text-white transition-colors px-4 py-2 rounded-lg border border-white/10 hover:border-white/20"
-              >
-                <Share2 className="w-4 h-4" />
-                {shared ? 'Copied!' : 'Share'}
-              </button>
-              <button
-                onClick={handleDownload}
-                className="flex items-center gap-2 text-sm text-white/50 hover:text-white transition-colors px-4 py-2 rounded-lg border border-white/10 hover:border-white/20"
-              >
-                <Download className="w-4 h-4" />
-                Download PDF
-              </button>
-            </motion.div>
-          )}
-        </div>
-
-        {/* Streaming text canvas */}
-        <div
-          ref={scrollRef}
-          className="glass-card-gold p-8 md:p-10 mb-8"
-          style={{ minHeight: '200px' }}
-        >
-          {renderLines(text, isDone)}
-        </div>
-
-        {/* CTA — shown only when stream is complete */}
-        {isDone && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.3 }}
-          >
-            <div className="relative overflow-hidden rounded-2xl p-8 md:p-12 text-center mb-16">
-              <div className="absolute inset-0 bg-gradient-to-br from-cosmic-purple/20 via-space-card to-cosmic-gold/10 border border-cosmic-gold/20 rounded-2xl" />
-              <div className="relative z-10">
-                <p className="pull-quote text-2xl md:text-3xl mb-8 max-w-xl mx-auto">
-                  Your blueprint is a map. The Death Module is the journey.
-                </p>
-                <p className="text-white/60 mb-2">
-                  The first SOVRN cohort opens July 2026. Twelve people. Eight weeks.
-                </p>
-                <p className="gold-glow text-xl font-bold mb-10">
-                  Investment: $1,000
-                </p>
-
-                {!showBooking ? (
-                  <>
-                    <button onClick={handleBookCall} className="sovereign-button text-lg mb-4">
-                      Apply for the Founding Cohort
-                    </button>
-                    <div className="sovereign-divider max-w-xs mx-auto my-8" />
-                    <button
-                      onClick={handleBookCall}
-                      className="sovereign-button"
-                      style={{ background: 'transparent', color: '#D4AF37', border: '1px solid rgba(212, 175, 55, 0.3)', borderRadius: '0.75rem' }}
-                    >
-                      Book a Sovereign Strategy Call
-                    </button>
-                  </>
-                ) : (
-                  <div
-                    className="iclosed-widget mt-4"
-                    data-url="https://app.iclosed.io/e/sovrngrowth/strategy-call"
-                    title="Strategy Call"
-                    style={{ width: '100%', height: '620px' }}
-                  />
-                )}
-              </div>
-            </div>
-
-            <div className="text-center pb-12">
-              <div className="w-12 h-px bg-gradient-to-r from-transparent via-cosmic-gold/50 to-transparent mx-auto mb-6" />
-              <p className="text-sm text-white/30">SOVRN — Your Sovereign Blueprint</p>
-            </div>
-          </motion.div>
-        )}
-      </div>
+          </p>
+        </motion.div>
+      )}
     </div>
   );
 }

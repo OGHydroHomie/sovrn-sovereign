@@ -1,307 +1,200 @@
-import { useEffect, useRef } from 'react';
-import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { motion } from 'framer-motion';
+import { ChevronDown } from 'lucide-react';
 import { trackEvent } from '../utils/storage';
-
-gsap.registerPlugin(ScrollTrigger);
 
 interface Props {
   onStart: () => void;
 }
 
-function splitChars(text: string, className: string) {
-  return text.split('').map((ch, i) => (
-    <span key={i} className={className} style={{ display: 'inline-block', overflow: 'hidden' }}>
-      <span className="char" style={{ display: 'inline-block' }}>
-        {ch === ' ' ? ' ' : ch}
-      </span>
-    </span>
-  ));
-}
+const FEATURE_CARDS = [
+  {
+    title: 'THE ARCHITECTURE YOU WERE BORN WITH',
+    body: 'Your Sun, Rising, and North Node decoded as archetypes of power — the hidden structure of who you were built to become.',
+    accent: '#DC2626',
+  },
+  {
+    title: "THE PATTERN THAT'S BEEN RUNNING YOUR LIFE",
+    body: 'The precise mechanism behind the loop you keep repeating — named with surgical accuracy, so it can finally be seen and broken.',
+    accent: '#1A1A1A',
+  },
+  {
+    title: 'WHERE YOUR LIFE IS ACTUALLY TRYING TO GO',
+    body: 'The trajectory your chart is pulling you toward, and the first sovereign act that moves you inside your real life.',
+    accent: '#DC2626',
+  },
+];
 
 export default function HeroPage({ onStart }: Props) {
-  const containerRef = useRef<HTMLDivElement>(null);
-
   const handleStart = () => {
     trackEvent('quizStart');
     onStart();
   };
 
-  useEffect(() => {
-    const ctx = gsap.context(() => {
-      // Title character animation
-      gsap.from('.hero-title .char', {
-        y: '110%',
-        opacity: 0,
-        stagger: 0.035,
-        ease: 'power4.out',
-        duration: 1.2,
-        delay: 0.5,
-      });
-
-      gsap.from('.hero-eyebrow', {
-        opacity: 0,
-        y: -20,
-        duration: 0.8,
-        delay: 0.3,
-        ease: 'power2.out',
-      });
-
-      gsap.from('.hero-sub', {
-        opacity: 0,
-        y: 20,
-        duration: 0.9,
-        delay: 1.4,
-        ease: 'power2.out',
-      });
-
-      gsap.from('.hero-cta', {
-        opacity: 0,
-        scale: 0.9,
-        duration: 0.8,
-        delay: 1.8,
-        ease: 'power2.out',
-      });
-
-      gsap.from('.scroll-hint', {
-        opacity: 0,
-        duration: 1,
-        delay: 2.5,
-      });
-
-      // Feature cards scroll reveal
-      gsap.from('.feature-card', {
-        scrollTrigger: {
-          trigger: '.features-section',
-          start: 'top 75%',
-        },
-        opacity: 0,
-        y: 60,
-        stagger: 0.15,
-        duration: 0.8,
-        ease: 'power3.out',
-      });
-
-      gsap.from('.features-heading', {
-        scrollTrigger: {
-          trigger: '.features-section',
-          start: 'top 80%',
-        },
-        opacity: 0,
-        y: 30,
-        duration: 0.8,
-        ease: 'power3.out',
-      });
-
-      // Threshold section
-      gsap.from('.threshold-content', {
-        scrollTrigger: {
-          trigger: '.threshold-section',
-          start: 'top 70%',
-        },
-        opacity: 0,
-        y: 50,
-        duration: 1,
-        ease: 'power3.out',
-      });
-    }, containerRef);
-
-    return () => ctx.revert();
-  }, []);
+  const scrollDown = () => {
+    document.getElementById('hero-more')?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   return (
-    <div ref={containerRef}>
-      {/* Section 1 — Hero */}
-      <section
-        className="relative flex flex-col items-center justify-center text-center px-4"
-        style={{ minHeight: '100vh', paddingTop: '10vh', paddingBottom: '10vh' }}
-      >
-        <p className="hero-eyebrow text-sm tracking-[0.5em] uppercase gold-glow font-medium mb-10">
+    <div>
+      {/* SCREEN 1 — Landing: full viewport, centered, no scroll required */}
+      <section className="app-screen relative flex flex-col items-center justify-center text-center px-6 py-10">
+        <motion.p
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="sovrn-wordmark absolute top-10 left-1/2 -translate-x-1/2"
+        >
           SOVRN
-        </p>
+        </motion.p>
 
-        <h1
-          className="hero-title font-bold leading-none mb-8"
+        <motion.h1
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.15 }}
           style={{
-            fontFamily: "'Space Grotesk', system-ui, sans-serif",
-            fontSize: 'clamp(3.5rem, 10vw, 8rem)',
-            lineHeight: 1.05,
+            color: '#DC2626',
+            fontWeight: 700,
+            fontSize: '36px',
+            lineHeight: 1.15,
+            letterSpacing: '-0.01em',
           }}
         >
-          <div
-            style={{
-              background: 'linear-gradient(135deg, #ffffff 0%, #a78bfa 50%, #D4AF37 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
-            }}
-          >
-            {splitChars('Remember', 'inline-block')}
-          </div>
-          <div
-            style={{
-              background: 'linear-gradient(135deg, #a78bfa 0%, #D4AF37 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
-            }}
-          >
-            {splitChars('who you are.', 'inline-block')}
-          </div>
-        </h1>
+          Remember who you are.
+        </motion.h1>
 
-        <p
-          className="hero-sub text-lg md:text-xl max-w-2xl mx-auto mb-14 leading-relaxed"
-          style={{ color: 'rgba(245, 240, 232, 0.6)' }}
+        <motion.p
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.35 }}
+          style={{
+            color: '#4A4A4A',
+            fontWeight: 400,
+            fontSize: '16px',
+            lineHeight: 1.6,
+            maxWidth: '340px',
+            marginTop: '20px',
+          }}
         >
-          Enter your birth data. Receive your Sovereign Blueprint — a personalized
-          decode of your soul architecture, shadow pattern, and true north written
-          into your natal chart before you were born.
-        </p>
+          You've read the books. Done the work. Built the habits. And something
+          still feels like it's missing — like you're living adjacent to your
+          actual life rather than inside it. That's not a discipline problem.
+          That's a blueprint problem.
+        </motion.p>
 
-        <div className="hero-cta">
-          <button
-            onClick={handleStart}
-            className="sovereign-button text-lg"
-          >
-            Begin Your Blueprint
-          </button>
-        </div>
+        <div style={{ height: '32px' }} />
 
-        <div className="scroll-hint absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
-          <span className="text-xs tracking-widest uppercase" style={{ color: 'rgba(212, 175, 55, 0.4)' }}>
-            Scroll
-          </span>
-          <div
-            style={{
-              width: 1,
-              height: 48,
-              background: 'linear-gradient(to bottom, rgba(212,175,55,0.4), transparent)',
-            }}
-          />
-        </div>
+        <motion.button
+          initial={{ opacity: 0, scale: 0.96 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6, delay: 0.55 }}
+          onClick={handleStart}
+          className="app-button breathe"
+        >
+          Begin Your Blueprint
+        </motion.button>
+
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6, delay: 0.75 }}
+          style={{ color: '#9A9A9A', fontSize: '13px', fontWeight: 400, marginTop: '16px' }}
+        >
+          Free · 5 minutes · No account required
+        </motion.p>
+
+        <button
+          onClick={scrollDown}
+          aria-label="See more"
+          className="absolute left-1/2 -translate-x-1/2"
+          style={{ bottom: '28px', background: 'none', border: 'none', cursor: 'pointer', padding: 8 }}
+        >
+          <ChevronDown className="chevron-bounce" size={24} color="#9A9A9A" />
+        </button>
       </section>
 
-      {/* Section 2 — Features */}
+      {/* SCREEN 1 (optional scroll) — feature cards + second CTA */}
       <section
-        className="features-section relative flex flex-col items-center justify-center px-4 py-24"
-        style={{ minHeight: '100vh' }}
+        id="hero-more"
+        className="relative flex flex-col items-center justify-center px-6 py-20"
       >
-        <div className="max-w-5xl mx-auto w-full">
-          <div className="features-heading text-center mb-20">
-            <p className="text-sm tracking-[0.4em] uppercase mb-4" style={{ color: 'rgba(212,175,55,0.6)' }}>
-              What awaits you
-            </p>
-            <h2
-              className="text-3xl md:text-5xl font-bold"
-              style={{ fontFamily: "'Space Grotesk', sans-serif" }}
-            >
-              <span style={{
-                background: 'linear-gradient(135deg, #ffffff 0%, #a78bfa 60%, #D4AF37 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-              }}>
-                Your Sovereign Blueprint
-              </span>
-            </h2>
-          </div>
+        <div className="w-full" style={{ maxWidth: '380px' }}>
+          <p
+            className="text-center"
+            style={{
+              color: '#9A9A9A',
+              fontSize: '12px',
+              fontWeight: 500,
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              marginBottom: '24px',
+            }}
+          >
+            What your blueprint reveals
+          </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {[
-              {
-                icon: '◈',
-                title: 'Soul Architecture',
-                body: 'Your Sun, Rising, and North Node decoded as archetypes of power — not signs, but titles. The hidden structure of who you were born to become.',
-              },
-              {
-                icon: '◉',
-                title: 'Shadow Pattern',
-                body: 'The precise mechanism behind your repeating loops, mapped to your South Node and Saturn. Named with surgical accuracy so it can finally be seen.',
-              },
-              {
-                icon: '◎',
-                title: 'True North',
-                body: 'The trajectory your chart is pulling you toward. Your Jupiter, North Node, and Midheaven converging into a clear direction — not a destination, a vector.',
-              },
-              {
-                icon: '◇',
-                title: 'First Sovereign Act',
-                body: 'One hyper-specific action, within 24 hours, that breaks the pattern. Not an affirmation. An initiation.',
-              },
-            ].map((card) => (
-              <div key={card.title} className="feature-card glass-card-gold p-8">
-                <div
-                  className="text-3xl mb-4 gold-glow"
-                  style={{ fontFamily: 'monospace' }}
-                >
-                  {card.icon}
-                </div>
+          <div className="flex flex-col gap-4">
+            {FEATURE_CARDS.map((card, i) => (
+              <motion.div
+                key={card.title}
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.3 }}
+                transition={{ duration: 0.5, delay: i * 0.08 }}
+                className="app-card"
+                style={{
+                  padding: '22px',
+                  borderLeft: `3px solid ${card.accent}`,
+                  background: '#FFFFFF',
+                  boxShadow: '0 2px 10px rgba(0,0,0,0.04)',
+                }}
+              >
                 <h3
-                  className="text-xl font-bold mb-3 gold-glow"
-                  style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+                  style={{
+                    color: '#1A1A1A',
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    letterSpacing: '0.04em',
+                    lineHeight: 1.35,
+                    marginBottom: '10px',
+                  }}
                 >
                   {card.title}
                 </h3>
-                <p style={{ color: 'rgba(245, 240, 232, 0.6)', lineHeight: 1.7 }}>
+                <p style={{ color: '#4A4A4A', fontSize: '15px', lineHeight: 1.55 }}>
                   {card.body}
                 </p>
-              </div>
+              </motion.div>
             ))}
           </div>
-        </div>
-      </section>
 
-      {/* Section 3 — The Threshold */}
-      <section
-        className="threshold-section relative flex flex-col items-center justify-center px-4 py-24 text-center"
-        style={{ minHeight: '100vh' }}
-      >
-        <div className="threshold-content max-w-3xl mx-auto">
-          <div className="sovereign-divider max-w-xs mx-auto mb-16" />
-
-          <p className="text-sm tracking-[0.5em] uppercase mb-8" style={{ color: 'rgba(212,175,55,0.5)' }}>
-            The Threshold
-          </p>
-
-          <h2
-            className="font-bold mb-8"
+          <motion.p
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true, amount: 0.5 }}
+            transition={{ duration: 0.6 }}
+            className="text-center"
             style={{
-              fontFamily: "'Space Grotesk', sans-serif",
-              fontSize: 'clamp(2.5rem, 6vw, 5rem)',
-              lineHeight: 1.1,
+              color: '#DC2626',
+              fontSize: '18px',
+              fontWeight: 600,
+              fontStyle: 'italic',
+              lineHeight: 1.5,
+              margin: '40px auto 32px',
+              maxWidth: '320px',
             }}
           >
-            <span style={{
-              background: 'linear-gradient(135deg, #ffffff 0%, #a78bfa 50%, #D4AF37 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
-            }}>
-              Every initiation begins<br />with a single step.
-            </span>
-          </h2>
+            Seven questions. One blueprint. No two are the same.
+          </motion.p>
 
-          <p
-            className="pull-quote text-xl md:text-2xl mb-16 max-w-xl mx-auto"
-          >
-            "You are not lost. You are between who you were and who you are becoming."
-          </p>
-
-          <button
-            onClick={handleStart}
-            className="sovereign-button text-lg cta-pulse mb-8"
-          >
-            Receive Your Blueprint
+          <button onClick={handleStart} className="app-button breathe">
+            Begin Your Blueprint
           </button>
 
-          <p className="text-sm" style={{ color: 'rgba(245, 240, 232, 0.3)' }}>
-            Free. Takes 3 minutes.
-          </p>
-
-          <div className="sovereign-divider max-w-xs mx-auto mt-20 mb-8" />
-          <p className="text-xs tracking-widest uppercase" style={{ color: 'rgba(245, 240, 232, 0.2)' }}>
-            SOVRN — Your Sovereign Blueprint
+          <p
+            className="text-center"
+            style={{ color: '#9A9A9A', fontSize: '13px', marginTop: '16px' }}
+          >
+            Free · 5 minutes · No account required
           </p>
         </div>
       </section>

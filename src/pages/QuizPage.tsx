@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, ArrowLeft } from 'lucide-react';
 import type { QuizData } from '../types';
 import { saveQuizData, saveLead } from '../utils/storage';
 
@@ -9,14 +8,90 @@ interface Props {
   onBack: () => void;
 }
 
-const TOTAL_STEPS = 4;
+type FieldKey =
+  | 'birthDate'
+  | 'birthTime'
+  | 'birthPlace'
+  | 'deepestFear'
+  | 'desiredReality'
+  | 'repeatingPattern'
+  | 'email';
 
-const STEP_TITLES = [
-  'Birth Data',
-  'Your Shadow',
-  'Your Vision',
-  'Deliver',
+interface Question {
+  field: FieldKey;
+  label: string;
+  helper?: string;
+  type: 'date' | 'time' | 'text' | 'email' | 'textarea';
+  placeholder?: string;
+  cta: string;
+}
+
+const QUESTIONS: Question[] = [
+  {
+    field: 'birthDate',
+    label: 'When did you arrive?',
+    type: 'date',
+    placeholder: 'MM / DD / YYYY',
+    cta: 'Next',
+  },
+  {
+    field: 'birthTime',
+    label: 'What hour did you enter the world?',
+    helper: 'As exact as you know. Check your birth certificate.',
+    type: 'time',
+    cta: 'Next',
+  },
+  {
+    field: 'birthPlace',
+    label: 'Where were you born?',
+    type: 'text',
+    placeholder: 'City, State, Country',
+    cta: 'Next',
+  },
+  {
+    field: 'deepestFear',
+    label: "Name the fear that runs your life — the one you've never said out loud.",
+    helper: "Be specific. Not 'failure' — what failure would look like. Write 2-3 sentences.",
+    type: 'textarea',
+    cta: 'Next',
+  },
+  {
+    field: 'desiredReality',
+    label: "Describe a single day in the life you know you're meant to live.",
+    helper: 'Not the vision board. The Tuesday. What do you wake up to?',
+    type: 'textarea',
+    cta: 'Next',
+  },
+  {
+    field: 'repeatingPattern',
+    label: 'What is the one pattern you keep repeating no matter how many times you swear you’ve broken it?',
+    helper: 'Describe the cycle, not the label.',
+    type: 'textarea',
+    cta: 'Next',
+  },
+  {
+    field: 'email',
+    label: 'Where do we send your blueprint?',
+    helper: 'Your blueprint will also be delivered here.',
+    type: 'email',
+    placeholder: 'you@email.com',
+    cta: 'Enter the Threshold',
+  },
 ];
+
+const TOTAL = QUESTIONS.length;
+
+// Derive a personalization name from the email local-part so the backend
+// (which requires a non-empty name) keeps working without an extra screen.
+function nameFromEmail(email: string): string {
+  const local = (email.split('@')[0] || '').replace(/[._-]+/g, ' ').trim();
+  if (!local) return 'Sovereign';
+  return local
+    .split(' ')
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ');
+}
 
 export default function QuizPage({ onComplete, onBack }: Props) {
   const [step, setStep] = useState(0);
@@ -33,33 +108,43 @@ export default function QuizPage({ onComplete, onBack }: Props) {
     email: '',
   });
 
-  const update = (field: keyof QuizData, value: string | boolean) => {
+  const q = QUESTIONS[step];
+
+  const update = (field: FieldKey, value: string) => {
     setData((prev) => ({ ...prev, [field]: value }));
   };
 
   const canProceed = (): boolean => {
-    switch (step) {
-      case 0:
-        return !!data.name && !!data.birthDate && !!data.birthPlace && (!!data.birthTime || data.birthTimeUnknown);
-      case 1:
-        return data.deepestFear.length >= 20;
-      case 2:
-        return data.desiredReality.length >= 20 && data.repeatingPattern.length >= 20;
-      case 3:
-        return !!data.email && data.email.includes('@');
+    switch (q.field) {
+      case 'birthDate':
+        return !!data.birthDate;
+      case 'birthTime':
+        return !!data.birthTime || data.birthTimeUnknown;
+      case 'birthPlace':
+        return data.birthPlace.trim().length > 0;
+      case 'deepestFear':
+        return data.deepestFear.trim().length >= 20;
+      case 'desiredReality':
+        return data.desiredReality.trim().length >= 20;
+      case 'repeatingPattern':
+        return data.repeatingPattern.trim().length >= 20;
+      case 'email':
+        return /\S+@\S+\.\S+/.test(data.email);
       default:
         return false;
     }
   };
 
   const next = () => {
-    if (step < TOTAL_STEPS - 1) {
+    if (!canProceed()) return;
+    if (step < TOTAL - 1) {
       setDirection(1);
       setStep(step + 1);
     } else {
-      saveQuizData(data);
-      saveLead(data.name, data.email);
-      onComplete(data);
+      const finalData: QuizData = { ...data, name: nameFromEmail(data.email) };
+      saveQuizData(finalData);
+      saveLead(finalData.name, finalData.email);
+      onComplete(finalData);
     }
   };
 
@@ -73,227 +158,157 @@ export default function QuizPage({ onComplete, onBack }: Props) {
   };
 
   const variants = {
-    enter: (dir: number) => ({ x: dir > 0 ? 300 : -300, opacity: 0 }),
+    enter: (dir: number) => ({ x: dir > 0 ? 60 : -60, opacity: 0 }),
     center: { x: 0, opacity: 1 },
-    exit: (dir: number) => ({ x: dir > 0 ? -300 : 300, opacity: 0 }),
+    exit: (dir: number) => ({ x: dir > 0 ? -60 : 60, opacity: 0 }),
   };
 
+  const progress = ((step + 1) / TOTAL) * 100;
+  const numberLabel = String(step + 1).padStart(2, '0');
+
   return (
-    <div className="relative min-h-screen flex flex-col items-center justify-center px-4 py-8">
-      <div className="relative z-10 w-full max-w-xl mx-auto">
-        {/* Header */}
+    <div className="app-screen flex flex-col px-6 pt-6 pb-8" style={{ maxWidth: 420, margin: '0 auto' }}>
+      {/* Progress bar */}
+      <div style={{ height: 3, background: '#E5E5E5', borderRadius: 999, overflow: 'hidden' }}>
         <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-8"
+          style={{ height: '100%', background: '#DC2626', borderRadius: 999 }}
+          initial={false}
+          animate={{ width: `${progress}%` }}
+          transition={{ duration: 0.4, ease: 'easeOut' }}
+        />
+      </div>
+
+      <div className="flex items-center justify-between" style={{ marginTop: 10 }}>
+        <span className="sovrn-wordmark">SOVRN</span>
+        <span style={{ color: '#9A9A9A', fontSize: 12, fontWeight: 500 }}>
+          {step + 1} / {TOTAL}
+        </span>
+      </div>
+
+      {/* Question body */}
+      <div className="relative flex-1 flex flex-col justify-center" style={{ overflow: 'hidden' }}>
+        {/* Large ghost number, top right */}
+        <span
+          style={{
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            fontSize: 48,
+            fontWeight: 700,
+            color: '#E5E5E5',
+            lineHeight: 1,
+            userSelect: 'none',
+          }}
         >
-          <h2 className="text-sm tracking-[0.4em] uppercase gold-glow font-medium mb-6">
-            SOVRN
-          </h2>
+          {numberLabel}
+        </span>
 
-          {/* Progress bar */}
-          <div className="flex items-center gap-2 mb-4">
-            {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
-              <div key={i} className="flex-1 h-1 rounded-full overflow-hidden bg-white/10">
-                <motion.div
-                  className="h-full rounded-full"
-                  initial={{ width: '0%' }}
-                  animate={{
-                    width: i < step ? '100%' : i === step ? '50%' : '0%',
-                  }}
-                  style={{
-                    background:
-                      i <= step
-                        ? 'linear-gradient(135deg, #8b5cf6, #D4AF37)'
-                        : 'transparent',
-                  }}
-                  transition={{ duration: 0.5 }}
+        <AnimatePresence mode="wait" custom={direction}>
+          <motion.div
+            key={step}
+            custom={direction}
+            variants={variants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{ duration: 0.28, ease: 'easeOut' }}
+            style={{ width: '100%' }}
+          >
+            <label
+              htmlFor={`q-${q.field}`}
+              style={{
+                display: 'block',
+                color: '#DC2626',
+                fontSize: 20,
+                fontWeight: 500,
+                lineHeight: 1.35,
+                maxWidth: 300,
+                marginBottom: 20,
+              }}
+            >
+              {q.label}
+            </label>
+
+            {q.type === 'textarea' ? (
+              <textarea
+                id={`q-${q.field}`}
+                className="app-textarea"
+                value={data[q.field] as string}
+                onChange={(e) => update(q.field, e.target.value)}
+                autoFocus
+              />
+            ) : (
+              <input
+                id={`q-${q.field}`}
+                className="app-field"
+                type={q.type}
+                inputMode={q.type === 'email' ? 'email' : undefined}
+                placeholder={q.placeholder}
+                value={data[q.field] as string}
+                onChange={(e) => update(q.field, e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && q.type !== 'textarea') {
+                    e.preventDefault();
+                    next();
+                  }
+                }}
+                disabled={q.field === 'birthTime' && data.birthTimeUnknown}
+                autoFocus
+              />
+            )}
+
+            {q.helper && (
+              <p style={{ color: '#9A9A9A', fontSize: 13, marginTop: 10, lineHeight: 1.5 }}>
+                {q.helper}
+              </p>
+            )}
+
+            {/* Birth-time unknown escape hatch (preserves backend feature) */}
+            {q.field === 'birthTime' && (
+              <label
+                className="flex items-center gap-2"
+                style={{ marginTop: 16, color: '#9A9A9A', fontSize: 14, cursor: 'pointer' }}
+              >
+                <input
+                  type="checkbox"
+                  checked={data.birthTimeUnknown}
+                  onChange={(e) =>
+                    setData((prev) => ({
+                      ...prev,
+                      birthTimeUnknown: e.target.checked,
+                      birthTime: e.target.checked ? '' : prev.birthTime,
+                    }))
+                  }
+                  style={{ accentColor: '#DC2626', width: 18, height: 18 }}
                 />
-              </div>
-            ))}
-          </div>
+                I don't know my exact birth time
+              </label>
+            )}
+          </motion.div>
+        </AnimatePresence>
+      </div>
 
-          <div className="flex items-center justify-between text-xs text-white/40">
-            <span>Step {step + 1} of {TOTAL_STEPS}</span>
-            <span>{STEP_TITLES[step]}</span>
-          </div>
-        </motion.div>
-
-        {/* Step content */}
-        <div className="glass-card p-8 md:p-10 min-h-[450px] flex flex-col">
-          <AnimatePresence mode="wait" custom={direction}>
-            <motion.div
-              key={step}
-              custom={direction}
-              variants={variants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={{ duration: 0.3 }}
-              className="flex-1 flex flex-col gap-6"
-            >
-              {step === 0 && (
-                <>
-                  <div>
-                    <label className="sovereign-label block mb-3">
-                      What is your name?
-                    </label>
-                    <input
-                      type="text"
-                      value={data.name}
-                      onChange={(e) => update('name', e.target.value)}
-                      placeholder="Your full name"
-                      className="sovereign-input"
-                    />
-                  </div>
-                  <div>
-                    <label className="sovereign-label block mb-3">
-                      When did you arrive?
-                    </label>
-                    <input
-                      type="date"
-                      value={data.birthDate}
-                      onChange={(e) => update('birthDate', e.target.value)}
-                      className="sovereign-input"
-                    />
-                  </div>
-                  <div>
-                    <label className="sovereign-label block mb-3">
-                      What hour did you enter the world?
-                    </label>
-                    <input
-                      type="time"
-                      value={data.birthTime}
-                      onChange={(e) => update('birthTime', e.target.value)}
-                      disabled={data.birthTimeUnknown}
-                      className="sovereign-input disabled:opacity-30"
-                    />
-                    <p className="sovereign-helper mt-2">
-                      As exact as you know. Check your birth certificate if unsure.
-                    </p>
-                    <label className="flex items-center gap-2 mt-3 cursor-pointer text-white/40 text-sm">
-                      <input
-                        type="checkbox"
-                        checked={data.birthTimeUnknown}
-                        onChange={(e) => {
-                          update('birthTimeUnknown', e.target.checked);
-                          if (e.target.checked) update('birthTime', '');
-                        }}
-                        style={{ accentColor: '#D4AF37' }}
-                      />
-                      I don't know my exact birth time
-                    </label>
-                  </div>
-                  <div>
-                    <label className="sovereign-label block mb-3">
-                      Where were you born?
-                    </label>
-                    <input
-                      type="text"
-                      value={data.birthPlace}
-                      onChange={(e) => update('birthPlace', e.target.value)}
-                      placeholder="City, State or Country"
-                      className="sovereign-input"
-                    />
-                  </div>
-                </>
-              )}
-
-              {step === 1 && (
-                <div>
-                  <label className="sovereign-label block mb-3">
-                    Name the fear that runs your life — the one you've never said out loud.
-                  </label>
-                  <p className="sovereign-helper mb-4">
-                    Be specific. Not "failure" — but what failure would look like. Not
-                    "rejection" — but whose rejection would break you and why. Write 2-3 sentences.
-                  </p>
-                  <textarea
-                    value={data.deepestFear}
-                    onChange={(e) => update('deepestFear', e.target.value)}
-                    rows={6}
-                    className="sovereign-input resize-none"
-                  />
-                </div>
-              )}
-
-              {step === 2 && (
-                <>
-                  <div>
-                    <label className="sovereign-label block mb-3">
-                      Describe a single day in the life you know you're meant to live.
-                    </label>
-                    <p className="sovereign-helper mb-4">
-                      Not the vision board. The Tuesday. What do you wake up to? What
-                      work are you doing? Who is around you? Describe it like you're
-                      remembering it, not imagining it. Write 3-4 sentences.
-                    </p>
-                    <textarea
-                      value={data.desiredReality}
-                      onChange={(e) => update('desiredReality', e.target.value)}
-                      rows={5}
-                      className="sovereign-input resize-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="sovereign-label block mb-3">
-                      What is the one pattern you keep repeating no matter how many times
-                      you swear you've broken it?
-                    </label>
-                    <p className="sovereign-helper mb-4">
-                      Describe the cycle, not the label. What triggers it? What do you do
-                      when it starts? How does it end? Be honest about the loop — that's
-                      where your blueprint finds the exit.
-                    </p>
-                    <textarea
-                      value={data.repeatingPattern}
-                      onChange={(e) => update('repeatingPattern', e.target.value)}
-                      rows={5}
-                      className="sovereign-input resize-none"
-                    />
-                  </div>
-                </>
-              )}
-
-              {step === 3 && (
-                <div>
-                  <label className="sovereign-label block mb-3">
-                    Where do we send your blueprint?
-                  </label>
-                  <input
-                    type="email"
-                    value={data.email}
-                    onChange={(e) => update('email', e.target.value)}
-                    placeholder="your@email.com"
-                    className="sovereign-input"
-                  />
-                  <p className="sovereign-helper mt-3">
-                    Your Sovereign Blueprint will also be delivered here.
-                  </p>
-                </div>
-              )}
-            </motion.div>
-          </AnimatePresence>
-
-          {/* Navigation */}
-          <div className="flex items-center justify-between mt-8 pt-6 border-t border-white/5">
-            <button
-              onClick={prev}
-              className="flex items-center gap-2 text-white/50 hover:text-white transition-colors text-sm"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back
-            </button>
-            <button
-              onClick={next}
-              disabled={!canProceed()}
-              className="sovereign-button flex items-center gap-2"
-            >
-              {step === TOTAL_STEPS - 1 ? 'Reveal My Blueprint' : 'Continue'}
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
+      {/* Actions */}
+      <div>
+        <button onClick={next} disabled={!canProceed()} className="app-button">
+          {q.cta}
+        </button>
+        <button
+          onClick={prev}
+          className="block"
+          style={{
+            background: 'none',
+            border: 'none',
+            color: '#9A9A9A',
+            fontSize: 14,
+            fontWeight: 400,
+            marginTop: 16,
+            cursor: 'pointer',
+            padding: '4px 0',
+          }}
+        >
+          Back
+        </button>
       </div>
     </div>
   );

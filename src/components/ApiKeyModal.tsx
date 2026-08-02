@@ -15,43 +15,43 @@ export default function ApiKeyModal({ onSubmit, onClose }: Props) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/60 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center px-6"
+      style={{ background: 'rgba(26,26,26,0.35)', backdropFilter: 'blur(4px)' }}
     >
       <motion.div
-        initial={{ scale: 0.95, opacity: 0 }}
+        initial={{ scale: 0.96, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.95, opacity: 0 }}
-        className="glass-card p-8 max-w-md w-full"
+        exit={{ scale: 0.96, opacity: 0 }}
+        className="app-card w-full"
+        style={{ maxWidth: 400, padding: 28, background: '#FFFFFF' }}
       >
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <Key className="w-5 h-5 text-cosmic-gold" />
-            <h3 className="text-lg font-semibold">Claude API Key</h3>
+        <div className="flex items-center justify-between" style={{ marginBottom: 20 }}>
+          <div className="flex items-center gap-2">
+            <Key size={18} color="#DC2626" />
+            <h3 style={{ fontSize: 17, fontWeight: 700, color: '#1A1A1A' }}>Claude API Key</h3>
           </div>
-          <button
-            onClick={onClose}
-            className="text-white/30 hover:text-white transition-colors"
-          >
-            <X className="w-5 h-5" />
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+            <X size={20} color="#9A9A9A" />
           </button>
         </div>
-        <p className="text-sm text-white/50 mb-4">
-          Enter your Anthropic API key to generate your personalized blueprint.
-          Your key is stored locally and never sent to our servers.
+        <p style={{ fontSize: 14, color: '#4A4A4A', marginBottom: 16, lineHeight: 1.5 }}>
+          Enter your Anthropic API key to generate your blueprint. Your key is
+          stored locally and never sent to our servers.
         </p>
         <input
           type="password"
           value={key}
           onChange={(e) => setKey(e.target.value)}
           placeholder="sk-ant-..."
-          className="cosmic-input mb-4"
+          className="app-field"
+          style={{ marginBottom: 20 }}
         />
         <button
           onClick={() => key.trim() && onSubmit(key.trim())}
           disabled={!key.trim()}
-          className="glow-button w-full !text-base disabled:opacity-30 disabled:cursor-not-allowed disabled:shadow-none"
+          className="app-button"
         >
-          Save & Generate Blueprint
+          Save &amp; Generate
         </button>
       </motion.div>
     </motion.div>
