@@ -220,7 +220,7 @@
   border-radius: 4px;
   padding: 18px 48px;
   cursor: pointer;
-  animation: btn-pulse 2s ease-in-out infinite;
+  animation: pulse-glow 2s ease-in-out infinite;
   transition: background 0.25s ease;
 }
 
@@ -235,14 +235,14 @@
   box-shadow: none;
 }
 
-@keyframes btn-pulse {
+@keyframes pulse-glow {
   0%, 100% {
     transform: scale(1);
-    box-shadow: 0 0 0 rgba(220, 38, 38, 0.15), 0 6px 24px rgba(220, 38, 38, 0.15);
+    box-shadow: 0 0 20px rgba(220, 38, 38, 0.15);
   }
   50% {
     transform: scale(1.02);
-    box-shadow: 0 0 0 rgba(220, 38, 38, 0.3), 0 10px 34px rgba(220, 38, 38, 0.3);
+    box-shadow: 0 0 30px rgba(220, 38, 38, 0.3);
   }
 }
 
@@ -255,11 +255,28 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: stretch;
   justify-content: center;
   max-width: 1120px;
   margin: 0 auto;
   padding: 8vh 24px;
+}
+
+/* Mobile-first: statue sits ABOVE the text and fades on its bottom edge */
+.hero-image {
+  width: 100%;
+  height: 40vh;
+  object-fit: cover;
+  object-position: center 20%;
+  margin-bottom: 32px;
+  -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+  mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+}
+
+.hero-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
 
 .hero-eyebrow {
@@ -610,6 +627,26 @@
  *  RESPONSIVE — desktop scales up from the 375px base
  * ------------------------------------------------------------------ */
 @media (min-width: 768px) {
+  /* Statue moves to the LEFT, text to the right; fade on the right edge */
+  .hero {
+    flex-direction: row;
+    align-items: center;
+    gap: 56px;
+  }
+
+  .hero-image {
+    width: 45%;
+    height: 80vh;
+    margin-bottom: 0;
+    object-position: center 15%;
+    -webkit-mask-image: linear-gradient(to right, black 60%, transparent 100%);
+    mask-image: linear-gradient(to right, black 60%, transparent 100%);
+  }
+
+  .hero-content {
+    width: 55%;
+  }
+
   .hero-title {
     font-size: 56px;
   }

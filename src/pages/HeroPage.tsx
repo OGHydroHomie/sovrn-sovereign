@@ -38,22 +38,30 @@ export default function HeroPage({ onStart }: Props) {
 
       {/* Hero */}
       <section className="hero">
-        <p className="eyebrow-red hero-eyebrow">Sovereign Blueprint</p>
+        <img
+          className="hero-image"
+          src="/hero-statue.jpg"
+          alt="Classical marble statue gazing upward"
+        />
 
-        <h1 className="hero-title">REMEMBER WHO YOU ARE.</h1>
+        <div className="hero-content">
+          <p className="eyebrow-red hero-eyebrow">Sovereign Blueprint</p>
 
-        <p className="hero-sub">
-          Your natal chart holds an architecture that was set before you arrived.
-          Enter your birth data and receive a personalized decode of your soul
-          pattern, your shadow, your hidden gifts, and your true north — in
-          language that will not let you look away.
-        </p>
+          <h1 className="hero-title">REMEMBER WHO YOU ARE.</h1>
 
-        <button className="btn-sovereign" onClick={handleStart}>
-          Begin Your Blueprint
-        </button>
+          <p className="hero-sub">
+            Your natal chart holds an architecture that was set before you arrived.
+            Enter your birth data and receive a personalized decode of your soul
+            pattern, your shadow, your hidden gifts, and your true north — in
+            language that will not let you look away.
+          </p>
 
-        <p className="hero-fineprint">Free · 5 minutes · No account required</p>
+          <button className="btn-sovereign" onClick={handleStart}>
+            Begin Your Blueprint
+          </button>
+
+          <p className="hero-fineprint">Free · 5 minutes · No account required</p>
+        </div>
       </section>
 
       {/* What your blueprint reveals */}
