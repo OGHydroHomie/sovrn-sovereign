@@ -1,0 +1,232 @@
+@import "tailwindcss";
+
+/* ============================================================= *
+ *  SOVRN — DESIGN SYSTEM
+ *  A premium medical diagnostic crossed with a luxury journal.
+ *  Warm, precise, authoritative.
+ * ============================================================= */
+
+@theme {
+  --color-bg: #FBFAF7;          /* warm white canvas */
+  --color-red: #C21F2C;         /* initiation red    */
+  --color-ink: #1A1A1A;         /* headlines / titles */
+  --color-body: #4A4A4A;        /* body text          */
+  --color-subtle: #9A9A9A;      /* captions / meta    */
+  --color-card: #F5F4F0;        /* card surface       */
+  --color-line: #E8E6E1;        /* hairlines / borders */
+}
+
+:root {
+  --sv-bg: #FBFAF7;
+  --sv-red: #C21F2C;
+  --sv-ink: #1A1A1A;
+  --sv-body: #4A4A4A;
+  --sv-subtle: #9A9A9A;
+  --sv-card: #F5F4F0;
+  --sv-line: #E8E6E1;
+
+  --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --font-ui: 'Space Grotesk', system-ui, sans-serif;
+  --font-body: Georgia, 'Times New Roman', serif;
+}
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    font-family: var(--font-body);
+    background-color: var(--sv-bg);
+    color: var(--sv-body);
+    font-size: 16px;
+    line-height: 1.6;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    color: var(--sv-ink);
+    line-height: 1.1;
+  }
+
+  ::selection {
+    background-color: rgba(194, 31, 44, 0.14);
+    color: var(--sv-ink);
+  }
+}
+
+/* ============================================================= *
+ *  TYPOGRAPHIC PRIMITIVES
+ * ============================================================= */
+@layer components {
+
+  /* Space Grotesk uppercase tracked label (wordmark, eyebrows, meta) */
+  .sv-eyebrow {
+    font-family: var(--font-ui);
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    font-weight: 600;
+    color: var(--sv-subtle);
+  }
+
+  .sv-label {
+    font-family: var(--font-ui);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 700;
+  }
+
+  .sv-serif {
+    font-family: var(--font-body);
+  }
+
+  .sv-display {
+    font-family: var(--font-display);
+  }
+
+  /* ----------------------------------------------------------- *
+   *  PRIMARY BUTTON — initiation red, breathing pulse
+   * ----------------------------------------------------------- */
+  .sv-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    max-width: 340px;
+    min-height: 48px;
+    background: var(--sv-red);
+    color: #fff;
+    font-family: var(--font-ui);
+    font-weight: 600;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 18px 24px;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    animation: sv-pulse 2.5s ease-in-out infinite;
+  }
+
+  .sv-btn:hover {
+    background: #a91824;
+  }
+
+  .sv-btn:active {
+    transform: scale(0.99);
+  }
+
+  .sv-btn:disabled {
+    background: #d8b3b6;
+    cursor: not-allowed;
+    animation: none;
+    box-shadow: none;
+  }
+
+  /* Outlined secondary button */
+  .sv-btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    max-width: 340px;
+    min-height: 48px;
+    background: transparent;
+    color: var(--sv-ink);
+    font-family: var(--font-ui);
+    font-weight: 600;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 16px 24px;
+    border: 1px solid var(--sv-ink);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+
+  .sv-btn-ghost:hover {
+    background: var(--sv-ink);
+    color: var(--sv-bg);
+  }
+
+  /* ----------------------------------------------------------- *
+   *  CARD — reveal / section surface
+   * ----------------------------------------------------------- */
+  .sv-card {
+    background: var(--sv-card);
+    border: 1px solid var(--sv-line);
+    border-radius: 12px;
+    padding: 24px;
+  }
+
+  .sv-divider {
+    height: 1px;
+    width: 100%;
+    background: var(--sv-line);
+    border: none;
+  }
+}
+
+/* ============================================================= *
+ *  ANIMATIONS
+ * ============================================================= */
+
+/* Breathing pulse on the primary CTA */
+@keyframes sv-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 20px rgba(194, 31, 44, 0.15);
+  }
+  50% {
+    transform: scale(1.02);
+    box-shadow: 0 0 30px rgba(194, 31, 44, 0.3);
+  }
+}
+
+/* Gentle down-chevron bounce */
+@keyframes sv-bounce {
+  0%, 100% { transform: translateY(0); opacity: 0.6; }
+  50% { transform: translateY(6px); opacity: 1; }
+}
+
+.sv-chevron {
+  animation: sv-bounce 2s ease-in-out infinite;
+}
+
+/* Streaming cursor (used on Blueprint later) */
+@keyframes sv-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.sv-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 20px;
+  background: var(--sv-red);
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  animation: sv-blink 0.8s step-end infinite;
+}
+
+/* Respect reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .sv-btn,
+  .sv-chevron,
+  .sv-cursor {
+    animation: none;
+  }
+}
