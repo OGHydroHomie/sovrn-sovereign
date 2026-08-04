@@ -10,12 +10,12 @@ const REVEALS = [
   {
     accent: '#E8B04B',
     title: 'The architecture you were born with',
-    body: 'Your Sun, Rising, and North Node decoded as a map of who you were built to become — before anyone had a chance to talk you out of it.',
+    body: 'Your Sun, Rising, and North Node decoded as a map of who you were built to become — before anyone could talk you out of it.',
   },
   {
     accent: '#E8B04B',
     title: "The pattern that's been running your life",
-    body: "Your blueprint names the exact loop with enough precision that you'll recognize it immediately — and enough clarity that it loses its grip.",
+    body: "Your blueprint names the exact loop. You'll recognize it immediately — and it loses its grip the moment you see it.",
   },
   {
     accent: '#E8B04B',
