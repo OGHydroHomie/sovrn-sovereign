@@ -181,13 +181,13 @@
    *  GLASS CARD — frosted night-glass, faint gilt edge
    * ----------------------------------------------------------- */
   .sv-card {
-    background: var(--sv-glass-bg);
-    -webkit-backdrop-filter: blur(16px);
-    backdrop-filter: blur(16px);
-    border: 1px solid var(--sv-glass-edge);
+    background: rgba(255, 255, 255, 0.06);
+    -webkit-backdrop-filter: blur(20px) saturate(1.2);
+    backdrop-filter: blur(20px) saturate(1.2);
+    border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 16px;
     padding: 24px;
-    box-shadow: 0 0 20px rgba(232, 176, 75, 0.06), inset 0 0 30px rgba(232, 176, 75, 0.03);
+    box-shadow: 0 0 40px rgba(232, 176, 75, 0.08);
   }
 
   .sv-divider {

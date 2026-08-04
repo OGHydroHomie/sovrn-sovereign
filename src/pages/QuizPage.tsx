@@ -199,7 +199,7 @@ export default function QuizPage({ onComplete, onBack }: Props) {
           </p>
           <div
             className="sv-display"
-            style={{ marginTop: 16, fontWeight: 800, fontSize: 28, color: '#E8B04B', letterSpacing: '0.02em' }}
+            style={{ marginTop: 16, fontWeight: 800, fontSize: 28, color: '#D93A2B', letterSpacing: '0.02em' }}
           >
             {archetype}
           </div>
@@ -220,9 +220,9 @@ export default function QuizPage({ onComplete, onBack }: Props) {
     { n: '02', label: "What's your date of birth?" },
     { n: '03', label: 'What time were you born?', helper: "Check your birth certificate if you're not sure." },
     { n: '04', label: 'Where were you born?', helper: 'City and country is enough.' },
-    { n: '05', label: "What's the one fear you've never said out loud?", helper: "Be specific. Not just 'failure' — what would failure actually look like for you? 2-3 sentences." },
-    { n: '06', label: 'Describe your perfect Tuesday.', helper: "Not the dream vacation. A regular day in the life you know is yours. What do you wake up to? What are you working on? Who's around you?" },
-    { n: '07', label: "What's the pattern you keep repeating no matter how many times you try to break it?", helper: 'What triggers it? What do you do when it starts? How does it end?' },
+    { n: '05', label: "What's the one fear you've never said out loud?", helper: "Be specific. Not just 'failure' — what would failure actually look like for you? Who would see it? Why does that terrify you? 2-3 sentences." },
+    { n: '06', label: "Describe the life you know you're supposed to be living.", helper: "Not goals. Not a vision board. The life that keeps you up at night because you're not living it yet. What does it look like? What does it feel like? Why aren't you there? Be brutally honest." },
+    { n: '07', label: "What's the pattern you keep repeating no matter how many times you swear you've broken it?", helper: "Don't name it — describe the cycle. What triggers it? What do you do every time? How does it end? And then what happens next?" },
     { n: '08', label: 'Where should we send your blueprint?', helper: "We'll deliver a copy to your inbox too." },
   ];
   const q = QUESTIONS[step];
