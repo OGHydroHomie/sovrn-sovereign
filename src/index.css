@@ -301,6 +301,17 @@
   animation: sv-blink 0.8s step-end infinite;
 }
 
+/* Streaming cursor on the light Blueprint page — crimson on white, no glow */
+.sv-cursor-light {
+  display: inline-block;
+  width: 2px;
+  height: 20px;
+  background: #C21F2C;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  animation: sv-blink 0.8s step-end infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .sv-btn, .sv-chevron, .sv-cursor, .sv-star, .sv-wave-dot { animation: none; }
+  .sv-btn, .sv-chevron, .sv-cursor, .sv-cursor-light, .sv-star, .sv-wave-dot { animation: none; }
 }
