@@ -11,6 +11,32 @@ import { saveBlueprint, getBlueprint, getQuizData, trackEvent } from './utils/st
 
 const API_KEY_STORAGE = 'sovrn_api_key';
 
+/* DEV-only sample text for previewing the Blueprint screen (?screen=blueprint).
+   Never referenced in production paths — only inside an import.meta.env.DEV guard. */
+const DEV_MOCK_BLUEPRINT = `SOUL ARCHITECTURE
+
+Your Sun sits at 14.7° Aries — the raw ignition point of the zodiac, the placement of the one who arrives before the map exists. You were not built to follow a trail. You were built to be the reason a trail exists at all.
+
+Your Rising in Scorpio wraps that fire in a still, watchful surface. People feel the heat before they see the flame. This is the architecture of someone whose presence is felt in a room a full second before they speak.
+
+"You have spent years apologizing for the exact intensity you were born to wield."
+
+SHADOW PATTERN
+
+Your South Node in Libra keeps handing you the same bargain: keep the peace, and you get to keep the room. So you shrink the flame to fit other people's comfort, then resent them for a smallness you chose.
+
+"You don't have a discipline problem. You have a permission problem."
+
+TRUE NORTH
+
+Your North Node in Aries is not asking you to be liked. It is asking you to be first — to move before consensus, to let the disagreement happen and survive it. Your Jupiter in the tenth says the visibility you fear is the exact soil your growth needs.
+
+FIRST SOVEREIGN ACT
+
+Within the next 24 hours: say the unpopular thing you have been softening. One sentence, unhedged, to the person whose approval you have been managing.
+
+"I am done being palatable. I am here to be true."`;
+
 export default function App() {
   const [page, setPage] = useState<AppPage>('hero');
   const [quizData, setQuizData] = useState<QuizData | null>(null);
@@ -30,11 +56,23 @@ export default function App() {
       setQuizData(existingQuiz);
     }
 
-    // DEV-only: preview a screen in isolation via ?screen=loading|quiz.
+    // DEV-only: preview a screen in isolation via ?screen=loading|quiz|blueprint.
     // Gated by import.meta.env.DEV — stripped from production builds.
     if (import.meta.env.DEV) {
-      const s = new URLSearchParams(window.location.search).get('screen');
-      if (s === 'loading' || s === 'quiz') setPage(s);
+      const params = new URLSearchParams(window.location.search);
+      const s = params.get('screen');
+      if (s === 'loading' || s === 'quiz') {
+        setPage(s);
+      } else if (s === 'blueprint') {
+        setQuizData({
+          name: 'Elijah', birthDate: '1990-04-05', birthTime: '08:30',
+          birthTimeUnknown: false, birthPlace: 'Detroit, USA',
+          deepestFear: '', desiredReality: '', repeatingPattern: '', email: '',
+        });
+        setStreamingText(DEV_MOCK_BLUEPRINT);
+        setStreamDone(params.get('streaming') !== '1');
+        setPage('blueprint');
+      }
     }
   }, []);
 
