@@ -27,8 +27,8 @@
   --sv-muted: #6E6A66;
   --sv-line: #2A272B;
 
-  --sv-glass-bg: rgba(15, 18, 35, 0.4);
-  --sv-glass-edge: rgba(232, 176, 75, 0.15);
+  --sv-glass-bg: rgba(15, 18, 35, 0.25);
+  --sv-glass-edge: rgba(232, 176, 75, 0.25);
 
   --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
   --font-ui: 'Space Grotesk', system-ui, sans-serif;
@@ -187,7 +187,7 @@
     border: 1px solid var(--sv-glass-edge);
     border-radius: 16px;
     padding: 24px;
-    box-shadow: inset 0 0 30px rgba(232, 176, 75, 0.03);
+    box-shadow: 0 0 20px rgba(232, 176, 75, 0.06), inset 0 0 30px rgba(232, 176, 75, 0.03);
   }
 
   .sv-divider {
@@ -214,6 +214,13 @@
   }
 }
 
+/* Constellation dot twinkle — gentle opacity oscillation */
+@keyframes sv-twinkle {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.5; }
+}
+.sv-star { animation: sv-twinkle 3s ease-in-out infinite; }
+
 /* Gentle down-chevron bounce */
 @keyframes sv-bounce {
   0%, 100% { transform: translateY(0); opacity: 0.5; }
@@ -238,5 +245,5 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .sv-btn, .sv-chevron, .sv-cursor { animation: none; }
+  .sv-btn, .sv-chevron, .sv-cursor, .sv-star { animation: none; }
 }

@@ -24,6 +24,51 @@ const REVEALS = [
   },
 ];
 
+/* A small natal constellation — a visual hint of the chart being calculated.
+   Static hairline lines; dots twinkle gently, staggered. ~160×80. */
+function Constellation() {
+  const dots = [
+    [18, 52], [46, 32], [72, 60], [96, 26], [124, 48], [150, 22], [60, 14],
+  ];
+  const lines = [
+    [0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [1, 6],
+  ];
+  return (
+    <svg
+      width="160"
+      height="80"
+      viewBox="0 0 160 80"
+      fill="none"
+      aria-hidden="true"
+      style={{ display: 'block' }}
+    >
+      {lines.map(([a, b], i) => (
+        <line
+          key={`l${i}`}
+          x1={dots[a][0]}
+          y1={dots[a][1]}
+          x2={dots[b][0]}
+          y2={dots[b][1]}
+          stroke="#E8B04B"
+          strokeOpacity="0.15"
+          strokeWidth="0.5"
+        />
+      ))}
+      {dots.map(([cx, cy], i) => (
+        <circle
+          key={`d${i}`}
+          className="sv-star"
+          cx={cx}
+          cy={cy}
+          r="1.5"
+          fill="#E8B04B"
+          style={{ animationDelay: `${(i * 0.4).toFixed(1)}s` }}
+        />
+      ))}
+    </svg>
+  );
+}
+
 function DownChevron() {
   return (
     <svg
@@ -76,11 +121,16 @@ export default function HeroPage({ onStart }: Props) {
             SOVRN
           </div>
 
-          {/* 60px → headline — one line, all bone. The power is in the phrase. */}
+          {/* Natal constellation — celestial hint, centered in the gap */}
+          <div style={{ marginTop: 32 }}>
+            <Constellation />
+          </div>
+
+          {/* 32px → headline — one line, all bone. The power is in the phrase. */}
           <h1
             className="sv-display"
             style={{
-              marginTop: 60,
+              marginTop: 32,
               fontWeight: 800,
               fontSize: 'clamp(28px, 8vw, 34px)',
               lineHeight: 1.1,
