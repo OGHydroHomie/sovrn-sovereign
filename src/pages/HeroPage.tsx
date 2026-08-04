@@ -5,22 +5,22 @@ interface Props {
   onStart: () => void;
 }
 
-/* Three things the blueprint reveals — stacked vertically on mobile. */
+/* Three things the blueprint reveals — stacked, max two sentences each. */
 const REVEALS = [
   {
-    accent: '#C21F2C',
+    accent: '#D93A2B',
     title: 'The architecture you were born with',
-    body: "Not who you were told to be. Not who you've been performing. Your Sun, Rising, and North Node decoded as a precise map of your actual power — the gifts that were encoded before anyone had a chance to talk you out of them.",
+    body: 'Your Sun, Rising, and North Node decoded as a map of who you were built to become — before anyone had a chance to talk you out of it.',
   },
   {
-    accent: '#1A1A1A',
+    accent: '#E8B04B',
     title: "The pattern that's been running your life",
-    body: "You know the loop. You've broken it a hundred times and watched it come back. Your blueprint names the exact mechanism — with enough precision that you'll recognize it immediately, and enough clarity that it loses its grip the moment you see it.",
+    body: "Your blueprint names the exact loop with enough precision that you'll recognize it immediately — and enough clarity that it loses its grip.",
   },
   {
-    accent: '#C21F2C',
+    accent: '#D93A2B',
     title: 'Where your life is actually trying to go',
-    body: "Your Jupiter, North Node, and Midheaven aren't suggestions. They're coordinates. This section shows you the direction your entire chart has been pulling you toward since the moment you arrived.",
+    body: 'The direction your entire chart has been pulling you toward since the moment you arrived. Not a suggestion. A coordinate.',
   },
 ];
 
@@ -32,7 +32,7 @@ function DownChevron() {
       height="22"
       viewBox="0 0 24 24"
       fill="none"
-      stroke="#9A9A9A"
+      stroke="#6E6A66"
       strokeWidth="1.5"
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -54,9 +54,9 @@ export default function HeroPage({ onStart }: Props) {
   }, []);
 
   return (
-    <div style={{ backgroundColor: '#FBFAF7', color: '#4A4A4A' }}>
+    <div style={{ color: '#A8A29B' }}>
       {/* ============================================================= *
-       *  ABOVE THE FOLD — one promise, one decision
+       *  ABOVE THE FOLD — one promise, one decision. Spacious.
        * ============================================================= */}
       <section
         style={{
@@ -65,64 +65,54 @@ export default function HeroPage({ onStart }: Props) {
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: '32px 20px',
+          padding: '48px 20px',
           position: 'relative',
           textAlign: 'center',
         }}
       >
-        {/* Wordmark */}
-        <div
-          className="sv-eyebrow"
-          style={{ fontSize: 13, position: 'absolute', top: 28, left: 0, right: 0 }}
-        >
-          SOVRN
-        </div>
+        <div style={{ maxWidth: 340, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          {/* Wordmark */}
+          <div className="sv-eyebrow" style={{ fontSize: 13, letterSpacing: '0.28em' }}>
+            SOVRN
+          </div>
 
-        <div style={{ maxWidth: 340, margin: '0 auto', width: '100%' }}>
+          {/* 60px → headline */}
           <h1
             className="sv-display"
             style={{
+              marginTop: 60,
               fontWeight: 800,
-              fontSize: 'clamp(34px, 11vw, 48px)',
-              lineHeight: 1.1,
-              color: '#C21F2C',
+              fontSize: 'clamp(38px, 12vw, 48px)',
+              lineHeight: 1.08,
+              color: '#F4F1EA',
               letterSpacing: '-0.01em',
             }}
           >
-            Remember who you are.
+            Remember who <span style={{ color: '#D93A2B' }}>you are.</span>
           </h1>
 
+          {/* 24px → body */}
           <p
-            className="sv-serif"
-            style={{ marginTop: 20, fontSize: 16, lineHeight: 1.6, color: '#4A4A4A' }}
+            className="sv-display"
+            style={{ marginTop: 24, fontWeight: 400, fontSize: 16, lineHeight: 1.6, color: '#A8A29B' }}
           >
-            You've read the books. Done the work. Built the habits. And something
-            still feels like it's missing — like you're living adjacent to your
-            actual life rather than inside it. That's not a discipline problem.
-            That's a blueprint problem.
+            Something still feels off — like you're living adjacent to your actual
+            life. Enter your birth data. Find out why.
           </p>
 
-          <p
-            className="sv-serif"
-            style={{ marginTop: 8, fontSize: 16, lineHeight: 1.6, color: '#4A4A4A' }}
-          >
-            Enter your birth data. Find out exactly what's been running underneath
-            everything.
-          </p>
+          {/* 40px → button */}
+          <button className="sv-btn" style={{ marginTop: 40 }} onClick={handleStart}>
+            Begin Your Blueprint
+          </button>
 
-          <div style={{ marginTop: 32, display: 'flex', justifyContent: 'center' }}>
-            <button className="sv-btn" onClick={handleStart}>
-              Begin Your Blueprint
-            </button>
-          </div>
-
+          {/* 20px → meta */}
           <p
             style={{
-              marginTop: 12,
+              marginTop: 20,
               fontFamily: "'Space Grotesk', sans-serif",
               fontWeight: 400,
               fontSize: 13,
-              color: '#9A9A9A',
+              color: '#6E6A66',
             }}
           >
             Free · 5 minutes · No account required
@@ -143,7 +133,7 @@ export default function HeroPage({ onStart }: Props) {
           className="sv-label"
           style={{
             fontSize: 11,
-            color: '#C21F2C',
+            color: '#D93A2B',
             letterSpacing: '0.2em',
             fontWeight: 600,
             textAlign: 'center',
@@ -157,17 +147,17 @@ export default function HeroPage({ onStart }: Props) {
             <div
               key={card.title}
               className="sv-card"
-              style={{ borderLeft: `3px solid ${card.accent}` }}
+              style={{ borderLeft: `3px solid ${card.accent}`, textAlign: 'left' }}
             >
               <h3
                 className="sv-label"
-                style={{ fontSize: 13, color: '#1A1A1A', fontWeight: 700, lineHeight: 1.3 }}
+                style={{ fontSize: 13, color: '#F4F1EA', fontWeight: 700, lineHeight: 1.3 }}
               >
                 {card.title}
               </h3>
               <p
                 className="sv-serif"
-                style={{ marginTop: 12, fontSize: 15, lineHeight: 1.6, color: '#4A4A4A' }}
+                style={{ marginTop: 12, fontSize: 15, lineHeight: 1.6, color: '#A8A29B' }}
               >
                 {card.body}
               </p>
@@ -183,27 +173,13 @@ export default function HeroPage({ onStart }: Props) {
             fontWeight: 400,
             fontSize: 22,
             lineHeight: 1.4,
-            color: '#4A4A4A',
+            color: '#F4F1EA',
             textAlign: 'center',
             maxWidth: 480,
             margin: '48px auto 0',
           }}
         >
-          Seven questions. One blueprint. No two are the same — because no two
-          people arrived with the same architecture.
-        </p>
-
-        <p
-          style={{
-            marginTop: 16,
-            fontFamily: "'Space Grotesk', sans-serif",
-            fontWeight: 400,
-            fontSize: 12,
-            color: '#9A9A9A',
-            textAlign: 'center',
-          }}
-        >
-          Powered by exact astronomical calculations from your birth data.
+          Seven questions. One blueprint. No two are the same.
         </p>
 
         {/* Second CTA */}
@@ -221,7 +197,7 @@ export default function HeroPage({ onStart }: Props) {
             fontWeight: 400,
             fontSize: 11,
             letterSpacing: '0.1em',
-            color: '#9A9A9A',
+            color: '#6E6A66',
             textAlign: 'center',
           }}
         >

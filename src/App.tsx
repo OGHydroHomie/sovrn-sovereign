@@ -86,18 +86,21 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#FBFAF7' }}>
+    <div className="min-h-screen" style={{ backgroundColor: '#0A0E1A', position: 'relative' }}>
+      {/* Night-sky backdrop (fixed, behind everything) */}
+      <div className="sv-backdrop" aria-hidden="true" />
+
       {/* Error banner */}
       {error && (
         <div
           className="fixed top-4 left-1/2 -translate-x-1/2 z-50 rounded-xl px-6 py-3 max-w-md text-center"
-          style={{ background: 'rgba(194,31,44,0.06)', border: '1px solid rgba(194,31,44,0.2)' }}
+          style={{ background: 'rgba(217,58,43,0.12)', border: '1px solid rgba(217,58,43,0.3)', backdropFilter: 'blur(12px)' }}
         >
-          <p className="text-sm" style={{ color: '#C21F2C', fontFamily: 'Georgia, serif' }}>{error}</p>
+          <p className="text-sm" style={{ color: '#F4F1EA', fontFamily: 'Georgia, serif' }}>{error}</p>
           <button
             onClick={() => setError(null)}
             className="text-xs mt-1"
-            style={{ color: 'rgba(194,31,44,0.6)', fontFamily: "'Space Grotesk', sans-serif" }}
+            style={{ color: 'rgba(244,241,234,0.6)', fontFamily: "'Space Grotesk', sans-serif" }}
           >
             Dismiss
           </button>
@@ -114,6 +117,7 @@ export default function App() {
         )}
       </AnimatePresence>
 
+      <div style={{ position: 'relative', zIndex: 1 }}>
       <AnimatePresence mode="wait">
         {page === 'hero' && (
           <motion.div
@@ -175,15 +179,17 @@ export default function App() {
           </motion.div>
         )}
       </AnimatePresence>
+      </div>
 
       {page === 'hero' && streamDone && streamingText && quizData && (
         <button
           onClick={() => setPage('blueprint')}
           className="fixed bottom-6 right-6 z-20 text-xs tracking-widest uppercase px-4 py-2 rounded-lg transition-all"
           style={{
-            background: '#F5F4F0',
-            color: '#C21F2C',
-            border: '1px solid #E8E6E1',
+            background: 'rgba(15,18,35,0.7)',
+            color: '#E8B04B',
+            border: '1px solid rgba(232,176,75,0.25)',
+            backdropFilter: 'blur(12px)',
             fontFamily: "'Space Grotesk', sans-serif",
             letterSpacing: '0.1em',
           }}

@@ -1,29 +1,34 @@
 @import "tailwindcss";
 
 /* ============================================================= *
- *  SOVRN — DESIGN SYSTEM
- *  A premium medical diagnostic crossed with a luxury journal.
- *  Warm, precise, authoritative.
+ *  SOVRN — DESIGN SYSTEM · "Obsidian Oracle"
+ *  Deep night sky + frosted glass + ember fire + gilt gold.
+ *  The oracle speaks through glass and fire.
  * ============================================================= */
 
 @theme {
-  --color-bg: #FBFAF7;          /* warm white canvas */
-  --color-red: #C21F2C;         /* initiation red    */
-  --color-ink: #1A1A1A;         /* headlines / titles */
-  --color-body: #4A4A4A;        /* body text          */
-  --color-subtle: #9A9A9A;      /* captions / meta    */
-  --color-card: #F5F4F0;        /* card surface       */
-  --color-line: #E8E6E1;        /* hairlines / borders */
+  --color-bg: #0A0E1A;          /* deep midnight blue-black */
+  --color-ember: #D93A2B;       /* initiation fire (glows)  */
+  --color-ember-deep: #C21F2C;  /* brand red variant        */
+  --color-gilt: #E8B04B;        /* oracle gold (sparing)    */
+  --color-bone: #F4F1EA;        /* warm white text          */
+  --color-body: #A8A29B;        /* secondary text           */
+  --color-muted: #6E6A66;       /* captions / labels        */
+  --color-line: #2A272B;        /* hairline borders         */
 }
 
 :root {
-  --sv-bg: #FBFAF7;
-  --sv-red: #C21F2C;
-  --sv-ink: #1A1A1A;
-  --sv-body: #4A4A4A;
-  --sv-subtle: #9A9A9A;
-  --sv-card: #F5F4F0;
-  --sv-line: #E8E6E1;
+  --sv-bg: #0A0E1A;
+  --sv-ember: #D93A2B;
+  --sv-ember-deep: #C21F2C;
+  --sv-gilt: #E8B04B;
+  --sv-bone: #F4F1EA;
+  --sv-body: #A8A29B;
+  --sv-muted: #6E6A66;
+  --sv-line: #2A272B;
+
+  --sv-glass-bg: rgba(15, 18, 35, 0.7);
+  --sv-glass-edge: rgba(232, 176, 75, 0.12);
 
   --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
   --font-ui: 'Space Grotesk', system-ui, sans-serif;
@@ -56,14 +61,37 @@
 
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
-    color: var(--sv-ink);
+    color: var(--sv-bone);
     line-height: 1.1;
   }
 
   ::selection {
-    background-color: rgba(194, 31, 44, 0.14);
-    color: var(--sv-ink);
+    background-color: rgba(217, 58, 43, 0.28);
+    color: var(--sv-bone);
   }
+}
+
+/* ============================================================= *
+ *  NIGHT-SKY BACKDROP — fixed layer behind all content
+ * ============================================================= */
+.sv-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-color: #0A0E1A;
+  /* ember dawn-glow at the crown + faint star salt */
+  background-image:
+    radial-gradient(130% 70% at 50% -8%, rgba(217, 58, 43, 0.12) 0%, rgba(217, 58, 43, 0) 46%),
+    radial-gradient(100% 60% at 50% 108%, rgba(28, 34, 66, 0.55) 0%, rgba(10, 14, 26, 0) 55%),
+    radial-gradient(1.2px 1.2px at 24px 40px, rgba(244, 241, 234, 0.28), transparent),
+    radial-gradient(1.2px 1.2px at 130px 90px, rgba(244, 241, 234, 0.18), transparent),
+    radial-gradient(1px 1px at 70px 160px, rgba(244, 241, 234, 0.20), transparent),
+    radial-gradient(1px 1px at 190px 30px, rgba(232, 176, 75, 0.22), transparent),
+    radial-gradient(1.4px 1.4px at 250px 200px, rgba(244, 241, 234, 0.16), transparent),
+    radial-gradient(1px 1px at 300px 120px, rgba(244, 241, 234, 0.14), transparent);
+  background-repeat: no-repeat, no-repeat, repeat, repeat, repeat, repeat, repeat, repeat;
+  background-size: 100% 100%, 100% 100%, 340px 260px, 340px 260px, 340px 260px, 340px 260px, 340px 260px, 340px 260px;
 }
 
 /* ============================================================= *
@@ -71,13 +99,12 @@
  * ============================================================= */
 @layer components {
 
-  /* Space Grotesk uppercase tracked label (wordmark, eyebrows, meta) */
   .sv-eyebrow {
     font-family: var(--font-ui);
     text-transform: uppercase;
     letter-spacing: 0.15em;
     font-weight: 600;
-    color: var(--sv-subtle);
+    color: var(--sv-muted);
   }
 
   .sv-label {
@@ -87,16 +114,11 @@
     font-weight: 700;
   }
 
-  .sv-serif {
-    font-family: var(--font-body);
-  }
-
-  .sv-display {
-    font-family: var(--font-display);
-  }
+  .sv-serif { font-family: var(--font-body); }
+  .sv-display { font-family: var(--font-display); }
 
   /* ----------------------------------------------------------- *
-   *  PRIMARY BUTTON — initiation red, breathing pulse
+   *  PRIMARY BUTTON — ember fire, breathing pulse
    * ----------------------------------------------------------- */
   .sv-btn {
     display: inline-flex;
@@ -105,7 +127,7 @@
     width: 100%;
     max-width: 340px;
     min-height: 48px;
-    background: var(--sv-red);
+    background: var(--sv-ember);
     color: #fff;
     font-family: var(--font-ui);
     font-weight: 600;
@@ -119,23 +141,17 @@
     transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
     animation: sv-pulse 2.5s ease-in-out infinite;
   }
-
-  .sv-btn:hover {
-    background: #a91824;
-  }
-
-  .sv-btn:active {
-    transform: scale(0.99);
-  }
-
+  .sv-btn:hover { background: #e8492f; }
+  .sv-btn:active { transform: scale(0.99); }
   .sv-btn:disabled {
-    background: #d8b3b6;
+    background: #4a2622;
+    color: rgba(244, 241, 234, 0.35);
     cursor: not-allowed;
     animation: none;
     box-shadow: none;
   }
 
-  /* Outlined secondary button */
+  /* Outlined secondary — bone edge */
   .sv-btn-ghost {
     display: inline-flex;
     align-items: center;
@@ -144,38 +160,39 @@
     max-width: 340px;
     min-height: 48px;
     background: transparent;
-    color: var(--sv-ink);
+    color: var(--sv-bone);
     font-family: var(--font-ui);
     font-weight: 600;
     font-size: 14px;
     text-transform: uppercase;
     letter-spacing: 0.08em;
     padding: 16px 24px;
-    border: 1px solid var(--sv-ink);
+    border: 1px solid rgba(244, 241, 234, 0.4);
     border-radius: 12px;
     cursor: pointer;
-    transition: background 0.2s ease, color 0.2s ease;
+    transition: background 0.2s ease, border-color 0.2s ease;
   }
-
   .sv-btn-ghost:hover {
-    background: var(--sv-ink);
-    color: var(--sv-bg);
+    background: rgba(244, 241, 234, 0.06);
+    border-color: rgba(244, 241, 234, 0.7);
   }
 
   /* ----------------------------------------------------------- *
-   *  CARD — reveal / section surface
+   *  GLASS CARD — frosted night-glass, faint gilt edge
    * ----------------------------------------------------------- */
   .sv-card {
-    background: var(--sv-card);
-    border: 1px solid var(--sv-line);
-    border-radius: 12px;
+    background: var(--sv-glass-bg);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--sv-glass-edge);
+    border-radius: 16px;
     padding: 24px;
   }
 
   .sv-divider {
     height: 1px;
     width: 100%;
-    background: var(--sv-line);
+    background: rgba(244, 241, 234, 0.1);
     border: none;
   }
 }
@@ -184,49 +201,41 @@
  *  ANIMATIONS
  * ============================================================= */
 
-/* Breathing pulse on the primary CTA */
+/* Breathing pulse on the primary CTA — ember glow */
 @keyframes sv-pulse {
   0%, 100% {
     transform: scale(1);
-    box-shadow: 0 0 20px rgba(194, 31, 44, 0.15);
+    box-shadow: 0 0 22px rgba(217, 58, 43, 0.30);
   }
   50% {
     transform: scale(1.02);
-    box-shadow: 0 0 30px rgba(194, 31, 44, 0.3);
+    box-shadow: 0 0 40px rgba(217, 58, 43, 0.55);
   }
 }
 
 /* Gentle down-chevron bounce */
 @keyframes sv-bounce {
-  0%, 100% { transform: translateY(0); opacity: 0.6; }
+  0%, 100% { transform: translateY(0); opacity: 0.5; }
   50% { transform: translateY(6px); opacity: 1; }
 }
+.sv-chevron { animation: sv-bounce 2s ease-in-out infinite; }
 
-.sv-chevron {
-  animation: sv-bounce 2s ease-in-out infinite;
-}
-
-/* Streaming cursor (used on Blueprint later) */
+/* Streaming cursor (Blueprint) — ember */
 @keyframes sv-blink {
   0%, 100% { opacity: 1; }
   50% { opacity: 0; }
 }
-
 .sv-cursor {
   display: inline-block;
   width: 2px;
   height: 20px;
-  background: var(--sv-red);
+  background: var(--sv-ember);
   margin-left: 2px;
   vertical-align: text-bottom;
+  box-shadow: 0 0 8px rgba(217, 58, 43, 0.6);
   animation: sv-blink 0.8s step-end infinite;
 }
 
-/* Respect reduced-motion preferences */
 @media (prefers-reduced-motion: reduce) {
-  .sv-btn,
-  .sv-chevron,
-  .sv-cursor {
-    animation: none;
-  }
+  .sv-btn, .sv-chevron, .sv-cursor { animation: none; }
 }
