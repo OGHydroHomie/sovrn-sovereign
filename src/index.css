@@ -263,6 +263,21 @@
 }
 .sv-star { animation: sv-twinkle 3s ease-in-out infinite; }
 
+/* Loading dots — ember wave lighting left → right */
+@keyframes sv-wave {
+  0%, 100% { background-color: #6E6A66; box-shadow: 0 0 0 rgba(217, 58, 43, 0); }
+  18% { background-color: #D93A2B; box-shadow: 0 0 10px rgba(217, 58, 43, 0.7); }
+  42% { background-color: #6E6A66; box-shadow: 0 0 0 rgba(217, 58, 43, 0); }
+}
+.sv-wave-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #6E6A66;
+  animation: sv-wave 1.4s ease-in-out infinite;
+}
+
 /* Gentle down-chevron bounce */
 @keyframes sv-bounce {
   0%, 100% { transform: translateY(0); opacity: 0.5; }
@@ -287,5 +302,5 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .sv-btn, .sv-chevron, .sv-cursor, .sv-star { animation: none; }
+  .sv-btn, .sv-chevron, .sv-cursor, .sv-star, .sv-wave-dot { animation: none; }
 }

@@ -29,6 +29,13 @@ export default function App() {
       setStreamDone(true);
       setQuizData(existingQuiz);
     }
+
+    // DEV-only: preview a screen in isolation via ?screen=loading|quiz.
+    // Gated by import.meta.env.DEV — stripped from production builds.
+    if (import.meta.env.DEV) {
+      const s = new URLSearchParams(window.location.search).get('screen');
+      if (s === 'loading' || s === 'quiz') setPage(s);
+    }
   }, []);
 
   const handleGenerate = useCallback((data: QuizData, apiKey?: string) => {
@@ -158,7 +165,7 @@ export default function App() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.8 }}
+            transition={{ duration: 0.3 }}
           >
             <LoadingPage />
           </motion.div>
@@ -169,7 +176,7 @@ export default function App() {
             key="blueprint"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.8 }}
+            transition={{ duration: 0.3 }}
           >
             <BlueprintPage
               text={streamingText}

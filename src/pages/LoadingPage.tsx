@@ -1,142 +1,91 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const MESSAGES = [
   'Reading your natal architecture...',
-  'Decoding your soul pattern...',
-  'Mapping your shadow structure...',
-  'Tracing your true north...',
-  'Forging your sovereign blueprint...',
+  'Mapping your shadow pattern...',
+  'Identifying your hidden gifts...',
+  'Calculating your true north...',
+  'Generating your sovereign blueprint...',
 ];
 
+/* Same natal constellation as the hero — visual continuity. */
+function Constellation() {
+  const dots = [
+    [18, 52], [46, 32], [72, 60], [96, 26], [124, 48], [150, 22], [60, 14],
+  ];
+  const lines = [
+    [0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [1, 6],
+  ];
+  return (
+    <svg width="160" height="80" viewBox="0 0 160 80" fill="none" aria-hidden="true" style={{ display: 'block' }}>
+      {lines.map(([a, b], i) => (
+        <line
+          key={`l${i}`}
+          x1={dots[a][0]} y1={dots[a][1]} x2={dots[b][0]} y2={dots[b][1]}
+          stroke="#E8B04B" strokeOpacity="0.15" strokeWidth="0.5"
+        />
+      ))}
+      {dots.map(([cx, cy], i) => (
+        <circle
+          key={`d${i}`} className="sv-star" cx={cx} cy={cy} r="1.5" fill="#E8B04B"
+          style={{ animationDelay: `${(i * 0.4).toFixed(1)}s` }}
+        />
+      ))}
+    </svg>
+  );
+}
+
 export default function LoadingPage() {
-  const [messageIndex, setMessageIndex] = useState(0);
-  const [progress, setProgress] = useState(0);
+  const [index, setIndex] = useState(0);
 
   useEffect(() => {
-    const messageInterval = setInterval(() => {
-      setMessageIndex((prev) => {
-        if (prev < MESSAGES.length - 1) return prev + 1;
-        return prev;
-      });
+    const id = setInterval(() => {
+      // Advance, holding on the final message until the stream takes over
+      setIndex((prev) => (prev < MESSAGES.length - 1 ? prev + 1 : prev));
     }, 3500);
-
-    const progressInterval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 95) return 95;
-        return prev + Math.random() * 8 + 2;
-      });
-    }, 500);
-
-    return () => {
-      clearInterval(messageInterval);
-      clearInterval(progressInterval);
-    };
+    return () => clearInterval(id);
   }, []);
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center px-4">
-      <div className="relative z-10 text-center max-w-lg">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 1 }}
-          className="mb-12"
-        >
-          <svg
-            viewBox="0 0 200 200"
-            className="w-48 h-48 mx-auto"
-            xmlns="http://www.w3.org/2000/svg"
+    <div
+      style={{
+        minHeight: '100svh',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '48px 24px',
+        textAlign: 'center',
+      }}
+    >
+      {/* Constellation — continuity with the hero */}
+      <div style={{ marginBottom: 44, opacity: 0.9 }}>
+        <Constellation />
+      </div>
+
+      {/* Rotating oracle messages */}
+      <div style={{ minHeight: 28, display: 'flex', alignItems: 'center' }}>
+        <AnimatePresence mode="wait">
+          <motion.p
+            key={index}
+            className="sv-display"
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.6, ease: 'easeInOut' }}
+            style={{ fontStyle: 'italic', fontWeight: 400, fontSize: 18, color: '#F4F1EA' }}
           >
-            {[
-              [100, 40, 60, 80],
-              [60, 80, 80, 130],
-              [80, 130, 140, 130],
-              [140, 130, 150, 80],
-              [150, 80, 100, 40],
-              [80, 130, 60, 170],
-              [140, 130, 150, 170],
-            ].map(([x1, y1, x2, y2], i) => (
-              <motion.line
-                key={i}
-                x1={x1}
-                y1={y1}
-                x2={x2}
-                y2={y2}
-                stroke="rgba(139, 92, 246, 0.4)"
-                strokeWidth="1"
-                initial={{ pathLength: 0 }}
-                animate={{ pathLength: 1 }}
-                transition={{ duration: 1.5, delay: i * 0.3 }}
-              />
-            ))}
-            {[
-              [100, 40],
-              [60, 80],
-              [150, 80],
-              [80, 130],
-              [140, 130],
-              [60, 170],
-              [150, 170],
-            ].map(([cx, cy], i) => (
-              <motion.circle
-                key={i}
-                cx={cx}
-                cy={cy}
-                r="3"
-                fill="#D4AF37"
-                initial={{ opacity: 0, scale: 0 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5, delay: i * 0.3 + 0.2 }}
-              >
-                <animate
-                  attributeName="opacity"
-                  values="0.5;1;0.5"
-                  dur={`${2 + i * 0.3}s`}
-                  repeatCount="indefinite"
-                />
-              </motion.circle>
-            ))}
-            <motion.circle
-              cx="100"
-              cy="105"
-              r="25"
-              fill="none"
-              stroke="rgba(139, 92, 246, 0.2)"
-              strokeWidth="1"
-              initial={{ scale: 0 }}
-              animate={{ scale: [1, 1.3, 1] }}
-              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-            />
-          </svg>
-        </motion.div>
+            {MESSAGES[index]}
+          </motion.p>
+        </AnimatePresence>
+      </div>
 
-        <motion.div
-          key={messageIndex}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -10 }}
-          transition={{ duration: 0.5 }}
-          className="mb-8"
-        >
-          <p className="text-lg text-white/80">{MESSAGES[messageIndex]}</p>
-        </motion.div>
-
-        <div className="w-full max-w-xs mx-auto h-1 rounded-full bg-white/10 overflow-hidden">
-          <motion.div
-            className="h-full rounded-full"
-            style={{
-              background: 'linear-gradient(135deg, #8b5cf6, #D4AF37)',
-            }}
-            initial={{ width: '0%' }}
-            animate={{ width: `${Math.min(progress, 95)}%` }}
-            transition={{ duration: 0.3 }}
-          />
-        </div>
-
-        <p className="text-xs text-white/30 mt-4">
-          Crafting your sovereign blueprint...
-        </p>
+      {/* Ember wave dots */}
+      <div style={{ marginTop: 28, display: 'flex', gap: 10 }}>
+        <span className="sv-wave-dot" style={{ animationDelay: '0s' }} />
+        <span className="sv-wave-dot" style={{ animationDelay: '0.18s' }} />
+        <span className="sv-wave-dot" style={{ animationDelay: '0.36s' }} />
       </div>
     </div>
   );
