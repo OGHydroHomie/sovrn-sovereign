@@ -1,6 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, ArrowLeft } from 'lucide-react';
 import type { QuizData } from '../types';
 import { saveQuizData, saveLead } from '../utils/storage';
 
@@ -9,18 +8,80 @@ interface Props {
   onBack: () => void;
 }
 
-const TOTAL_STEPS = 4;
+const TOTAL = 8;
+/* Progress never starts at zero. Q1 = 12%, filling to 100% on Q8. */
+const PROGRESS = [12, 25, 37, 50, 62, 75, 88, 100];
 
-const STEP_TITLES = [
-  'Birth Data',
-  'Your Shadow',
-  'Your Vision',
-  'Deliver',
+const FORMSPREE_ENDPOINT = 'https://formspree.io/f/xdarebvj';
+
+/* ── Sun-sign preview (date-range math only; the real chart lives in chart.ts) ── */
+const SIGN_RANGES: { sign: string; from: [number, number]; to: [number, number] }[] = [
+  { sign: 'Capricorn', from: [12, 22], to: [1, 19] },
+  { sign: 'Aquarius', from: [1, 20], to: [2, 18] },
+  { sign: 'Pisces', from: [2, 19], to: [3, 20] },
+  { sign: 'Aries', from: [3, 21], to: [4, 19] },
+  { sign: 'Taurus', from: [4, 20], to: [5, 20] },
+  { sign: 'Gemini', from: [5, 21], to: [6, 20] },
+  { sign: 'Cancer', from: [6, 21], to: [7, 22] },
+  { sign: 'Leo', from: [7, 23], to: [8, 22] },
+  { sign: 'Virgo', from: [8, 23], to: [9, 22] },
+  { sign: 'Libra', from: [9, 23], to: [10, 22] },
+  { sign: 'Scorpio', from: [10, 23], to: [11, 21] },
+  { sign: 'Sagittarius', from: [11, 22], to: [12, 21] },
 ];
+
+const ARCHETYPES: Record<string, string> = {
+  Aries: 'THE PIONEER',
+  Taurus: 'THE SOVEREIGN BUILDER',
+  Gemini: 'THE ORACLE OF TONGUES',
+  Cancer: 'THE GUARDIAN',
+  Leo: 'THE SOVEREIGN FLAME',
+  Virgo: 'THE ARCHITECT OF ORDER',
+  Libra: 'THE EMISSARY',
+  Scorpio: 'THE INITIATOR',
+  Sagittarius: 'THE TORCH BEARER',
+  Capricorn: 'THE ANCIENT AUTHORITY',
+  Aquarius: 'THE PATTERN BREAKER',
+  Pisces: 'THE MYSTIC CHANNEL',
+};
+
+function sunSignFromDate(dateStr: string): string {
+  const parts = dateStr.split('-').map(Number);
+  if (parts.length < 3 || parts.some(isNaN)) return 'Aries';
+  const [, month, day] = parts;
+  for (const { sign, from, to } of SIGN_RANGES) {
+    if (from[0] === month && day >= from[1]) return sign;
+    if (to[0] === month && day <= to[1]) return sign;
+  }
+  return 'Aries';
+}
+
+/* Fire the lead to Formspree — non-blocking, runs alongside chart calc + stream. */
+function fireFormspree(data: QuizData): void {
+  const payload = {
+    name: data.name,
+    birthDate: data.birthDate,
+    birthTime: data.birthTime,
+    birthTimeUnknown: data.birthTimeUnknown,
+    birthPlace: data.birthPlace,
+    fear: data.deepestFear,
+    desiredReality: data.desiredReality,
+    repeatingPattern: data.repeatingPattern,
+    email: data.email,
+  };
+  fetch(FORMSPREE_ENDPOINT, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify(payload),
+  }).catch((err) => console.warn('Formspree capture failed:', err));
+}
 
 export default function QuizPage({ onComplete, onBack }: Props) {
   const [step, setStep] = useState(0);
   const [direction, setDirection] = useState(1);
+  const [phase, setPhase] = useState<'quiz' | 'reveal'>('quiz');
+  const revealTimer = useRef<number | null>(null);
+
   const [data, setData] = useState<QuizData>({
     name: '',
     birthDate: '',
@@ -33,94 +94,165 @@ export default function QuizPage({ onComplete, onBack }: Props) {
     email: '',
   });
 
-  const update = (field: keyof QuizData, value: string | boolean) => {
+  const update = (field: keyof QuizData, value: string | boolean) =>
     setData((prev) => ({ ...prev, [field]: value }));
-  };
+
+  useEffect(() => () => { if (revealTimer.current) window.clearTimeout(revealTimer.current); }, []);
 
   const canProceed = (): boolean => {
     switch (step) {
-      case 0:
-        return !!data.name && !!data.birthDate && !!data.birthPlace && (!!data.birthTime || data.birthTimeUnknown);
-      case 1:
-        return data.deepestFear.length >= 20;
-      case 2:
-        return data.desiredReality.length >= 20 && data.repeatingPattern.length >= 20;
-      case 3:
-        return !!data.email && data.email.includes('@');
-      default:
-        return false;
+      case 0: return data.name.trim().length > 0;
+      case 1: return !!data.birthDate;
+      case 2: return !!data.birthTime || data.birthTimeUnknown;
+      case 3: return data.birthPlace.trim().length > 0;
+      case 4: return data.deepestFear.trim().length >= 10;
+      case 5: return data.desiredReality.trim().length >= 10;
+      case 6: return data.repeatingPattern.trim().length >= 10;
+      case 7: return /\S+@\S+\.\S+/.test(data.email);
+      default: return false;
     }
   };
 
-  const next = () => {
-    if (step < TOTAL_STEPS - 1) {
-      setDirection(1);
-      setStep(step + 1);
+  const goTo = (next: number, dir: number) => {
+    setDirection(dir);
+    setStep(next);
+  };
+
+  const advance = () => {
+    if (!canProceed()) return;
+
+    // After Q4 (birthplace) → chart-insight reveal, then Q5
+    if (step === 3) {
+      window.scrollTo(0, 0);
+      setPhase('reveal');
+      revealTimer.current = window.setTimeout(() => {
+        setPhase('quiz');
+        goTo(4, 1);
+      }, 4000);
+      return;
+    }
+
+    if (step < TOTAL - 1) {
+      window.scrollTo(0, 0);
+      goTo(step + 1, 1);
     } else {
+      // Q8 submit — persist, capture lead, fire Formspree, kick off generation
       saveQuizData(data);
       saveLead(data.name, data.email);
+      fireFormspree(data);
       onComplete(data);
     }
   };
 
-  const prev = () => {
+  const back = () => {
     if (step > 0) {
-      setDirection(-1);
-      setStep(step - 1);
+      window.scrollTo(0, 0);
+      goTo(step - 1, -1);
     } else {
       onBack();
     }
   };
 
-  const variants = {
-    enter: (dir: number) => ({ x: dir > 0 ? 300 : -300, opacity: 0 }),
-    center: { x: 0, opacity: 1 },
-    exit: (dir: number) => ({ x: dir > 0 ? -300 : 300, opacity: 0 }),
+  const skipTime = () => {
+    update('birthTimeUnknown', true);
+    update('birthTime', '');
+    window.scrollTo(0, 0);
+    goTo(3, 1);
   };
 
-  return (
-    <div className="relative min-h-screen flex flex-col items-center justify-center px-4 py-8">
-      <div className="relative z-10 w-full max-w-xl mx-auto">
-        {/* Header */}
+  const onEnterKey = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && canProceed()) advance();
+  };
+
+  const variants = {
+    enter: (dir: number) => ({ x: dir > 0 ? 60 : -60, opacity: 0 }),
+    center: { x: 0, opacity: 1 },
+    exit: (dir: number) => ({ x: dir > 0 ? -60 : 60, opacity: 0 }),
+  };
+
+  // ── Chart-insight reveal screen ──
+  if (phase === 'reveal') {
+    const sign = sunSignFromDate(data.birthDate);
+    const archetype = ARCHETYPES[sign] ?? 'THE PIONEER';
+    return (
+      <div
+        style={{
+          minHeight: '100svh',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '48px 24px',
+          textAlign: 'center',
+        }}
+      >
         <motion.div
-          initial={{ opacity: 0, y: -20 }}
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-8"
+          transition={{ duration: 0.8 }}
         >
-          <h2 className="text-sm tracking-[0.4em] uppercase gold-glow font-medium mb-6">
-            SOVRN
-          </h2>
-
-          {/* Progress bar */}
-          <div className="flex items-center gap-2 mb-4">
-            {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
-              <div key={i} className="flex-1 h-1 rounded-full overflow-hidden bg-white/10">
-                <motion.div
-                  className="h-full rounded-full"
-                  initial={{ width: '0%' }}
-                  animate={{
-                    width: i < step ? '100%' : i === step ? '50%' : '0%',
-                  }}
-                  style={{
-                    background:
-                      i <= step
-                        ? 'linear-gradient(135deg, #8b5cf6, #D4AF37)'
-                        : 'transparent',
-                  }}
-                  transition={{ duration: 0.5 }}
-                />
-              </div>
-            ))}
+          <p
+            className="sv-label"
+            style={{ fontSize: 12, color: '#9A9A9A', letterSpacing: '0.22em', fontWeight: 500 }}
+          >
+            Your chart has been calculated
+          </p>
+          <div
+            className="sv-display"
+            style={{ marginTop: 16, fontWeight: 800, fontSize: 28, color: '#E8B04B', letterSpacing: '0.02em' }}
+          >
+            {archetype}
           </div>
-
-          <div className="flex items-center justify-between text-xs text-white/40">
-            <span>Step {step + 1} of {TOTAL_STEPS}</span>
-            <span>{STEP_TITLES[step]}</span>
-          </div>
+          <p style={{ marginTop: 6, fontFamily: "'Space Grotesk', sans-serif", fontSize: 14, color: '#A8A29B', letterSpacing: '0.06em' }}>
+            {sign} Sun
+          </p>
+          <p className="sv-display" style={{ marginTop: 12, fontStyle: 'italic', fontSize: 15, color: '#A8A29B' }}>
+            Four questions remain.
+          </p>
         </motion.div>
+      </div>
+    );
+  }
 
-        {/* Step content */}
-        <div className="glass-card p-8 md:p-10 min-h-[450px] flex flex-col">
+  // ── Question copy ──
+  const QUESTIONS = [
+    { n: '01', label: "What's your first name?" },
+    { n: '02', label: "What's your date of birth?" },
+    { n: '03', label: 'What time were you born?', helper: "Check your birth certificate if you're not sure." },
+    { n: '04', label: 'Where were you born?', helper: 'City and country is enough.' },
+    { n: '05', label: "What's the one fear you've never said out loud?", helper: "Be specific. Not just 'failure' — what would failure actually look like for you? 2-3 sentences." },
+    { n: '06', label: 'Describe your perfect Tuesday.', helper: "Not the dream vacation. A regular day in the life you know is yours. What do you wake up to? What are you working on? Who's around you?" },
+    { n: '07', label: "What's the pattern you keep repeating no matter how many times you try to break it?", helper: 'What triggers it? What do you do when it starts? How does it end?' },
+    { n: '08', label: 'Where should we send your blueprint?', helper: "We'll deliver a copy to your inbox too." },
+  ];
+  const q = QUESTIONS[step];
+
+  return (
+    <div style={{ minHeight: '100svh', display: 'flex', flexDirection: 'column', padding: '0 20px' }}>
+      {/* Progress bar */}
+      <div style={{ paddingTop: 24, maxWidth: 480, width: '100%', margin: '0 auto' }}>
+        <div style={{ height: 3, borderRadius: 999, background: 'rgba(244,241,234,0.1)', overflow: 'hidden' }}>
+          <motion.div
+            style={{ height: '100%', borderRadius: 999, background: '#D93A2B', boxShadow: '0 0 10px rgba(217,58,43,0.5)' }}
+            initial={false}
+            animate={{ width: `${PROGRESS[step]}%` }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
+          />
+        </div>
+      </div>
+
+      {/* Question body — one per screen, vertically centered */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+        <div style={{ position: 'relative', maxWidth: 340, width: '100%', margin: '0 auto', paddingBottom: 40 }}>
+          {/* Decorative question number */}
+          <div
+            className="sv-label"
+            aria-hidden="true"
+            style={{ position: 'absolute', top: -64, right: 0, fontSize: 48, fontWeight: 700, color: 'rgba(232,176,75,0.14)' }}
+          >
+            {q.n}
+          </div>
+
           <AnimatePresence mode="wait" custom={direction}>
             <motion.div
               key={step}
@@ -129,168 +261,147 @@ export default function QuizPage({ onComplete, onBack }: Props) {
               initial="enter"
               animate="center"
               exit="exit"
-              transition={{ duration: 0.3 }}
-              className="flex-1 flex flex-col gap-6"
+              transition={{ duration: 0.3, ease: 'easeOut' }}
             >
-              {step === 0 && (
-                <>
-                  <div>
-                    <label className="sovereign-label block mb-3">
-                      What is your name?
-                    </label>
-                    <input
-                      type="text"
-                      value={data.name}
-                      onChange={(e) => update('name', e.target.value)}
-                      placeholder="Your full name"
-                      className="sovereign-input"
-                    />
-                  </div>
-                  <div>
-                    <label className="sovereign-label block mb-3">
-                      When did you arrive?
-                    </label>
-                    <input
-                      type="date"
-                      value={data.birthDate}
-                      onChange={(e) => update('birthDate', e.target.value)}
-                      className="sovereign-input"
-                    />
-                  </div>
-                  <div>
-                    <label className="sovereign-label block mb-3">
-                      What hour did you enter the world?
-                    </label>
+              <h2
+                className="sv-display"
+                style={{ fontWeight: 600, fontSize: 'clamp(22px, 6.4vw, 26px)', lineHeight: 1.25, color: '#F4F1EA' }}
+              >
+                {q.label}
+              </h2>
+
+              <div style={{ marginTop: 24 }}>
+                {step === 0 && (
+                  <input
+                    type="text"
+                    autoFocus
+                    value={data.name}
+                    onChange={(e) => update('name', e.target.value)}
+                    onKeyDown={onEnterKey}
+                    placeholder="First name"
+                    className="sv-field"
+                  />
+                )}
+
+                {step === 1 && (
+                  <input
+                    type="date"
+                    value={data.birthDate}
+                    onChange={(e) => update('birthDate', e.target.value)}
+                    onKeyDown={onEnterKey}
+                    className="sv-field"
+                  />
+                )}
+
+                {step === 2 && (
+                  <>
                     <input
                       type="time"
                       value={data.birthTime}
                       onChange={(e) => update('birthTime', e.target.value)}
-                      disabled={data.birthTimeUnknown}
-                      className="sovereign-input disabled:opacity-30"
+                      onKeyDown={onEnterKey}
+                      className="sv-field"
                     />
-                    <p className="sovereign-helper mt-2">
-                      As exact as you know. Check your birth certificate if unsure.
+                    <p className="sv-serif" style={{ marginTop: 10, fontSize: 13, color: '#9A9A9A', lineHeight: 1.5 }}>
+                      {q.helper}
                     </p>
-                    <label className="flex items-center gap-2 mt-3 cursor-pointer text-white/40 text-sm">
-                      <input
-                        type="checkbox"
-                        checked={data.birthTimeUnknown}
-                        onChange={(e) => {
-                          update('birthTimeUnknown', e.target.checked);
-                          if (e.target.checked) update('birthTime', '');
-                        }}
-                        style={{ accentColor: '#D4AF37' }}
-                      />
-                      I don't know my exact birth time
-                    </label>
-                  </div>
-                  <div>
-                    <label className="sovereign-label block mb-3">
-                      Where were you born?
-                    </label>
+                    <button
+                      type="button"
+                      onClick={skipTime}
+                      style={{
+                        marginTop: 14,
+                        background: 'none',
+                        border: 'none',
+                        padding: 0,
+                        cursor: 'pointer',
+                        fontFamily: "'Space Grotesk', sans-serif",
+                        fontSize: 13,
+                        color: '#E8B04B',
+                        textDecoration: 'underline',
+                        textUnderlineOffset: 3,
+                      }}
+                    >
+                      I don't know my birth time
+                    </button>
+                  </>
+                )}
+
+                {step === 3 && (
+                  <>
                     <input
                       type="text"
                       value={data.birthPlace}
                       onChange={(e) => update('birthPlace', e.target.value)}
-                      placeholder="City, State or Country"
-                      className="sovereign-input"
+                      onKeyDown={onEnterKey}
+                      placeholder="Start typing a city..."
+                      className="sv-field"
                     />
-                  </div>
-                </>
-              )}
+                    <p className="sv-serif" style={{ marginTop: 10, fontSize: 13, color: '#9A9A9A', lineHeight: 1.5 }}>
+                      {q.helper}
+                    </p>
+                  </>
+                )}
 
-              {step === 1 && (
-                <div>
-                  <label className="sovereign-label block mb-3">
-                    Name the fear that runs your life — the one you've never said out loud.
-                  </label>
-                  <p className="sovereign-helper mb-4">
-                    Be specific. Not "failure" — but what failure would look like. Not
-                    "rejection" — but whose rejection would break you and why. Write 2-3 sentences.
-                  </p>
-                  <textarea
-                    value={data.deepestFear}
-                    onChange={(e) => update('deepestFear', e.target.value)}
-                    rows={6}
-                    className="sovereign-input resize-none"
-                  />
-                </div>
-              )}
-
-              {step === 2 && (
-                <>
-                  <div>
-                    <label className="sovereign-label block mb-3">
-                      Describe a single day in the life you know you're meant to live.
-                    </label>
-                    <p className="sovereign-helper mb-4">
-                      Not the vision board. The Tuesday. What do you wake up to? What
-                      work are you doing? Who is around you? Describe it like you're
-                      remembering it, not imagining it. Write 3-4 sentences.
+                {(step === 4 || step === 5 || step === 6) && (
+                  <>
+                    <p className="sv-serif" style={{ marginBottom: 12, fontSize: 13, color: '#9A9A9A', lineHeight: 1.5 }}>
+                      {q.helper}
                     </p>
                     <textarea
-                      value={data.desiredReality}
-                      onChange={(e) => update('desiredReality', e.target.value)}
-                      rows={5}
-                      className="sovereign-input resize-none"
+                      autoFocus
+                      value={step === 4 ? data.deepestFear : step === 5 ? data.desiredReality : data.repeatingPattern}
+                      onChange={(e) =>
+                        update(
+                          step === 4 ? 'deepestFear' : step === 5 ? 'desiredReality' : 'repeatingPattern',
+                          e.target.value
+                        )
+                      }
+                      className="sv-textarea"
                     />
-                  </div>
-                  <div>
-                    <label className="sovereign-label block mb-3">
-                      What is the one pattern you keep repeating no matter how many times
-                      you swear you've broken it?
-                    </label>
-                    <p className="sovereign-helper mb-4">
-                      Describe the cycle, not the label. What triggers it? What do you do
-                      when it starts? How does it end? Be honest about the loop — that's
-                      where your blueprint finds the exit.
-                    </p>
-                    <textarea
-                      value={data.repeatingPattern}
-                      onChange={(e) => update('repeatingPattern', e.target.value)}
-                      rows={5}
-                      className="sovereign-input resize-none"
-                    />
-                  </div>
-                </>
-              )}
+                  </>
+                )}
 
-              {step === 3 && (
-                <div>
-                  <label className="sovereign-label block mb-3">
-                    Where do we send your blueprint?
-                  </label>
-                  <input
-                    type="email"
-                    value={data.email}
-                    onChange={(e) => update('email', e.target.value)}
-                    placeholder="your@email.com"
-                    className="sovereign-input"
-                  />
-                  <p className="sovereign-helper mt-3">
-                    Your Sovereign Blueprint will also be delivered here.
-                  </p>
-                </div>
-              )}
+                {step === 7 && (
+                  <>
+                    <input
+                      type="email"
+                      inputMode="email"
+                      autoFocus
+                      value={data.email}
+                      onChange={(e) => update('email', e.target.value)}
+                      onKeyDown={onEnterKey}
+                      placeholder="your@email.com"
+                      className="sv-field"
+                    />
+                    <p className="sv-serif" style={{ marginTop: 10, fontSize: 13, color: '#9A9A9A', lineHeight: 1.5 }}>
+                      {q.helper}
+                    </p>
+                  </>
+                )}
+              </div>
             </motion.div>
           </AnimatePresence>
 
-          {/* Navigation */}
-          <div className="flex items-center justify-between mt-8 pt-6 border-t border-white/5">
-            <button
-              onClick={prev}
-              className="flex items-center gap-2 text-white/50 hover:text-white transition-colors text-sm"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back
+          {/* Actions */}
+          <div style={{ marginTop: 32, display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+            <button className="sv-btn" onClick={advance} disabled={!canProceed()}>
+              {step === TOTAL - 1 ? 'Generate My Blueprint' : 'Next'}
             </button>
             <button
-              onClick={next}
-              disabled={!canProceed()}
-              className="sovereign-button flex items-center gap-2"
+              type="button"
+              onClick={back}
+              style={{
+                marginTop: 12,
+                background: 'none',
+                border: 'none',
+                padding: '4px 0',
+                cursor: 'pointer',
+                fontFamily: "'Space Grotesk', sans-serif",
+                fontSize: 14,
+                color: '#6E6A66',
+              }}
             >
-              {step === TOTAL_STEPS - 1 ? 'Reveal My Blueprint' : 'Continue'}
-              <ArrowRight className="w-4 h-4" />
+              ← Back
             </button>
           </div>
         </div>

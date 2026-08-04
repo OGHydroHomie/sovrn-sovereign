@@ -196,6 +196,48 @@
     background: rgba(244, 241, 234, 0.1);
     border: none;
   }
+
+  /* ----------------------------------------------------------- *
+   *  FORM FIELDS
+   * ----------------------------------------------------------- */
+  /* Underline field — text / date / time / email */
+  .sv-field {
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid rgba(244, 241, 234, 0.15);
+    padding: 12px 2px;
+    color: #F4F1EA;
+    font-family: var(--font-body);
+    font-size: 16px;
+    outline: none;
+    transition: border-color 0.2s ease;
+    color-scheme: dark;
+  }
+  .sv-field:focus { border-color: #D93A2B; }
+  .sv-field::placeholder { color: #6E6A66; }
+  .sv-field:disabled { opacity: 0.35; }
+
+  /* Frosted textarea — the deep questions */
+  .sv-textarea {
+    width: 100%;
+    background: rgba(15, 18, 35, 0.4);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(232, 176, 75, 0.15);
+    border-radius: 12px;
+    padding: 16px;
+    min-height: 120px;
+    color: #F4F1EA;
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.6;
+    outline: none;
+    resize: none;
+    transition: border-color 0.2s ease;
+  }
+  .sv-textarea:focus { border-color: #D93A2B; }
+  .sv-textarea::placeholder { color: #6E6A66; }
 }
 
 /* ============================================================= *
