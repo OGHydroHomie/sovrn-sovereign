@@ -8,7 +8,7 @@ interface Props {
 /* Three things the blueprint reveals — stacked, max two sentences each. */
 const REVEALS = [
   {
-    accent: '#D93A2B',
+    accent: '#E8B04B',
     title: 'The architecture you were born with',
     body: 'Your Sun, Rising, and North Node decoded as a map of who you were built to become — before anyone had a chance to talk you out of it.',
   },
@@ -18,7 +18,7 @@ const REVEALS = [
     body: "Your blueprint names the exact loop with enough precision that you'll recognize it immediately — and enough clarity that it loses its grip.",
   },
   {
-    accent: '#D93A2B',
+    accent: '#E8B04B',
     title: 'Where your life is actually trying to go',
     body: 'The direction your entire chart has been pulling you toward since the moment you arrived. Not a suggestion. A coordinate.',
   },
@@ -72,23 +72,24 @@ export default function HeroPage({ onStart }: Props) {
       >
         <div style={{ maxWidth: 340, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           {/* Wordmark */}
-          <div className="sv-eyebrow" style={{ fontSize: 13, letterSpacing: '0.28em' }}>
+          <div className="sv-eyebrow" style={{ fontSize: 13, letterSpacing: '0.28em', color: '#E8B04B' }}>
             SOVRN
           </div>
 
-          {/* 60px → headline */}
+          {/* 60px → headline — one line, all bone. The power is in the phrase. */}
           <h1
             className="sv-display"
             style={{
               marginTop: 60,
               fontWeight: 800,
-              fontSize: 'clamp(38px, 12vw, 48px)',
-              lineHeight: 1.08,
+              fontSize: 'clamp(28px, 8vw, 34px)',
+              lineHeight: 1.1,
               color: '#F4F1EA',
-              letterSpacing: '-0.01em',
+              letterSpacing: '-0.02em',
+              whiteSpace: 'nowrap',
             }}
           >
-            Remember who <span style={{ color: '#D93A2B' }}>you are.</span>
+            Remember who you are.
           </h1>
 
           {/* 24px → body */}
@@ -133,7 +134,7 @@ export default function HeroPage({ onStart }: Props) {
           className="sv-label"
           style={{
             fontSize: 11,
-            color: '#D93A2B',
+            color: '#E8B04B',
             letterSpacing: '0.2em',
             fontWeight: 600,
             textAlign: 'center',
@@ -165,27 +166,73 @@ export default function HeroPage({ onStart }: Props) {
           ))}
         </div>
 
-        {/* Pull quote */}
-        <p
-          className="sv-display"
-          style={{
-            fontStyle: 'italic',
-            fontWeight: 400,
-            fontSize: 22,
-            lineHeight: 1.4,
-            color: '#F4F1EA',
-            textAlign: 'center',
-            maxWidth: 480,
-            margin: '48px auto 0',
-          }}
-        >
-          Seven questions. One blueprint. No two are the same.
-        </p>
+        {/* Blurred blueprint preview — show what's waiting without revealing it */}
+        <div style={{ marginTop: 48 }}>
+          <div
+            aria-hidden="true"
+            style={{
+              filter: 'blur(6px)',
+              opacity: 0.7,
+              pointerEvents: 'none',
+              userSelect: 'none',
+            }}
+          >
+            <div
+              className="sv-card"
+              style={{ borderLeft: '3px solid #E8B04B', textAlign: 'left', maxWidth: 360, margin: '0 auto' }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                <span className="sv-label" style={{ fontSize: 10, color: '#6E6A66', letterSpacing: '0.18em' }}>
+                  Soul Architecture
+                </span>
+                <span className="sv-label" style={{ fontSize: 11, color: '#E8B04B' }}>01</span>
+              </div>
+              <div className="sv-display" style={{ fontWeight: 800, fontSize: 24, color: '#E8B04B', marginTop: 10 }}>
+                THE PIONEER
+              </div>
+              <p className="sv-serif" style={{ marginTop: 12, fontSize: 14, lineHeight: 1.7, color: '#A8A29B' }}>
+                Your Aries Sun at 14° burns in the first house — the raw signature
+                of someone built to go first, to break the trail the rest will only
+                later find the courage to follow.
+              </p>
+              <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
+                {['Initiator', 'Fire', 'Cardinal'].map((t) => (
+                  <span
+                    key={t}
+                    style={{
+                      fontFamily: "'Space Grotesk', sans-serif",
+                      fontSize: 11,
+                      color: '#F4F1EA',
+                      padding: '6px 12px',
+                      border: '1px solid rgba(232,176,75,0.3)',
+                      borderRadius: 999,
+                    }}
+                  >
+                    {t}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
 
-        {/* Second CTA */}
+          <p
+            style={{
+              marginTop: 16,
+              fontFamily: "'Space Grotesk', sans-serif",
+              fontWeight: 400,
+              fontSize: 14,
+              color: '#A8A29B',
+              textAlign: 'center',
+            }}
+          >
+            This was generated from a birthday and three questions.
+          </p>
+        </div>
+
+        {/* Second CTA — a different angle from the hero button */}
         <div style={{ marginTop: 32, display: 'flex', justifyContent: 'center' }}>
           <button className="sv-btn" onClick={handleStart}>
-            Begin Your Blueprint
+            See what your chart says
           </button>
         </div>
 
