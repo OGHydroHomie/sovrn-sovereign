@@ -161,7 +161,16 @@ export default function BlueprintPage({ text, isDone, quizData }: Props) {
   const handleTransform = () => { trackEvent('ctaClick'); setShowBooking(true); };
 
   return (
-    <div style={{ minHeight: '100svh', background: '#FBFAF7', color: '#4A4A4A', padding: '24px 20px 56px' }}>
+    <div style={{ minHeight: '100svh', background: '#FBFAF7', color: '#4A4A4A', padding: '24px 20px 56px', position: 'relative' }}>
+      {/* Dawn bloom — a warm veil that clears on mount, so the blueprint
+          materializes into daylight as the dark loading screen crossfades out. */}
+      <motion.div
+        aria-hidden="true"
+        initial={{ opacity: 0.7 }}
+        animate={{ opacity: 0 }}
+        transition={{ duration: 0.9, ease: 'easeOut' }}
+        style={{ position: 'fixed', inset: 0, background: '#FBFAF7', pointerEvents: 'none', zIndex: 10 }}
+      />
       <div style={{ maxWidth: 620, margin: '0 auto' }}>
         {/* ── Masthead ── */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
@@ -181,7 +190,7 @@ export default function BlueprintPage({ text, isDone, quizData }: Props) {
             className="sv-display"
             style={{
               fontStyle: 'italic', fontWeight: 400,
-              fontSize: 'clamp(22px, 6.4vw, 24px)', lineHeight: 1.35,
+              fontSize: 'clamp(24px, 6.6vw, 28px)', lineHeight: 1.35,
               color: '#C21F2C', textAlign: 'center', maxWidth: 480,
               margin: '48px auto', padding: '0 4px',
             }}

@@ -9,8 +9,10 @@ interface Props {
 }
 
 const TOTAL = 8;
-/* Progress never starts at zero. Q1 = 12%, filling to 100% on Q8. */
-const PROGRESS = [12, 25, 37, 50, 62, 75, 88, 100];
+/* Progress never starts at zero (see docs/product.md).
+   Q1..Q8, with the chart reveal sitting at 55% between Q4 (48) and Q5 (64). */
+const PROGRESS = [12, 24, 36, 48, 64, 76, 88, 100];
+const REVEAL_PROGRESS = 55;
 
 const FORMSPREE_ENDPOINT = 'https://formspree.io/f/xdarebvj';
 
@@ -170,49 +172,10 @@ export default function QuizPage({ onComplete, onBack }: Props) {
     exit: (dir: number) => ({ x: dir > 0 ? -60 : 60, opacity: 0 }),
   };
 
-  // ── Chart-insight reveal screen ──
-  if (phase === 'reveal') {
-    const sign = sunSignFromDate(data.birthDate);
-    const archetype = ARCHETYPES[sign] ?? 'THE PIONEER';
-    return (
-      <div
-        style={{
-          minHeight: '100svh',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '48px 24px',
-          textAlign: 'center',
-        }}
-      >
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-        >
-          <p
-            className="sv-label"
-            style={{ fontSize: 12, color: '#9A9A9A', letterSpacing: '0.22em', fontWeight: 500 }}
-          >
-            Your chart has been calculated
-          </p>
-          <div
-            className="sv-display"
-            style={{ marginTop: 16, fontWeight: 800, fontSize: 28, color: '#D93A2B', letterSpacing: '0.02em' }}
-          >
-            {archetype}
-          </div>
-          <p style={{ marginTop: 6, fontFamily: "'Space Grotesk', sans-serif", fontSize: 14, color: '#A8A29B', letterSpacing: '0.06em' }}>
-            {sign} Sun
-          </p>
-          <p className="sv-display" style={{ marginTop: 12, fontStyle: 'italic', fontSize: 15, color: '#A8A29B' }}>
-            Four questions remain.
-          </p>
-        </motion.div>
-      </div>
-    );
-  }
+  // Reveal data (used only during the chart-insight reveal phase)
+  const revealSign = sunSignFromDate(data.birthDate);
+  const revealArchetype = ARCHETYPES[revealSign] ?? 'THE PIONEER';
+  const progressValue = phase === 'reveal' ? REVEAL_PROGRESS : PROGRESS[step];
 
   // ── Question copy ──
   const QUESTIONS = [
@@ -229,19 +192,38 @@ export default function QuizPage({ onComplete, onBack }: Props) {
 
   return (
     <div style={{ minHeight: '100svh', display: 'flex', flexDirection: 'column', padding: '0 20px' }}>
-      {/* Progress bar */}
+      {/* Progress bar — persistent across quiz + reveal so it animates 48 → 55 → 64 */}
       <div style={{ paddingTop: 24, maxWidth: 480, width: '100%', margin: '0 auto' }}>
-        <div style={{ height: 3, borderRadius: 999, background: 'rgba(244,241,234,0.1)', overflow: 'hidden' }}>
+        <div style={{ height: 3, borderRadius: 999, background: '#2A272B', overflow: 'hidden' }}>
           <motion.div
-            style={{ height: '100%', borderRadius: 999, background: '#D93A2B', boxShadow: '0 0 10px rgba(217,58,43,0.5)' }}
+            style={{ height: '100%', borderRadius: 999, background: '#C21F2C', boxShadow: '0 0 10px rgba(194,31,44,0.5)' }}
             initial={false}
-            animate={{ width: `${PROGRESS[step]}%` }}
+            animate={{ width: `${progressValue}%` }}
             transition={{ duration: 0.5, ease: 'easeOut' }}
           />
         </div>
       </div>
 
-      {/* Question body — one per screen, vertically centered */}
+      {phase === 'reveal' ? (
+        /* ── Chart-insight reveal — auto-advances after 4s ── */
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', paddingBottom: 40 }}>
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
+            <p className="sv-label" style={{ fontSize: 12, color: '#9A9A9A', letterSpacing: '0.22em', fontWeight: 500 }}>
+              Your chart has been calculated
+            </p>
+            <div className="sv-display" style={{ marginTop: 16, fontWeight: 800, fontSize: 28, color: '#D93A2B', letterSpacing: '0.02em' }}>
+              {revealArchetype}
+            </div>
+            <p style={{ marginTop: 6, fontFamily: "'Space Grotesk', sans-serif", fontSize: 14, color: '#A8A29B', letterSpacing: '0.06em' }}>
+              {revealSign} Sun
+            </p>
+            <p className="sv-display" style={{ marginTop: 12, fontStyle: 'italic', fontSize: 15, color: '#A8A29B' }}>
+              Four questions remain.
+            </p>
+          </motion.div>
+        </div>
+      ) : (
+      /* ── Question body — one per screen, vertically centered ── */
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
         <div style={{ position: 'relative', maxWidth: 340, width: '100%', margin: '0 auto', paddingBottom: 40 }}>
           {/* Decorative question number */}
@@ -406,6 +388,7 @@ export default function QuizPage({ onComplete, onBack }: Props) {
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 }
