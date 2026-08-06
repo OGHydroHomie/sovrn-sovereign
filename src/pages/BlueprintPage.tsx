@@ -259,7 +259,7 @@ export default function BlueprintPage({ text, isDone, quizData }: Props) {
                   background: 'transparent', color: '#1A1A1A',
                   border: '1px solid #1A1A1A', borderRadius: 12,
                   fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: 14,
-                  textTransform: 'uppercase', letterSpacing: '0.08em', padding: '16px 24px', cursor: 'pointer',
+                  textTransform: 'uppercase', letterSpacing: '0.08em', padding: '18px 24px', cursor: 'pointer',
                 }}
               >
                 Download Blueprint

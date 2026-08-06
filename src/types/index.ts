@@ -4,6 +4,10 @@ export interface QuizData {
   birthTime: string;
   birthTimeUnknown: boolean;
   birthPlace: string;
+  /* Resolved from the Q4 location autocomplete (optional; chart.ts still
+     geocodes birthPlace itself — these are for records / future use). */
+  latitude?: number;
+  longitude?: number;
   deepestFear: string;
   desiredReality: string;
   repeatingPattern: string;

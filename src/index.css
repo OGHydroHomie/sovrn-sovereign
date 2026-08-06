@@ -63,6 +63,13 @@
     font-family: var(--font-display);
     color: var(--sv-bone);
     line-height: 1.1;
+    text-wrap: balance;
+  }
+
+  /* Avoid single-word orphan lines site-wide — including dynamic
+     streamed blueprint text. Progressive; ignored by older engines. */
+  p {
+    text-wrap: pretty;
   }
 
   ::selection {
@@ -166,7 +173,7 @@
     font-size: 14px;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    padding: 16px 24px;
+    padding: 18px 24px;
     border: 1px solid rgba(244, 241, 234, 0.4);
     border-radius: 12px;
     cursor: pointer;
@@ -214,7 +221,7 @@
     transition: border-color 0.2s ease;
     color-scheme: dark;
   }
-  .sv-field:focus { border-color: #D93A2B; }
+  .sv-field:focus { border-color: #D93A2B; scroll-margin-bottom: 140px; scroll-margin-top: 24px; }
   .sv-field::placeholder { color: #6E6A66; }
   .sv-field:disabled { opacity: 0.35; }
 
@@ -228,6 +235,8 @@
     border-radius: 12px;
     padding: 16px;
     min-height: 120px;
+    max-height: 200px;
+    overflow-y: auto;
     color: #F4F1EA;
     font-family: var(--font-body);
     font-size: 16px;
@@ -236,7 +245,7 @@
     resize: none;
     transition: border-color 0.2s ease;
   }
-  .sv-textarea:focus { border-color: #D93A2B; }
+  .sv-textarea:focus { border-color: #D93A2B; scroll-margin-bottom: 140px; scroll-margin-top: 24px; }
   .sv-textarea::placeholder { color: #6E6A66; }
 }
 

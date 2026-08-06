@@ -132,7 +132,7 @@ export default function HeroPage({ onStart }: Props) {
             style={{
               marginTop: 32,
               fontWeight: 800,
-              fontSize: 'clamp(28px, 8vw, 34px)',
+              fontSize: 'clamp(30px, 8.2vw, 48px)',
               lineHeight: 1.1,
               color: '#F4F1EA',
               letterSpacing: '-0.02em',
@@ -275,7 +275,7 @@ export default function HeroPage({ onStart }: Props) {
               textAlign: 'center',
             }}
           >
-            This was generated from a birthday and three questions.
+            {'This was generated from a birthday and three questions.'}
           </p>
         </div>
 

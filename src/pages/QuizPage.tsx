@@ -78,11 +78,33 @@ function fireFormspree(data: QuizData): void {
   }).catch((err) => console.warn('Formspree capture failed:', err));
 }
 
+/* ── Location autocomplete (OpenStreetMap Nominatim — free, no key) ── */
+interface PlaceResult {
+  display_name: string;
+  lat: string;
+  lon: string;
+  address?: Record<string, string>;
+}
+
+function formatPlace(item: PlaceResult): string {
+  const a = item.address || {};
+  const city = a.city || a.town || a.village || a.hamlet || a.municipality || a.county || '';
+  const region = a.state || a.region || a.state_district || '';
+  const country = a.country || '';
+  const parts = [city, region, country].filter(Boolean);
+  return parts.length ? parts.join(', ') : item.display_name;
+}
+
 export default function QuizPage({ onComplete, onBack }: Props) {
   const [step, setStep] = useState(0);
   const [direction, setDirection] = useState(1);
   const [phase, setPhase] = useState<'quiz' | 'reveal'>('quiz');
   const revealTimer = useRef<number | null>(null);
+
+  // Q4 location autocomplete
+  const [placeResults, setPlaceResults] = useState<PlaceResult[]>([]);
+  const [placeOpen, setPlaceOpen] = useState(false);
+  const placeTimer = useRef<number | null>(null);
 
   const [data, setData] = useState<QuizData>({
     name: '',
@@ -99,7 +121,44 @@ export default function QuizPage({ onComplete, onBack }: Props) {
   const update = (field: keyof QuizData, value: string | boolean) =>
     setData((prev) => ({ ...prev, [field]: value }));
 
-  useEffect(() => () => { if (revealTimer.current) window.clearTimeout(revealTimer.current); }, []);
+  useEffect(() => () => {
+    if (revealTimer.current) window.clearTimeout(revealTimer.current);
+    if (placeTimer.current) window.clearTimeout(placeTimer.current);
+  }, []);
+
+  const fetchPlaces = async (query: string) => {
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5&addressdetails=1`,
+        { headers: { 'User-Agent': 'SOVRN-App' } }
+      );
+      if (!res.ok) return;
+      const json = (await res.json()) as PlaceResult[];
+      setPlaceResults(json);
+      setPlaceOpen(json.length > 0);
+    } catch {
+      /* network hiccup — manual entry still works, chart.ts geocodes the string */
+    }
+  };
+
+  const onPlaceChange = (v: string) => {
+    // Editing clears any previously resolved coordinates
+    setData((prev) => ({ ...prev, birthPlace: v, latitude: undefined, longitude: undefined }));
+    if (placeTimer.current) window.clearTimeout(placeTimer.current);
+    if (v.trim().length < 3) { setPlaceResults([]); setPlaceOpen(false); return; }
+    placeTimer.current = window.setTimeout(() => fetchPlaces(v.trim()), 300);
+  };
+
+  const selectPlace = (item: PlaceResult) => {
+    setData((prev) => ({
+      ...prev,
+      birthPlace: formatPlace(item),
+      latitude: parseFloat(item.lat),
+      longitude: parseFloat(item.lon),
+    }));
+    setPlaceResults([]);
+    setPlaceOpen(false);
+  };
 
   const canProceed = (): boolean => {
     switch (step) {
@@ -291,10 +350,13 @@ export default function QuizPage({ onComplete, onBack }: Props) {
                       type="button"
                       onClick={skipTime}
                       style={{
-                        marginTop: 14,
+                        marginTop: 6,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        minHeight: 48,
                         background: 'none',
                         border: 'none',
-                        padding: 0,
+                        padding: '0 2px',
                         cursor: 'pointer',
                         fontFamily: "'Space Grotesk', sans-serif",
                         fontSize: 13,
@@ -310,14 +372,49 @@ export default function QuizPage({ onComplete, onBack }: Props) {
 
                 {step === 3 && (
                   <>
-                    <input
-                      type="text"
-                      value={data.birthPlace}
-                      onChange={(e) => update('birthPlace', e.target.value)}
-                      onKeyDown={onEnterKey}
-                      placeholder="Start typing a city..."
-                      className="sv-field"
-                    />
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        type="text"
+                        value={data.birthPlace}
+                        onChange={(e) => onPlaceChange(e.target.value)}
+                        onKeyDown={onEnterKey}
+                        placeholder="Start typing a city..."
+                        className="sv-field"
+                        autoComplete="off"
+                      />
+                      {placeOpen && placeResults.length > 0 && (
+                        <ul
+                          style={{
+                            listStyle: 'none', margin: 0, padding: 0,
+                            position: 'absolute', top: 'calc(100% + 8px)', left: 0, right: 0, zIndex: 20,
+                            background: 'rgba(15, 18, 35, 0.95)',
+                            WebkitBackdropFilter: 'blur(12px)', backdropFilter: 'blur(12px)',
+                            border: '1px solid rgba(255, 255, 255, 0.12)', borderRadius: 12,
+                            overflow: 'hidden', boxShadow: '0 12px 40px rgba(0,0,0,0.5)',
+                          }}
+                        >
+                          {placeResults.map((item, idx) => (
+                            <li key={`${item.lat}-${item.lon}-${idx}`}>
+                              <button
+                                type="button"
+                                onClick={() => selectPlace(item)}
+                                style={{
+                                  display: 'flex', alignItems: 'center', width: '100%', minHeight: 48,
+                                  padding: '10px 14px', textAlign: 'left', cursor: 'pointer',
+                                  background: 'transparent', border: 'none',
+                                  borderTop: idx === 0 ? 'none' : '1px solid rgba(255,255,255,0.06)',
+                                  color: '#F4F1EA', fontFamily: 'Georgia, serif', fontSize: 15, lineHeight: 1.4,
+                                }}
+                                onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.08)')}
+                                onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                              >
+                                {formatPlace(item)}
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
                     <p className="sv-serif" style={{ marginTop: 10, fontSize: 13, color: '#9A9A9A', lineHeight: 1.5 }}>
                       {q.helper}
                     </p>
@@ -373,10 +470,13 @@ export default function QuizPage({ onComplete, onBack }: Props) {
               type="button"
               onClick={back}
               style={{
-                marginTop: 12,
+                marginTop: 8,
+                display: 'inline-flex',
+                alignItems: 'center',
+                minHeight: 48,
                 background: 'none',
                 border: 'none',
-                padding: '4px 0',
+                padding: '0 2px',
                 cursor: 'pointer',
                 fontFamily: "'Space Grotesk', sans-serif",
                 fontSize: 14,

@@ -55,7 +55,7 @@ export default function LoadingPage() {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '48px 24px',
+        padding: '48px 20px',
         textAlign: 'center',
       }}
     >
