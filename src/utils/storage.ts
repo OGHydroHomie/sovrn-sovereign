@@ -5,7 +5,17 @@ const KEYS = {
   BLUEPRINT: 'sovrn_blueprint',
   ANALYTICS: 'sovrn_analytics',
   LEADS: 'sovrn_leads',
+  THRESHOLD_SEEN: 'sovrn_threshold_seen',
 } as const;
+
+/* The full opening ceremony plays once (docs/art-direction.md, law 9). */
+export function hasSeenThreshold(): boolean {
+  return localStorage.getItem(KEYS.THRESHOLD_SEEN) === '1';
+}
+
+export function markThresholdSeen(): void {
+  localStorage.setItem(KEYS.THRESHOLD_SEEN, '1');
+}
 
 export function saveQuizData(data: QuizData): void {
   localStorage.setItem(KEYS.QUIZ_DATA, JSON.stringify(data));

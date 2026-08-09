@@ -324,3 +324,258 @@
 @media (prefers-reduced-motion: reduce) {
   .sv-btn, .sv-chevron, .sv-cursor, .sv-cursor-light, .sv-star, .sv-wave-dot { animation: none; }
 }
+
+/* ============================================================= *
+ *  THE THRESHOLD — first-use entrance
+ *  docs/art-direction.md, Part II. Fully self-contained under
+ *  .sv-th-*; its palette is local so it cannot affect other screens.
+ *  Animates transform + opacity only.
+ * ============================================================= */
+
+.sv-th-root {
+  --th-canvas: #070A0F;
+  --th-bone: #EEE9DF;
+  --th-gold: #C4A36A;
+
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  overflow: hidden;
+  background: var(--th-canvas);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  isolation: isolate;
+  touch-action: manipulation;
+}
+
+/* ---- layers ------------------------------------------------- */
+
+/* 1 · depth field — a face implied, never a wall drawn */
+.sv-th-depth {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(58% 46% at 50% 50%, #0D1118 0%, rgba(13, 17, 24, 0) 72%);
+}
+
+/* 2 · aperture glow — the single light source, latent gold */
+.sv-th-glow {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 62vw;
+  max-width: 320px;
+  height: 58svh;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 1200ms ease-out;
+  background: radial-gradient(50% 50% at 50% 50%, rgba(196, 163, 106, 0.16) 0%, rgba(196, 163, 106, 0) 70%);
+}
+.sv-th-glow.sv-th-on { opacity: 0.45; }
+
+.sv-th-column {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* 3 · seam — the aperture proper. Latent ceiling: never above 40%. */
+.sv-th-aperture {
+  position: relative;
+  width: 1px;
+  height: 34svh;
+}
+
+.sv-th-seam,
+.sv-th-bloom {
+  position: absolute;
+  inset: 0;
+  width: 1px;
+  background: var(--th-gold);
+  opacity: 0;
+  transform-origin: 50% 50%;
+  transition: opacity 900ms ease-out;
+  will-change: transform, opacity;
+}
+.sv-th-seam.sv-th-on { opacity: 0.28; }
+.sv-th-seam.sv-th-bright { opacity: 0.40; }
+
+.sv-th-bloom {
+  filter: blur(14px);
+}
+.sv-th-bloom.sv-th-on { opacity: 0.18; }
+.sv-th-bloom.sv-th-bright { opacity: 0.25; }
+
+/* A 1px seam reads dimmer on a phone than it does on a desktop panel.
+   Lift opacity only — same hue, same width, same blur radius, same single
+   light source — and stay under the 40% latent-gold ceiling. */
+@media (max-width: 480px) {
+  .sv-th-seam.sv-th-on { opacity: 0.36; }
+  .sv-th-bloom.sv-th-on { opacity: 0.26; }
+  .sv-th-bloom.sv-th-bright { opacity: 0.34; }
+}
+
+/* 4 · seal — the mechanism, lit by the seam, never glowing alone */
+.sv-th-seal {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  transition: opacity 900ms ease-out;
+}
+.sv-th-seal.sv-th-on { opacity: 1; }
+
+.sv-th-seal-l,
+.sv-th-seal-r {
+  stroke: var(--th-bone);
+  stroke-opacity: 0.22;
+  stroke-width: 1;
+  transform-origin: 50% 50%;
+}
+.sv-th-ticks line {
+  stroke: var(--th-bone);
+  stroke-opacity: 0.14;
+  stroke-width: 1;
+}
+
+/* 5 · doctrine slot — one fixed position, lines replace one another */
+.sv-th-slot {
+  margin-top: 44px;
+  min-height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.sv-th-line {
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: 12px;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  color: rgba(238, 233, 223, 0.72);
+  animation: sv-th-line-in 400ms ease-out both;
+}
+
+.sv-th-enter-well {
+  margin-top: 36px;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+}
+.sv-th-enter {
+  min-height: 48px;
+  padding: 14px 34px;
+  background: transparent;
+  border: 1px solid rgba(238, 233, 223, 0.20);
+  border-radius: 2px;
+  color: var(--th-bone);
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.20em;
+  cursor: pointer;
+  animation: sv-th-line-in 500ms ease-out both;
+  transition: border-color 180ms ease-out;
+}
+.sv-th-enter:hover,
+.sv-th-enter:focus-visible { border-color: rgba(196, 163, 106, 0.65); }
+
+/* 6 · grain — static, never animated */
+.sv-th-grain {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* 7 · vignette */
+.sv-th-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(72% 62% at 50% 50%, rgba(7, 10, 15, 0) 40%, rgba(7, 10, 15, 0.35) 100%);
+}
+
+/* ---- passage ------------------------------------------------ *
+ *  The slot widens past the viewport edge. The frame is consumed;
+ *  no camera flies through anything.
+ * ------------------------------------------------------------- */
+
+@keyframes sv-th-line-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes sv-th-open {
+  0%   { transform: scaleX(1); }
+  45%  { transform: scaleX(150); }
+  100% { transform: scaleX(1600); }
+}
+@keyframes sv-th-part-l { to { transform: translateX(-13px); opacity: 0; } }
+@keyframes sv-th-part-r { to { transform: translateX(13px); opacity: 0; } }
+@keyframes sv-th-out { to { opacity: 0; } }
+@keyframes sv-th-glow-rise {
+  0%   { opacity: 0.45; }
+  55%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.sv-th-root[data-opening] .sv-th-seam,
+.sv-th-root[data-opening] .sv-th-bloom {
+  animation: sv-th-open 1500ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.sv-th-root[data-opening] .sv-th-seal-l {
+  animation: sv-th-part-l 500ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.sv-th-root[data-opening] .sv-th-seal-r {
+  animation: sv-th-part-r 500ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.sv-th-root[data-opening] .sv-th-ticks {
+  animation: sv-th-out 300ms ease-out forwards;
+}
+.sv-th-root[data-opening] .sv-th-slot,
+.sv-th-root[data-opening] .sv-th-enter-well {
+  animation: sv-th-out 400ms ease-out forwards;
+}
+.sv-th-root[data-opening] .sv-th-glow {
+  animation: sv-th-glow-rise 1500ms ease-out forwards;
+}
+.sv-th-root[data-opening] .sv-th-vignette,
+.sv-th-root[data-opening] .sv-th-depth {
+  animation: sv-th-out 900ms 300ms ease-out forwards;
+}
+
+/* ---- reduced motion: a composed still, not a stalled ceremony ---- */
+@media (prefers-reduced-motion: reduce) {
+  .sv-th-seam,
+  .sv-th-bloom,
+  .sv-th-seal,
+  .sv-th-glow { transition: none; }
+
+  .sv-th-line,
+  .sv-th-enter { animation: none; }
+
+  /* Seal rendered already parted; nothing scales, nothing translates. */
+  .sv-th-seal-l { transform: translateX(-13px); }
+  .sv-th-seal-r { transform: translateX(13px); }
+  .sv-th-ticks { opacity: 0; }
+
+  .sv-th-root[data-opening] { animation: sv-th-out 200ms ease-out forwards; }
+  .sv-th-root[data-opening] .sv-th-seam,
+  .sv-th-root[data-opening] .sv-th-bloom,
+  .sv-th-root[data-opening] .sv-th-seal-l,
+  .sv-th-root[data-opening] .sv-th-seal-r,
+  .sv-th-root[data-opening] .sv-th-ticks,
+  .sv-th-root[data-opening] .sv-th-slot,
+  .sv-th-root[data-opening] .sv-th-enter-well,
+  .sv-th-root[data-opening] .sv-th-glow,
+  .sv-th-root[data-opening] .sv-th-vignette,
+  .sv-th-root[data-opening] .sv-th-depth { animation: none; }
+}

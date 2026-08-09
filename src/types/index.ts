@@ -18,7 +18,7 @@ export interface BlueprintResult {
   text: string;
 }
 
-export type AppPage = 'hero' | 'quiz' | 'loading' | 'blueprint';
+export type AppPage = 'threshold' | 'hero' | 'quiz' | 'loading' | 'blueprint';
 
 export interface Analytics {
   pageViews: Record<string, number>;

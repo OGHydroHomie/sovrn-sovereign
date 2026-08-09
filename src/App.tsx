@@ -1,13 +1,21 @@
 import { useState, useEffect, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import ApiKeyModal from './components/ApiKeyModal';
+import ThresholdPage from './pages/ThresholdPage';
 import HeroPage from './pages/HeroPage';
 import QuizPage from './pages/QuizPage';
 import LoadingPage from './pages/LoadingPage';
 import BlueprintPage from './pages/BlueprintPage';
 import type { AppPage, QuizData } from './types';
 import { generateBlueprint } from './utils/api';
-import { saveBlueprint, getBlueprint, getQuizData, trackEvent } from './utils/storage';
+import {
+  saveBlueprint,
+  getBlueprint,
+  getQuizData,
+  trackEvent,
+  hasSeenThreshold,
+  markThresholdSeen,
+} from './utils/storage';
 
 const API_KEY_STORAGE = 'sovrn_api_key';
 
@@ -37,8 +45,21 @@ Within the next 24 hours: say the unpopular thing you have been softening. One s
 
 "I am done being palatable. I am here to be true."`;
 
+/* First entry is the Threshold. A saved blueprint means this person has
+   already been through it — they land on their existing state instead
+   (docs/art-direction.md, §13). */
+function initialPage(): AppPage {
+  try {
+    if (getBlueprint()) return 'hero';
+  } catch {
+    /* storage unavailable — fall through to the Threshold */
+  }
+  return 'threshold';
+}
+
 export default function App() {
-  const [page, setPage] = useState<AppPage>('hero');
+  const [page, setPage] = useState<AppPage>(initialPage);
+  const [thresholdSeen] = useState(hasSeenThreshold);
   const [quizData, setQuizData] = useState<QuizData | null>(null);
   const [streamingText, setStreamingText] = useState('');
   const [streamDone, setStreamDone] = useState(false);
@@ -47,7 +68,7 @@ export default function App() {
   const [pendingQuizData, setPendingQuizData] = useState<QuizData | null>(null);
 
   useEffect(() => {
-    trackEvent('pageView', 'hero');
+    trackEvent('pageView', initialPage());
     const existing = getBlueprint();
     const existingQuiz = getQuizData();
     if (existing && existingQuiz) {
@@ -132,8 +153,9 @@ export default function App() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#0A0E1A', position: 'relative' }}>
-      {/* Night-sky backdrop (fixed, behind everything) */}
-      <div className="sv-backdrop" aria-hidden="true" />
+      {/* Night-sky backdrop (fixed, behind everything).
+          Suppressed on the Threshold, which paints its own void. */}
+      {page !== 'threshold' && <div className="sv-backdrop" aria-hidden="true" />}
 
       {/* Error banner */}
       {error && (
@@ -164,6 +186,27 @@ export default function App() {
 
       <div style={{ position: 'relative', zIndex: 1 }}>
       <AnimatePresence mode="wait">
+        {page === 'threshold' && (
+          <motion.div
+            key="threshold"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <ThresholdPage
+              abbreviated={thresholdSeen}
+              onEnter={() => {
+                markThresholdSeen();
+                trackEvent('quizStart');
+                trackEvent('pageView', 'quiz');
+                window.scrollTo(0, 0);
+                setPage('quiz');
+              }}
+            />
+          </motion.div>
+        )}
+
         {page === 'hero' && (
           <motion.div
             key="hero"
