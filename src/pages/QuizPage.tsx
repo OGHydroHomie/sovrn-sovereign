@@ -16,48 +16,6 @@ const TOTAL = 8;
 const PROGRESS = [12, 24, 36, 48, 64, 76, 88, 100];
 const REVEAL_PROGRESS = 55;
 
-/* ── Sun-sign preview (date-range math only; the real chart lives in chart.ts) ── */
-const SIGN_RANGES: { sign: string; from: [number, number]; to: [number, number] }[] = [
-  { sign: 'Capricorn', from: [12, 22], to: [1, 19] },
-  { sign: 'Aquarius', from: [1, 20], to: [2, 18] },
-  { sign: 'Pisces', from: [2, 19], to: [3, 20] },
-  { sign: 'Aries', from: [3, 21], to: [4, 19] },
-  { sign: 'Taurus', from: [4, 20], to: [5, 20] },
-  { sign: 'Gemini', from: [5, 21], to: [6, 20] },
-  { sign: 'Cancer', from: [6, 21], to: [7, 22] },
-  { sign: 'Leo', from: [7, 23], to: [8, 22] },
-  { sign: 'Virgo', from: [8, 23], to: [9, 22] },
-  { sign: 'Libra', from: [9, 23], to: [10, 22] },
-  { sign: 'Scorpio', from: [10, 23], to: [11, 21] },
-  { sign: 'Sagittarius', from: [11, 22], to: [12, 21] },
-];
-
-const ARCHETYPES: Record<string, string> = {
-  Aries: 'THE PIONEER',
-  Taurus: 'THE SOVEREIGN BUILDER',
-  Gemini: 'THE ORACLE OF TONGUES',
-  Cancer: 'THE GUARDIAN',
-  Leo: 'THE SOVEREIGN FLAME',
-  Virgo: 'THE ARCHITECT OF ORDER',
-  Libra: 'THE EMISSARY',
-  Scorpio: 'THE INITIATOR',
-  Sagittarius: 'THE TORCH BEARER',
-  Capricorn: 'THE ANCIENT AUTHORITY',
-  Aquarius: 'THE PATTERN BREAKER',
-  Pisces: 'THE MYSTIC CHANNEL',
-};
-
-function sunSignFromDate(dateStr: string): string {
-  const parts = dateStr.split('-').map(Number);
-  if (parts.length < 3 || parts.some(isNaN)) return 'Aries';
-  const [, month, day] = parts;
-  for (const { sign, from, to } of SIGN_RANGES) {
-    if (from[0] === month && day >= from[1]) return sign;
-    if (to[0] === month && day <= to[1]) return sign;
-  }
-  return 'Aries';
-}
-
 /* ── Location autocomplete (OpenStreetMap Nominatim — free, no key) ── */
 interface PlaceResult {
   display_name: string;
@@ -171,7 +129,7 @@ export default function QuizPage({ onComplete, onBack }: Props) {
       revealTimer.current = window.setTimeout(() => {
         setPhase('quiz');
         goTo(4, 1);
-      }, 4000);
+      }, 3000);
       return;
     }
 
@@ -216,8 +174,6 @@ export default function QuizPage({ onComplete, onBack }: Props) {
   };
 
   // Reveal data (used only during the chart-insight reveal phase)
-  const revealSign = sunSignFromDate(data.birthDate);
-  const revealArchetype = ARCHETYPES[revealSign] ?? 'THE PIONEER';
   const progressValue = phase === 'reveal' ? REVEAL_PROGRESS : PROGRESS[step];
 
   // ── Question copy ──
@@ -251,17 +207,20 @@ export default function QuizPage({ onComplete, onBack }: Props) {
         /* ── Chart-insight reveal — auto-advances after 4s ── */
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', paddingBottom: 40 }}>
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
-            <p className="sv-label" style={{ fontSize: 12, color: '#9A9A9A', letterSpacing: '0.22em', fontWeight: 500 }}>
-              Your chart has been calculated
+            <p className="sv-label" style={{ fontSize: 11, color: '#9A9A9A', letterSpacing: '0.22em', fontWeight: 700 }}>
+              That was the easy part
             </p>
-            <div className="sv-display" style={{ marginTop: 16, fontWeight: 700, fontSize: 28, color: '#1A1A1A', letterSpacing: '0.02em' }}>
-              {revealArchetype}
+            <div
+              style={{
+                marginTop: 18, fontFamily: 'var(--sv-font)', fontWeight: 300,
+                fontSize: 'clamp(22px, 6.4vw, 26px)', lineHeight: 1.3,
+                color: '#1A1A1A', maxWidth: 300,
+              }}
+            >
+              The next four are about you.
             </div>
-            <p style={{ marginTop: 6, fontFamily: 'var(--sv-font)', fontSize: 14, color: '#9A9A9A', letterSpacing: '0.06em' }}>
-              {revealSign} Sun
-            </p>
-            <p className="sv-display" style={{ marginTop: 12, fontStyle: 'italic', fontSize: 15, color: '#9A9A9A' }}>
-              Four questions remain.
+            <p style={{ marginTop: 16, fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 14, lineHeight: 1.6, color: '#6E6A66', maxWidth: 300 }}>
+              Answer them in your own words. They are used exactly as you write them.
             </p>
           </motion.div>
         </div>
