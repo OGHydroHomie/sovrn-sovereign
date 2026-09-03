@@ -216,7 +216,11 @@ async function safetyCheck(client: Anthropic, mission: string): Promise<boolean>
   try {
     const response = await client.messages.create({
       model: SAFETY_MODEL,
-      max_tokens: 1,
+      // The verdict is one word and nothing else. max_tokens must still be > 1:
+      // at 1 this model returns an empty text block rather than a partial word,
+      // which made every verdict unreadable and failed 100% of checks. 5 is the
+      // smallest cap that reliably contains PASS or FAIL however it tokenizes.
+      max_tokens: 5,
       system: SAFETY_SYSTEM,
       messages: [{ role: 'user', content: `<mission>\n${mission}\n</mission>` }],
     });
