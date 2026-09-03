@@ -134,10 +134,13 @@ export default function App() {
         setPage('blueprint');
         void openBlueprint(fullText);
       },
+      // Stay on the loading screen. Sending someone who just typed their
+      // deepest fear back to "what's your first name" loses eight answers to a
+      // transient server error. quizData is still in state and in localStorage,
+      // so retry reuses it exactly.
       onError: (err) => {
         console.error('Blueprint generation failed:', err);
         setError(err.message);
-        setPage('quiz');
       },
     });
   }, [openBlueprint]);
@@ -147,22 +150,6 @@ export default function App() {
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#FBFAF7', position: 'relative' }}>
 
-      {/* Error banner */}
-      {error && (
-        <div
-          className="fixed top-4 left-1/2 -translate-x-1/2 z-50 rounded-xl px-6 py-3 max-w-md text-center"
-          style={{ background: 'rgba(244,241,234,0.12)', border: '1px solid rgba(244,241,234,0.3)', backdropFilter: 'blur(12px)' }}
-        >
-          <p className="text-sm" style={{ color: '#1A1A1A', fontFamily: 'var(--sv-font)' }}>{error}</p>
-          <button
-            onClick={() => setError(null)}
-            className="text-xs mt-1"
-            style={{ color: '#6E6A66', fontFamily: 'var(--sv-font)' }}
-          >
-            Dismiss
-          </button>
-        </div>
-      )}
 
 
       <div style={{ position: 'relative', zIndex: 1 }}>
@@ -208,7 +195,7 @@ export default function App() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
           >
-            <LoadingPage />
+            <LoadingPage error={error} onRetry={() => quizData && handleGenerate(quizData)} />
           </motion.div>
         )}
 
