@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import type { QuizData } from '../types';
 import { saveQuizData, saveLead } from '../utils/storage';
 import { captureEmail } from '../lib/capture';
+import { recordConsent } from '../lib/session';
 
 interface Props {
   onComplete: (data: QuizData) => void;
@@ -76,6 +77,7 @@ function formatPlace(item: PlaceResult): string {
 
 export default function QuizPage({ onComplete, onBack }: Props) {
   const [step, setStep] = useState(0);
+  const [consented, setConsented] = useState(false);
   const [direction, setDirection] = useState(1);
   const [phase, setPhase] = useState<'quiz' | 'reveal'>('quiz');
   const revealTimer = useRef<number | null>(null);
@@ -148,7 +150,8 @@ export default function QuizPage({ onComplete, onBack }: Props) {
       case 4: return data.deepestFear.trim().length >= 10;
       case 5: return data.desiredReality.trim().length >= 10;
       case 6: return data.repeatingPattern.trim().length >= 10;
-      case 7: return /\S+@\S+\.\S+/.test(data.email);
+      // Q8 is the consent gate: a valid email is not enough on its own.
+      case 7: return /\S+@\S+\.\S+/.test(data.email) && consented;
       default: return false;
     }
   };
@@ -180,6 +183,7 @@ export default function QuizPage({ onComplete, onBack }: Props) {
       // Capture is non-blocking: it runs alongside chart calc + stream.
       saveQuizData(data);
       saveLead(data.name, data.email);
+      void recordConsent();
       void captureEmail(data.email, 'quiz');
       onComplete(data);
     }
@@ -434,6 +438,32 @@ export default function QuizPage({ onComplete, onBack }: Props) {
                     />
                     <p className="sv-serif" style={{ marginTop: 10, fontSize: 13, color: '#9A9A9A', lineHeight: 1.5 }}>
                       {q.helper}
+                    </p>
+
+                    {/* Consent gate. The submit button stays disabled until this is
+                        ticked, and submitting is what stamps users.consent_at. */}
+                    <label
+                      htmlFor="sv-consent"
+                      style={{ display: 'flex', gap: 12, alignItems: 'flex-start', marginTop: 22, cursor: 'pointer' }}
+                    >
+                      <input
+                        id="sv-consent"
+                        type="checkbox"
+                        required
+                        checked={consented}
+                        onChange={(e) => setConsented(e.target.checked)}
+                        style={{ width: 20, height: 20, marginTop: 1, flexShrink: 0, accentColor: '#F4F1EA', cursor: 'pointer' }}
+                      />
+                      <span style={{ fontFamily: 'var(--sv-font)', fontSize: 13, lineHeight: 1.6, color: '#A8A29B' }}>
+                        I understand my birth data and answers are used to generate my
+                        Blueprint and are stored to keep my Ledger.
+                      </span>
+                    </label>
+
+                    <p style={{ marginTop: 10, marginLeft: 32, fontFamily: 'var(--sv-font)', fontSize: 13, color: '#6E6A66' }}>
+                      <a href="/privacy" style={{ color: '#F4F1EA' }}>Privacy</a>
+                      <span style={{ padding: '0 8px' }}>·</span>
+                      <a href="/terms" style={{ color: '#F4F1EA' }}>Terms</a>
                     </p>
                   </>
                 )}

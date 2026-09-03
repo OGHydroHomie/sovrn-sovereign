@@ -43,6 +43,26 @@ async function bootstrapUser(): Promise<string | null> {
   return uid;
 }
 
+/**
+ * Stamp the moment the person consented, on their own users row.
+ *
+ * Written at intake, once, when the box is ticked and the quiz is submitted.
+ * `users_update_own` scopes the write to id = auth.uid(), so a session can only
+ * ever record consent for itself. Non-blocking: a failure here must not stand
+ * between someone and their blueprint, and the checkbox is the gate.
+ */
+export async function recordConsent(): Promise<void> {
+  const uid = await ensureUser();
+  if (!uid) return;
+
+  const { error } = await supabase
+    .from('users')
+    .update({ consent_at: new Date().toISOString() })
+    .eq('id', uid);
+
+  if (error) console.warn('Consent stamp failed:', error.message);
+}
+
 async function currentUid(): Promise<string | null> {
   const { data: existing } = await supabase.auth.getSession();
   if (existing.session?.user?.id) return existing.session.user.id;
