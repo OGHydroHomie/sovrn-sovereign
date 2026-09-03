@@ -3,6 +3,8 @@ import { completeEntry, listEntries, type LedgerEntry } from '../lib/ledger';
 
 interface Props {
   entry: LedgerEntry;
+  /** Rendered inside an existing card (the ONE ACT panel) — drops the outer chrome. */
+  embedded?: boolean;
 }
 
 interface LedgerRow {
@@ -45,7 +47,7 @@ const CARD: React.CSSProperties = {
   padding: 24,
 };
 
-export default function DayOne({ entry: initialEntry }: Props) {
+export default function DayOne({ entry: initialEntry, embedded = false }: Props) {
   const [entry, setEntry] = useState<LedgerEntry>(initialEntry);
   const [asking, setAsking] = useState(false);
   const [text, setText] = useState('');
@@ -86,18 +88,20 @@ export default function DayOne({ entry: initialEntry }: Props) {
   };
 
   return (
-    <div style={{ marginTop: 32 }}>
-      <div style={CARD}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-          <h2 className="sv-label" style={{ fontSize: 12, color: '#1A1A1A', fontWeight: 700, letterSpacing: '0.1em' }}>
-            DAY {entry.day_number}
-          </h2>
-          <span className="sv-label" style={{ fontSize: 11, color: '#9A9A9A', letterSpacing: '0.12em' }}>
-            {isComplete ? 'Complete' : 'Your mission'}
-          </span>
-        </div>
+    <div style={{ marginTop: embedded ? 0 : 32 }}>
+      <div style={embedded ? { padding: 0 } : CARD}>
+        {!embedded && (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+            <h2 className="sv-label" style={{ fontSize: 12, color: '#1A1A1A', fontWeight: 700, letterSpacing: '0.1em' }}>
+              DAY {entry.day_number}
+            </h2>
+            <span className="sv-label" style={{ fontSize: 11, color: '#9A9A9A', letterSpacing: '0.12em' }}>
+              {isComplete ? 'Complete' : 'Your mission'}
+            </span>
+          </div>
+        )}
 
-        <p className="sv-serif" style={{ fontSize: 17, lineHeight: 1.6, color: '#1A1A1A', marginTop: 12 }}>
+        <p className="sv-serif" style={{ fontSize: 17, lineHeight: 1.6, color: '#1A1A1A', marginTop: embedded ? 0 : 12 }}>
           {entry.mission_text}
         </p>
 

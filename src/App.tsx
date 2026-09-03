@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import HeroPage from './pages/HeroPage';
 import QuizPage from './pages/QuizPage';
@@ -8,34 +8,43 @@ import type { AppPage, QuizData } from './types';
 import { generateBlueprint } from './utils/api';
 import { saveBlueprint, getBlueprint, getQuizData, trackEvent } from './utils/storage';
 import { ensureUser } from './lib/session';
-import { extractSovereignAct, requestMission } from './lib/mission';
 import { createDayOneEntry, getEntryForDay, type LedgerEntry } from './lib/ledger';
+import { parseBlueprint, saveBlueprintRecord } from './lib/blueprint';
 
 /* DEV-only sample text for previewing the Blueprint screen (?screen=blueprint).
    Never referenced in production paths — only inside an import.meta.env.DEV guard. */
-const DEV_MOCK_BLUEPRINT = `SOUL ARCHITECTURE
+const DEV_MOCK_BLUEPRINT = `THE HEADLINER
+Right now you're the Opening Act.
 
-Your Sun sits at 14.7° Aries — the raw ignition point of the zodiac, the placement of the one who arrives before the map exists. You were not built to follow a trail. You were built to be the reason a trail exists at all.
+WHO YOU ARE
 
-Your Rising in Scorpio wraps that fire in a still, watchful surface. People feel the heat before they see the flame. This is the architecture of someone whose presence is felt in a room a full second before they speak.
+You were built to be heard. Not to be approved of, not to be safe — to be heard, with your name on it, in a room full of strangers who don't owe you anything. That is not a fantasy you invented. It is a function you were wired for, the same way a speaker is wired to push air. A speaker sitting in a box is not being modest. It is failing at its one job.
 
-"You have spent years apologizing for the exact intensity you were born to wield."
+The Headliner doesn't need the room to love them before they walk out. They need to walk out. The work gets made and then it gets released, and the release is part of the work — not a threat to it. You have been treating the door to the stage as the dangerous part. It isn't. The fourteen months in the wings is the dangerous part.
 
-SHADOW PATTERN
+You said you want to tour it in small rooms and not apologise for any of it. That sentence already sounds like someone who has done the thing. It does not sound like someone who needs another pass on the mix.
 
-Your South Node in Libra keeps handing you the same bargain: keep the peace, and you get to keep the room. So you shrink the flame to fit other people's comfort, then resent them for a smallness you chose.
+"You have already written the apology tour. You just haven't given yourself the show first."
 
-"You don't have a discipline problem. You have a permission problem."
+THE PATTERN
 
-TRUE NORTH
+Here is the mechanism. You finish. The thing is done — you can feel it land, it holds together, it is real. And then a small sound goes off somewhere in the room: what if they find out. Not that you failed, but that you succeeded at something smaller than what they imagined. So you go back in. You call it craft. It is not craft. It is a lock you put on the door from the inside.
 
-Your North Node in Aries is not asking you to be liked. It is asking you to be first — to move before consensus, to let the disagreement happen and survive it. Your Jupiter in the tenth says the visibility you fear is the exact soil your growth needs.
+The Opening Act will be ready when the fear is gone. The fear is not going to go. It is attached to the work the way a price tag is attached to something valuable. You do not remove the tag by putting the thing back on the shelf. You remove it at the register.
 
-FIRST SOVEREIGN ACT
+Fourteen months of three-weeks-from-release is not perfectionism. It is a decision, made quietly, every single time, to protect the assumption over the reality. The assumption that you might be as good as they think is more comfortable than a world where strangers have actually heard it and decided. You are choosing the maybe. The maybe is eating the record.
 
-Within the next 24 hours: say the unpopular thing you have been softening. One sentence, unhedged, to the person whose approval you have been managing.
+No amount of additional passes changes what the listener will feel. You already know this. That's what makes the loop so efficient — you know, and you go back in anyway.
 
-"I am done being palatable. I am here to be true."`;
+ONE ACT
+
+THE HARD ONE — Set a release date in public, today, somewhere one other person will see it, before you open the project file again.
+
+THE NEXT ONE — Send the album file to one person you don't know well enough to ask for softness, with a message that says it's done.
+
+Choosing either one costs you the maybe. The maybe is the only thing keeping the fear polite and the record theoretical.
+
+"I am not waiting until I'm sure — I'm releasing it because I made it."`;
 
 export default function App() {
   const [page, setPage] = useState<AppPage>('hero');
@@ -43,25 +52,32 @@ export default function App() {
   const [blueprint, setBlueprint] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [dayOne, setDayOne] = useState<LedgerEntry | null>(null);
+  const blueprintRef = useRef('');
 
-  /* Derive the Day 1 mission from the blueprint's First Sovereign Act and write it
-     to the ledger at generation time. The row exists as soon as the mission is
-     shown, so a day that goes uncompleted stays visible as an open entry. */
-  const startDayOne = useCallback(async (blueprintText: string) => {
-    const act = extractSovereignAct(blueprintText);
-    if (!act) return;
-
+  /* On reveal, keep the parsed reading — including the act not taken — on the
+     users row, and recover an existing Day 1 entry for a returning visitor. The
+     ledger entry itself is written when the person chooses an act, not before:
+     the choice is the commitment. */
+  const openBlueprint = useCallback(async (blueprintText: string) => {
+    const parsed = parseBlueprint(blueprintText);
     const existing = await getEntryForDay(1);
     if (existing) {
       setDayOne(existing);
+      void saveBlueprintRecord(parsed, null);
       return;
     }
-
-    const mission = await requestMission(act);
-    if (!mission) return;
-
-    setDayOne(await createDayOneEntry(mission.mission));
+    void saveBlueprintRecord(parsed, null);
   }, []);
+
+  const handleChooseAct = useCallback(
+    async (chosen: 'hard' | 'next', missionText: string) => {
+      if (!missionText.trim()) return;
+      const entry = await createDayOneEntry(missionText.trim());
+      if (entry) setDayOne(entry);
+      void saveBlueprintRecord(parseBlueprint(blueprintRef.current), chosen);
+    },
+    []
+  );
 
   useEffect(() => {
     trackEvent('pageView', 'hero');
@@ -74,10 +90,11 @@ export default function App() {
     const existingQuiz = getQuizData();
     if (existing && existingQuiz) {
       setBlueprint(existing.text);
+      blueprintRef.current = existing.text;
       setQuizData(existingQuiz);
       // Returning visitor: recover the ledger row written on the first pass, or
       // derive it now if the blueprint predates the mission.
-      void startDayOne(existing.text);
+      void openBlueprint(existing.text);
     }
 
     // DEV-only: preview a screen in isolation via ?screen=loading|quiz|blueprint.
@@ -94,6 +111,7 @@ export default function App() {
           deepestFear: '', desiredReality: '', repeatingPattern: '', email: '',
         });
         setBlueprint(DEV_MOCK_BLUEPRINT);
+        blueprintRef.current = DEV_MOCK_BLUEPRINT;
         setPage('blueprint');
       }
     }
@@ -112,8 +130,9 @@ export default function App() {
       onDone: (fullText) => {
         saveBlueprint({ text: fullText });
         setBlueprint(fullText);
+        blueprintRef.current = fullText;
         setPage('blueprint');
-        void startDayOne(fullText);
+        void openBlueprint(fullText);
       },
       onError: (err) => {
         console.error('Blueprint generation failed:', err);
@@ -121,7 +140,7 @@ export default function App() {
         setPage('quiz');
       },
     });
-  }, [startDayOne]);
+  }, [openBlueprint]);
 
   const handleQuizComplete = (data: QuizData) => handleGenerate(data);
 
@@ -206,6 +225,7 @@ export default function App() {
               text={blueprint}
               quizData={quizData}
               dayOne={dayOne}
+              onChooseAct={handleChooseAct}
             />
           </motion.div>
         )}
