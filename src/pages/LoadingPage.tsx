@@ -23,12 +23,12 @@ function Constellation() {
         <line
           key={`l${i}`}
           x1={dots[a][0]} y1={dots[a][1]} x2={dots[b][0]} y2={dots[b][1]}
-          stroke="#E8B04B" strokeOpacity="0.15" strokeWidth="0.5"
+          stroke="#F4F1EA" strokeOpacity="0.15" strokeWidth="0.5"
         />
       ))}
       {dots.map(([cx, cy], i) => (
         <circle
-          key={`d${i}`} className="sv-star" cx={cx} cy={cy} r="1.5" fill="#E8B04B"
+          key={`d${i}`} className="sv-star" cx={cx} cy={cy} r="1.5" fill="#F4F1EA"
           style={{ animationDelay: `${(i * 0.4).toFixed(1)}s` }}
         />
       ))}

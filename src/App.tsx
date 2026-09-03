@@ -171,7 +171,7 @@ export default function App() {
       {error && (
         <div
           className="fixed top-4 left-1/2 -translate-x-1/2 z-50 rounded-xl px-6 py-3 max-w-md text-center"
-          style={{ background: 'rgba(217,58,43,0.12)', border: '1px solid rgba(217,58,43,0.3)', backdropFilter: 'blur(12px)' }}
+          style={{ background: 'rgba(244,241,234,0.12)', border: '1px solid rgba(244,241,234,0.3)', backdropFilter: 'blur(12px)' }}
         >
           <p className="text-sm" style={{ color: '#F4F1EA', fontFamily: 'var(--sv-font)' }}>{error}</p>
           <button
@@ -265,8 +265,8 @@ export default function App() {
           className="fixed bottom-6 right-6 z-20 text-xs tracking-widest uppercase px-4 py-2 rounded-lg transition-all"
           style={{
             background: 'rgba(15,18,35,0.7)',
-            color: '#E8B04B',
-            border: '1px solid rgba(232,176,75,0.25)',
+            color: '#F4F1EA',
+            border: '1px solid rgba(244,241,234,0.25)',
             backdropFilter: 'blur(12px)',
             fontFamily: 'var(--sv-font)',
             letterSpacing: '0.1em',

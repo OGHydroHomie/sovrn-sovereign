@@ -8,17 +8,17 @@ interface Props {
 /* Three things the blueprint reveals — stacked, max two sentences each. */
 const REVEALS = [
   {
-    accent: '#E8B04B',
+    accent: '#F4F1EA',
     title: 'The architecture you were born with',
     body: 'Your Sun, Rising, and North Node decoded as a map of who you were built to become — before anyone could talk you out of it.',
   },
   {
-    accent: '#E8B04B',
+    accent: '#F4F1EA',
     title: "The pattern that's been running your life",
     body: "Your blueprint names the exact loop. You'll recognize it immediately — and it loses its grip the moment you see it.",
   },
   {
-    accent: '#E8B04B',
+    accent: '#F4F1EA',
     title: 'Where your life is actually trying to go',
     body: 'The direction your entire chart has been pulling you toward since the moment you arrived. Not a suggestion. A coordinate.',
   },
@@ -49,7 +49,7 @@ function Constellation() {
           y1={dots[a][1]}
           x2={dots[b][0]}
           y2={dots[b][1]}
-          stroke="#E8B04B"
+          stroke="#F4F1EA"
           strokeOpacity="0.15"
           strokeWidth="0.5"
         />
@@ -61,7 +61,7 @@ function Constellation() {
           cx={cx}
           cy={cy}
           r="1.5"
-          fill="#E8B04B"
+          fill="#F4F1EA"
           style={{ animationDelay: `${(i * 0.4).toFixed(1)}s` }}
         />
       ))}
@@ -117,7 +117,7 @@ export default function HeroPage({ onStart }: Props) {
       >
         <div style={{ maxWidth: 340, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           {/* Wordmark */}
-          <div className="sv-eyebrow" style={{ fontSize: 13, letterSpacing: '0.28em', color: '#E8B04B' }}>
+          <div className="sv-eyebrow" style={{ fontSize: 13, letterSpacing: '0.28em', color: '#F4F1EA' }}>
             SOVRN
           </div>
 
@@ -184,7 +184,7 @@ export default function HeroPage({ onStart }: Props) {
           className="sv-label"
           style={{
             fontSize: 11,
-            color: '#E8B04B',
+            color: '#F4F1EA',
             letterSpacing: '0.2em',
             fontWeight: 700,
             textAlign: 'center',
@@ -229,15 +229,15 @@ export default function HeroPage({ onStart }: Props) {
           >
             <div
               className="sv-card"
-              style={{ borderLeft: '3px solid #E8B04B', textAlign: 'left', maxWidth: 360, margin: '0 auto' }}
+              style={{ borderLeft: '3px solid #F4F1EA', textAlign: 'left', maxWidth: 360, margin: '0 auto' }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
                 <span className="sv-label" style={{ fontSize: 10, color: '#6E6A66', letterSpacing: '0.18em' }}>
                   Soul Architecture
                 </span>
-                <span className="sv-label" style={{ fontSize: 11, color: '#E8B04B' }}>01</span>
+                <span className="sv-label" style={{ fontSize: 11, color: '#F4F1EA' }}>01</span>
               </div>
-              <div className="sv-display" style={{ fontWeight: 700, fontSize: 24, color: '#E8B04B', marginTop: 10 }}>
+              <div className="sv-display" style={{ fontWeight: 700, fontSize: 24, color: '#F4F1EA', marginTop: 10 }}>
                 THE PIONEER
               </div>
               <p className="sv-serif" style={{ marginTop: 12, fontSize: 14, lineHeight: 1.7, color: '#A8A29B' }}>
@@ -254,7 +254,7 @@ export default function HeroPage({ onStart }: Props) {
                       fontSize: 11,
                       color: '#F4F1EA',
                       padding: '6px 12px',
-                      border: '1px solid rgba(232,176,75,0.3)',
+                      border: '1px solid rgba(244,241,234,0.3)',
                       borderRadius: 999,
                     }}
                   >

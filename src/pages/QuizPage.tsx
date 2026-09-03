@@ -250,7 +250,7 @@ export default function QuizPage({ onComplete, onBack }: Props) {
             <p className="sv-label" style={{ fontSize: 12, color: '#9A9A9A', letterSpacing: '0.22em', fontWeight: 500 }}>
               Your chart has been calculated
             </p>
-            <div className="sv-display" style={{ marginTop: 16, fontWeight: 700, fontSize: 28, color: '#D93A2B', letterSpacing: '0.02em' }}>
+            <div className="sv-display" style={{ marginTop: 16, fontWeight: 700, fontSize: 28, color: '#F4F1EA', letterSpacing: '0.02em' }}>
               {revealArchetype}
             </div>
             <p style={{ marginTop: 6, fontFamily: 'var(--sv-font)', fontSize: 14, color: '#A8A29B', letterSpacing: '0.06em' }}>
@@ -269,7 +269,7 @@ export default function QuizPage({ onComplete, onBack }: Props) {
           <div
             className="sv-label"
             aria-hidden="true"
-            style={{ position: 'absolute', top: -64, right: 0, fontSize: 48, fontWeight: 700, color: 'rgba(232,176,75,0.14)' }}
+            style={{ position: 'absolute', top: -64, right: 0, fontSize: 48, fontWeight: 700, color: 'rgba(244,241,234,0.14)' }}
           >
             {q.n}
           </div>
@@ -340,7 +340,7 @@ export default function QuizPage({ onComplete, onBack }: Props) {
                         cursor: 'pointer',
                         fontFamily: 'var(--sv-font)',
                         fontSize: 13,
-                        color: '#E8B04B',
+                        color: '#F4F1EA',
                         textDecoration: 'underline',
                         textUnderlineOffset: 3,
                       }}
