@@ -9,6 +9,8 @@ import type { AppPage, QuizData } from './types';
 import { generateBlueprint } from './utils/api';
 import { saveBlueprint, getBlueprint, getQuizData, trackEvent } from './utils/storage';
 import { ensureUser } from './lib/session';
+import { extractSovereignAct, requestMission } from './lib/mission';
+import { createDayOneEntry, getEntryForDay, type LedgerEntry } from './lib/ledger';
 
 const API_KEY_STORAGE = 'sovrn_api_key';
 
@@ -46,6 +48,26 @@ export default function App() {
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pendingQuizData, setPendingQuizData] = useState<QuizData | null>(null);
+  const [dayOne, setDayOne] = useState<LedgerEntry | null>(null);
+
+  /* Derive the Day 1 mission from the blueprint's First Sovereign Act and write it
+     to the ledger at generation time. The row exists as soon as the mission is
+     shown, so a day that goes uncompleted stays visible as an open entry. */
+  const startDayOne = useCallback(async (blueprintText: string) => {
+    const act = extractSovereignAct(blueprintText);
+    if (!act) return;
+
+    const existing = await getEntryForDay(1);
+    if (existing) {
+      setDayOne(existing);
+      return;
+    }
+
+    const mission = await requestMission(act);
+    if (!mission) return;
+
+    setDayOne(await createDayOneEntry(mission.mission));
+  }, []);
 
   useEffect(() => {
     trackEvent('pageView', 'hero');
@@ -60,6 +82,9 @@ export default function App() {
       setStreamingText(existing.text);
       setStreamDone(true);
       setQuizData(existingQuiz);
+      // Returning visitor: recover the ledger row written on the first pass, or
+      // derive it now if the blueprint predates the mission.
+      void startDayOne(existing.text);
     }
 
     // DEV-only: preview a screen in isolation via ?screen=loading|quiz|blueprint.
@@ -102,6 +127,7 @@ export default function App() {
         onDone: (fullText) => {
           saveBlueprint({ text: fullText });
           setStreamDone(true);
+          void startDayOne(fullText);
         },
         onError: (err) => {
           console.error('Blueprint generation failed:', err);
@@ -120,7 +146,7 @@ export default function App() {
       },
       apiKey
     );
-  }, []);
+  }, [startDayOne]);
 
   const handleQuizComplete = (data: QuizData) => {
     const localKey = localStorage.getItem(API_KEY_STORAGE);
@@ -226,6 +252,7 @@ export default function App() {
               text={streamingText}
               isDone={streamDone}
               quizData={quizData}
+              dayOne={dayOne}
             />
           </motion.div>
         )}

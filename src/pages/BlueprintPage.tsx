@@ -3,11 +3,15 @@ import { motion } from 'framer-motion';
 import { jsPDF } from 'jspdf';
 import type { QuizData } from '../types';
 import { trackEvent } from '../utils/storage';
+import type { LedgerEntry } from '../lib/ledger';
 
 interface Props {
   text: string;
   isDone: boolean;
   quizData: QuizData;
+  /* Day 1 mission, written to the ledger when the blueprint finished. Null while
+     it is still being derived, or if derivation failed. */
+  dayOne: LedgerEntry | null;
 }
 
 /* Superset of every section header the oracle can emit (backend emits four). */
@@ -80,7 +84,7 @@ function renderBody(lines: string[], showCursor: boolean) {
   return out;
 }
 
-export default function BlueprintPage({ text, isDone, quizData }: Props) {
+export default function BlueprintPage({ text, isDone, quizData, dayOne }: Props) {
   const endRef = useRef<HTMLDivElement>(null);
   const [blueprintNo] = useState(() => String(Math.floor(1000 + Math.random() * 9000)));
   const [showBooking, setShowBooking] = useState(false);
@@ -242,6 +246,33 @@ export default function BlueprintPage({ text, isDone, quizData }: Props) {
         {/* ── Completion ── */}
         {isDone && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, delay: 0.2 }}>
+            {/* ── Day 1 mission ── */}
+            {dayOne && (
+              <div
+                style={{
+                  marginTop: 32,
+                  background: '#FFFFFF',
+                  border: '1px solid #E8E6E1',
+                  borderLeft: '3px solid #C21F2C',
+                  borderRadius: 12,
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                  padding: 24,
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                  <h2 className="sv-label" style={{ fontSize: 12, color: '#1A1A1A', fontWeight: 700, letterSpacing: '0.1em' }}>
+                    DAY {dayOne.day_number}
+                  </h2>
+                  <span className="sv-label" style={{ fontSize: 11, color: '#9A9A9A', letterSpacing: '0.12em' }}>
+                    Your mission
+                  </span>
+                </div>
+                <p className="sv-serif" style={{ fontSize: 17, lineHeight: 1.6, color: '#1A1A1A', marginTop: 12 }}>
+                  {dayOne.mission_text}
+                </p>
+              </div>
+            )}
+
             <div style={{ height: 32 }} />
             <div style={{ height: 1, background: '#E8E6E1' }} />
             <p
