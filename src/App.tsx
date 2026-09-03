@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import ApiKeyModal from './components/ApiKeyModal';
 import HeroPage from './pages/HeroPage';
 import QuizPage from './pages/QuizPage';
 import LoadingPage from './pages/LoadingPage';
@@ -11,8 +10,6 @@ import { saveBlueprint, getBlueprint, getQuizData, trackEvent } from './utils/st
 import { ensureUser } from './lib/session';
 import { extractSovereignAct, requestMission } from './lib/mission';
 import { createDayOneEntry, getEntryForDay, type LedgerEntry } from './lib/ledger';
-
-const API_KEY_STORAGE = 'sovrn_api_key';
 
 /* DEV-only sample text for previewing the Blueprint screen (?screen=blueprint).
    Never referenced in production paths — only inside an import.meta.env.DEV guard. */
@@ -43,11 +40,8 @@ Within the next 24 hours: say the unpopular thing you have been softening. One s
 export default function App() {
   const [page, setPage] = useState<AppPage>('hero');
   const [quizData, setQuizData] = useState<QuizData | null>(null);
-  const [streamingText, setStreamingText] = useState('');
-  const [streamDone, setStreamDone] = useState(false);
-  const [showApiKeyModal, setShowApiKeyModal] = useState(false);
+  const [blueprint, setBlueprint] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [pendingQuizData, setPendingQuizData] = useState<QuizData | null>(null);
   const [dayOne, setDayOne] = useState<LedgerEntry | null>(null);
 
   /* Derive the Day 1 mission from the blueprint's First Sovereign Act and write it
@@ -79,8 +73,7 @@ export default function App() {
     const existing = getBlueprint();
     const existingQuiz = getQuizData();
     if (existing && existingQuiz) {
-      setStreamingText(existing.text);
-      setStreamDone(true);
+      setBlueprint(existing.text);
       setQuizData(existingQuiz);
       // Returning visitor: recover the ledger row written on the first pass, or
       // derive it now if the blueprint predates the mission.
@@ -100,67 +93,37 @@ export default function App() {
           birthTimeUnknown: false, birthPlace: 'Detroit, USA',
           deepestFear: '', desiredReality: '', repeatingPattern: '', email: '',
         });
-        setStreamingText(DEV_MOCK_BLUEPRINT);
-        setStreamDone(params.get('streaming') !== '1');
+        setBlueprint(DEV_MOCK_BLUEPRINT);
         setPage('blueprint');
       }
     }
   }, []);
 
-  const handleGenerate = useCallback((data: QuizData, apiKey?: string) => {
+  const handleGenerate = useCallback((data: QuizData) => {
     setPage('loading');
     setError(null);
-    setStreamingText('');
-    setStreamDone(false);
+    setBlueprint('');
     setQuizData(data);
     trackEvent('quizComplete');
 
-    generateBlueprint(
-      data,
-      {
-        onFirstChunk: () => {
-          setPage('blueprint');
-        },
-        onChunk: (text) => {
-          setStreamingText((prev) => prev + text);
-        },
-        onDone: (fullText) => {
-          saveBlueprint({ text: fullText });
-          setStreamDone(true);
-          void startDayOne(fullText);
-        },
-        onError: (err) => {
-          console.error('Blueprint generation failed:', err);
-          const message = err.message;
-
-          if (!apiKey && (message.includes('404') || message.includes('Failed to fetch'))) {
-            setPage('quiz');
-            setPendingQuizData(data);
-            setShowApiKeyModal(true);
-            return;
-          }
-
-          setError(message);
-          setPage('quiz');
-        },
+    generateBlueprint(data, {
+      // The reading arrives whole. The loading screen holds until it does, then
+      // the reveal runs — nothing is rendered half-written.
+      onDone: (fullText) => {
+        saveBlueprint({ text: fullText });
+        setBlueprint(fullText);
+        setPage('blueprint');
+        void startDayOne(fullText);
       },
-      apiKey
-    );
+      onError: (err) => {
+        console.error('Blueprint generation failed:', err);
+        setError(err.message);
+        setPage('quiz');
+      },
+    });
   }, [startDayOne]);
 
-  const handleQuizComplete = (data: QuizData) => {
-    const localKey = localStorage.getItem(API_KEY_STORAGE);
-    handleGenerate(data, localKey || undefined);
-  };
-
-  const handleApiKeySubmit = (key: string) => {
-    localStorage.setItem(API_KEY_STORAGE, key);
-    setShowApiKeyModal(false);
-    if (pendingQuizData) {
-      handleGenerate(pendingQuizData, key);
-      setPendingQuizData(null);
-    }
-  };
+  const handleQuizComplete = (data: QuizData) => handleGenerate(data);
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#0A0E1A', position: 'relative' }}>
@@ -184,15 +147,6 @@ export default function App() {
         </div>
       )}
 
-      {/* API Key Modal (local dev fallback) */}
-      <AnimatePresence>
-        {showApiKeyModal && (
-          <ApiKeyModal
-            onSubmit={handleApiKeySubmit}
-            onClose={() => setShowApiKeyModal(false)}
-          />
-        )}
-      </AnimatePresence>
 
       <div style={{ position: 'relative', zIndex: 1 }}>
       <AnimatePresence mode="wait">
@@ -249,8 +203,7 @@ export default function App() {
             transition={{ duration: 0.3 }}
           >
             <BlueprintPage
-              text={streamingText}
-              isDone={streamDone}
+              text={blueprint}
               quizData={quizData}
               dayOne={dayOne}
             />
@@ -259,7 +212,7 @@ export default function App() {
       </AnimatePresence>
       </div>
 
-      {page === 'hero' && streamDone && streamingText && quizData && (
+      {page === 'hero' && blueprint && quizData && (
         <button
           onClick={() => setPage('blueprint')}
           className="fixed bottom-6 right-6 z-20 text-xs tracking-widest uppercase px-4 py-2 rounded-lg transition-all"

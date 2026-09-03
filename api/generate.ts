@@ -265,11 +265,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const chartData = data.chartData || '';
 
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('X-Accel-Buffering', 'no');
-  res.setHeader('Connection', 'keep-alive');
-
+  // The blueprint is generated whole and returned whole. It is a reveal, not a
+  // feed: nobody should watch their own reading push the page down under them
+  // while they are reading it. At 1500 max_tokens the call returns well inside
+  // the function's budget, so there is nothing to stream around.
   try {
     const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -281,7 +280,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
         max_tokens: 1500,
-        stream: true,
         system: buildSystemPrompt(chartData),
         messages: [{ role: 'user', content: buildUserMessage(data) }],
       }),
@@ -290,57 +288,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!anthropicRes.ok) {
       const errBody = await anthropicRes.text();
       console.error('Anthropic API error:', anthropicRes.status, errBody);
-      res.write(`data: ${JSON.stringify({ error: `Anthropic API error: ${anthropicRes.status}` })}\n\n`);
-      return res.end();
+      return res.status(502).json({ error: `Anthropic API error: ${anthropicRes.status}` });
     }
 
-    if (!anthropicRes.body) {
-      res.write(`data: ${JSON.stringify({ error: 'No response body' })}\n\n`);
-      return res.end();
+    const payload = await anthropicRes.json();
+
+    if (payload.stop_reason === 'refusal') {
+      console.warn('Blueprint refused by safety classifier');
+      return res.status(502).json({ error: 'The reading could not be generated. Please try again.' });
     }
 
-    const reader = anthropicRes.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
+    const text: string = (payload.content ?? [])
+      .filter((b: { type: string }) => b.type === 'text')
+      .map((b: { text: string }) => b.text)
+      .join('')
+      .trim();
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() ?? '';
-
-      for (const line of lines) {
-        if (!line.startsWith('data: ')) continue;
-        const raw = line.slice(6).trim();
-        if (raw === '[DONE]') continue;
-
-        try {
-          const event = JSON.parse(raw);
-          if (
-            event.type === 'content_block_delta' &&
-            event.delta?.type === 'text_delta' &&
-            typeof event.delta.text === 'string'
-          ) {
-            res.write(`data: ${JSON.stringify({ text: event.delta.text })}\n\n`);
-          }
-        } catch {
-          // skip malformed SSE lines
-        }
-      }
+    if (!text) {
+      return res.status(502).json({ error: 'Empty response from the model' });
     }
 
-    res.write('data: [DONE]\n\n');
-    res.end();
+    return res.status(200).json({ text });
   } catch (err) {
     const errMessage = err instanceof Error ? err.message : 'Internal server error';
     console.error('Blueprint generation failed:', err);
-    try {
-      res.write(`data: ${JSON.stringify({ error: errMessage })}\n\n`);
-      res.end();
-    } catch {
-      res.end();
-    }
+    return res.status(500).json({ error: errMessage });
   }
 }

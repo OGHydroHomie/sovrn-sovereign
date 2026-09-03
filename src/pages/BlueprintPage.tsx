@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { jsPDF } from 'jspdf';
 import type { QuizData } from '../types';
@@ -8,7 +8,6 @@ import DayOne from '../components/DayOne';
 
 interface Props {
   text: string;
-  isDone: boolean;
   quizData: QuizData;
   /* Day 1 mission, written to the ledger when the blueprint finished. Null while
      it is still being derived, or if derivation failed. */
@@ -85,18 +84,10 @@ function renderBody(lines: string[], showCursor: boolean) {
   return out;
 }
 
-export default function BlueprintPage({ text, isDone, quizData, dayOne }: Props) {
-  const endRef = useRef<HTMLDivElement>(null);
+export default function BlueprintPage({ text, quizData, dayOne }: Props) {
   const [blueprintNo] = useState(() => String(Math.floor(1000 + Math.random() * 9000)));
 
   useEffect(() => { trackEvent('pageView', 'blueprint'); }, []);
-
-  // Keep the latest streaming text in view
-  useEffect(() => {
-    if (!isDone && endRef.current) {
-      endRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
-    }
-  }, [text, isDone]);
 
   const { preamble, sections } = parseBlueprint(text);
   const twoTone = ['#000000', '#1A1A1A']; // alternating left bars: black / ink
@@ -189,14 +180,12 @@ export default function BlueprintPage({ text, isDone, quizData, dayOne }: Props)
             }}
           >
             {preamble}
-            {!isDone && sections.length === 0 && <span className="sv-cursor-light" />}
           </p>
         )}
 
         {/* ── Section cards ── */}
         <div style={{ marginTop: preamble ? 8 : 32, display: 'flex', flexDirection: 'column', gap: 16 }}>
           {sections.map((s, i) => {
-            const isLast = i === sections.length - 1;
             const num = String(i + 1).padStart(2, '0');
             return (
               <motion.div
@@ -222,18 +211,15 @@ export default function BlueprintPage({ text, isDone, quizData, dayOne }: Props)
                   </span>
                 </div>
                 <div style={{ marginTop: 12 }}>
-                  {renderBody(s.lines, !isDone && isLast)}
+                  {renderBody(s.lines, false)}
                 </div>
               </motion.div>
             );
           })}
         </div>
 
-        {/* Scroll anchor for auto-follow while streaming */}
-        <div ref={endRef} />
-
         {/* ── Completion ── */}
-        {isDone && (
+        {(
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, delay: 0.2 }}>
             {/* ── Day 1 mission, completion, and the Ledger ── */}
             {dayOne && <DayOne key={dayOne.id} entry={dayOne} />}
