@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import Anthropic from '@anthropic-ai/sdk';
-import { safetyCheck } from './_safety';
+import { safetyCheck } from './_safety.js';
 
 export const config = {
   maxDuration: 120,
