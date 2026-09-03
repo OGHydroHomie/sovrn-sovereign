@@ -1,91 +1,59 @@
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 
-const MESSAGES = [
-  'Reading your natal architecture...',
-  'Mapping your shadow pattern...',
-  'Identifying your hidden gifts...',
-  'Calculating your true north...',
-  'Generating your sovereign blueprint...',
-];
+/* The anticipation beat. Paper ground, one line, one line of movement.
 
-/* Same natal constellation as the hero — visual continuity. */
-function Constellation() {
-  const dots = [
-    [18, 52], [46, 32], [72, 60], [96, 26], [124, 48], [150, 22], [60, 14],
-  ];
-  const lines = [
-    [0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [1, 6],
-  ];
-  return (
-    <svg width="160" height="80" viewBox="0 0 160 80" fill="none" aria-hidden="true" style={{ display: 'block' }}>
-      {lines.map(([a, b], i) => (
-        <line
-          key={`l${i}`}
-          x1={dots[a][0]} y1={dots[a][1]} x2={dots[b][0]} y2={dots[b][1]}
-          stroke="#F4F1EA" strokeOpacity="0.15" strokeWidth="0.5"
-        />
-      ))}
-      {dots.map(([cx, cy], i) => (
-        <circle
-          key={`d${i}`} className="sv-star" cx={cx} cy={cy} r="1.5" fill="#F4F1EA"
-          style={{ animationDelay: `${(i * 0.4).toFixed(1)}s` }}
-        />
-      ))}
-    </svg>
-  );
-}
+   DESIGN_FROZEN.md: cream ground, black, Geist Sans, no cosmic imagery — so the
+   constellation, the star field, and the rotating oracle copy are gone. No
+   spinner either: a spinner says "the machine is busy," and this moment is
+   supposed to say "something is about to be said about you."
 
+   The single motion is a hairline drawing itself across the page over roughly
+   the length of a generation. It is deliberately not a progress bar — it makes
+   no claim about how far along anything is, it just gives the pause a length. */
 export default function LoadingPage() {
-  const [index, setIndex] = useState(0);
-
-  useEffect(() => {
-    const id = setInterval(() => {
-      // Advance, holding on the final message until the stream takes over
-      setIndex((prev) => (prev < MESSAGES.length - 1 ? prev + 1 : prev));
-    }, 3500);
-    return () => clearInterval(id);
-  }, []);
+  const reduceMotion = useReducedMotion();
 
   return (
     <div
       style={{
         minHeight: '100svh',
+        background: '#FBFAF7',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '48px 20px',
+        padding: '48px 24px',
         textAlign: 'center',
       }}
     >
-      {/* Constellation — continuity with the hero */}
-      <div style={{ marginBottom: 44, opacity: 0.9 }}>
-        <Constellation />
-      </div>
+      <motion.p
+        initial={reduceMotion ? false : { opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 1.2, ease: 'easeOut' }}
+        style={{
+          fontFamily: 'var(--sv-font)',
+          fontWeight: 300,
+          fontSize: 'clamp(19px, 5.2vw, 23px)',
+          lineHeight: 1.45,
+          letterSpacing: '-0.01em',
+          color: '#1A1A1A',
+          maxWidth: 320,
+        }}
+      >
+        Finding the name for what you're becoming.
+      </motion.p>
 
-      {/* Rotating oracle messages */}
-      <div style={{ minHeight: 28, display: 'flex', alignItems: 'center' }}>
-        <AnimatePresence mode="wait">
-          <motion.p
-            key={index}
-            className="sv-display"
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -6 }}
-            transition={{ duration: 0.6, ease: 'easeInOut' }}
-            style={{ fontStyle: 'italic', fontWeight: 400, fontSize: 18, color: '#F4F1EA' }}
-          >
-            {MESSAGES[index]}
-          </motion.p>
-        </AnimatePresence>
-      </div>
-
-      {/* Ember wave dots */}
-      <div style={{ marginTop: 28, display: 'flex', gap: 10 }}>
-        <span className="sv-wave-dot" style={{ animationDelay: '0s' }} />
-        <span className="sv-wave-dot" style={{ animationDelay: '0.18s' }} />
-        <span className="sv-wave-dot" style={{ animationDelay: '0.36s' }} />
+      {/* The one motion. Draws to full over ~22s, then holds. */}
+      <div
+        aria-hidden="true"
+        style={{ marginTop: 40, width: 'min(240px, 62vw)', height: 1, background: '#E4E0D6' }}
+      >
+        <motion.div
+          initial={{ width: reduceMotion ? '38%' : '0%' }}
+          animate={{ width: reduceMotion ? '38%' : '100%' }}
+          transition={reduceMotion ? { duration: 0 } : { duration: 22, ease: 'easeOut' }}
+          style={{ height: 1, background: '#1A1A1A' }}
+        />
       </div>
     </div>
   );
