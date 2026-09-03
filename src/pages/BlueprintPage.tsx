@@ -88,7 +88,6 @@ function renderBody(lines: string[], showCursor: boolean) {
 export default function BlueprintPage({ text, isDone, quizData, dayOne }: Props) {
   const endRef = useRef<HTMLDivElement>(null);
   const [blueprintNo] = useState(() => String(Math.floor(1000 + Math.random() * 9000)));
-  const [showBooking, setShowBooking] = useState(false);
 
   useEffect(() => { trackEvent('pageView', 'blueprint'); }, []);
 
@@ -98,17 +97,6 @@ export default function BlueprintPage({ text, isDone, quizData, dayOne }: Props)
       endRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
     }
   }, [text, isDone]);
-
-  // Existing booking widget (loaded on demand)
-  useEffect(() => {
-    if (showBooking) {
-      const script = document.createElement('script');
-      script.src = 'https://app.iclosed.io/assets/widget.js';
-      script.async = true;
-      document.body.appendChild(script);
-      return () => { document.body.removeChild(script); };
-    }
-  }, [showBooking]);
 
   const { preamble, sections } = parseBlueprint(text);
   const twoTone = ['#C21F2C', '#1A1A1A']; // alternating left bars: ember / ink
@@ -162,8 +150,6 @@ export default function BlueprintPage({ text, isDone, quizData, dayOne }: Props)
     doc.text('SOVRN — 2026', pageWidth / 2, y, { align: 'center' });
     doc.save(`SOVRN-Blueprint-${quizData.name.replace(/\s+/g, '-')}.pdf`);
   };
-
-  const handleTransform = () => { trackEvent('ctaClick'); setShowBooking(true); };
 
   return (
     <div style={{ minHeight: '100svh', background: '#FBFAF7', color: '#4A4A4A', padding: '24px 20px 56px', position: 'relative' }}>
@@ -272,19 +258,7 @@ export default function BlueprintPage({ text, isDone, quizData, dayOne }: Props)
               >
                 Download Blueprint
               </button>
-              <button className="sv-btn" style={{ background: '#C21F2C' }} onClick={handleTransform}>
-                Begin Your Transformation
-              </button>
             </div>
-
-            {showBooking && (
-              <div
-                className="iclosed-widget"
-                data-url="https://app.iclosed.io/e/sovrngrowth/strategy-call"
-                title="Strategy Call"
-                style={{ width: '100%', height: 620, marginTop: 24 }}
-              />
-            )}
 
             <p
               style={{ marginTop: 40, fontFamily: "'Space Grotesk', sans-serif", fontWeight: 400, fontSize: 11, letterSpacing: '0.1em', color: '#9A9A9A', textAlign: 'center' }}
