@@ -59,6 +59,53 @@ export async function getEntryForDay(dayNumber: number): Promise<LedgerEntry | n
   return (data as LedgerEntry) ?? null;
 }
 
+export async function getEntryById(id: string): Promise<LedgerEntry | null> {
+  const { data, error } = await supabase
+    .from('ledger_entries')
+    .select(COLUMNS)
+    .eq('id', id)
+    .maybeSingle();
+
+  if (error) {
+    console.warn('Ledger read failed:', error.message);
+    return null;
+  }
+  return (data as LedgerEntry) ?? null;
+}
+
+/**
+ * Close an entry: set completed_at and what_happened together.
+ *
+ * Two Postgres rules do the real enforcement here and this function is built to
+ * sit inside them rather than around them:
+ *
+ *   - `completion_requires_text` rejects a completion whose what_happened is
+ *     blank, so both columns must be written in the same statement.
+ *   - `ledger_complete_once` stops matching the row the moment completed_at is
+ *     set, so a second attempt updates nothing. That comes back as success with
+ *     zero rows, NOT as an error — an already-closed entry is re-read and
+ *     returned unchanged rather than reported as a failure.
+ */
+export async function completeEntry(id: string, whatHappened: string): Promise<LedgerEntry | null> {
+  const text = whatHappened.trim();
+  if (!text) return null;
+
+  const { data, error } = await supabase
+    .from('ledger_entries')
+    .update({ completed_at: new Date().toISOString(), what_happened: text })
+    .eq('id', id)
+    .select(COLUMNS);
+
+  if (error) {
+    console.warn('Ledger completion failed:', error.message);
+    return null;
+  }
+
+  if (!data || data.length === 0) return getEntryById(id);
+
+  return data[0] as LedgerEntry;
+}
+
 /** Every entry for this identity, oldest day first. */
 export async function listEntries(): Promise<LedgerEntry[]> {
   const uid = await ensureUser();
