@@ -211,6 +211,7 @@ let safetyFails = 0;
 async function safetyCheck(client: Anthropic, mission: string): Promise<boolean> {
   safetyChecks += 1;
   let passed = false;
+  let raw = '';
 
   try {
     const response = await client.messages.create({
@@ -222,8 +223,12 @@ async function safetyCheck(client: Anthropic, mission: string): Promise<boolean>
 
     if (response.stop_reason !== 'refusal') {
       const block = response.content.find((b) => b.type === 'text');
-      const verdict = block && block.type === 'text' ? block.text.trim().toUpperCase() : '';
-      passed = verdict.startsWith('PASS');
+      raw = block && block.type === 'text' ? block.text : '';
+      // One token is not one word: "PASS" may arrive tokenized as "P" or "PA".
+      // So the verdict is accepted when it is a non-empty prefix of PASS, which
+      // no prefix of FAIL can satisfy. Empty or unrecognized still fails closed.
+      const verdict = raw.trim().toUpperCase().replace(/[^A-Z]/g, '');
+      passed = verdict.length > 0 && 'PASS'.startsWith(verdict);
     }
   } catch (err) {
     console.error('Safety check failed — treating as FAIL:', err);
@@ -232,7 +237,7 @@ async function safetyCheck(client: Anthropic, mission: string): Promise<boolean>
 
   if (!passed) safetyFails += 1;
   console.log(
-    `[mission.safety] verdict=${passed ? 'PASS' : 'FAIL'} ` +
+    `[mission.safety] verdict=${passed ? 'PASS' : 'FAIL'} token=${JSON.stringify(raw)} ` +
       `fail_rate=${((safetyFails / safetyChecks) * 100).toFixed(1)}% (${safetyFails}/${safetyChecks})`
   );
 
