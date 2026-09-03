@@ -8,66 +8,21 @@ interface Props {
 /* Three things the blueprint reveals — stacked, max two sentences each. */
 const REVEALS = [
   {
-    accent: '#F4F1EA',
+    accent: '#1A1A1A',
     title: 'The architecture you were born with',
     body: 'Your Sun, Rising, and North Node decoded as a map of who you were built to become — before anyone could talk you out of it.',
   },
   {
-    accent: '#F4F1EA',
+    accent: '#1A1A1A',
     title: "The pattern that's been running your life",
     body: "Your blueprint names the exact loop. You'll recognize it immediately — and it loses its grip the moment you see it.",
   },
   {
-    accent: '#F4F1EA',
+    accent: '#1A1A1A',
     title: 'Where your life is actually trying to go',
     body: 'The direction your entire chart has been pulling you toward since the moment you arrived. Not a suggestion. A coordinate.',
   },
 ];
-
-/* A small natal constellation — a visual hint of the chart being calculated.
-   Static hairline lines; dots twinkle gently, staggered. ~160×80. */
-function Constellation() {
-  const dots = [
-    [18, 52], [46, 32], [72, 60], [96, 26], [124, 48], [150, 22], [60, 14],
-  ];
-  const lines = [
-    [0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [1, 6],
-  ];
-  return (
-    <svg
-      width="160"
-      height="80"
-      viewBox="0 0 160 80"
-      fill="none"
-      aria-hidden="true"
-      style={{ display: 'block' }}
-    >
-      {lines.map(([a, b], i) => (
-        <line
-          key={`l${i}`}
-          x1={dots[a][0]}
-          y1={dots[a][1]}
-          x2={dots[b][0]}
-          y2={dots[b][1]}
-          stroke="#F4F1EA"
-          strokeOpacity="0.15"
-          strokeWidth="0.5"
-        />
-      ))}
-      {dots.map(([cx, cy], i) => (
-        <circle
-          key={`d${i}`}
-          className="sv-star"
-          cx={cx}
-          cy={cy}
-          r="1.5"
-          fill="#F4F1EA"
-          style={{ animationDelay: `${(i * 0.4).toFixed(1)}s` }}
-        />
-      ))}
-    </svg>
-  );
-}
 
 function DownChevron() {
   return (
@@ -99,7 +54,7 @@ export default function HeroPage({ onStart }: Props) {
   }, []);
 
   return (
-    <div style={{ color: '#A8A29B' }}>
+    <div style={{ color: '#9A9A9A' }}>
       {/* ============================================================= *
        *  ABOVE THE FOLD — one promise, one decision. Spacious.
        * ============================================================= */}
@@ -117,13 +72,8 @@ export default function HeroPage({ onStart }: Props) {
       >
         <div style={{ maxWidth: 340, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           {/* Wordmark */}
-          <div className="sv-eyebrow" style={{ fontSize: 13, letterSpacing: '0.28em', color: '#F4F1EA' }}>
+          <div className="sv-eyebrow" style={{ fontSize: 13, letterSpacing: '0.28em', color: '#1A1A1A' }}>
             SOVRN
-          </div>
-
-          {/* Natal constellation — celestial hint, centered in the gap */}
-          <div style={{ marginTop: 32 }}>
-            <Constellation />
           </div>
 
           {/* 32px → headline — one line, all bone. The power is in the phrase. */}
@@ -134,9 +84,8 @@ export default function HeroPage({ onStart }: Props) {
               fontWeight: 700,
               fontSize: 'clamp(30px, 8.2vw, 48px)',
               lineHeight: 1.1,
-              color: '#F4F1EA',
+              color: '#1A1A1A',
               letterSpacing: '-0.02em',
-              whiteSpace: 'nowrap',
             }}
           >
             Remember who you are.
@@ -145,7 +94,7 @@ export default function HeroPage({ onStart }: Props) {
           {/* 24px → body */}
           <p
             className="sv-display"
-            style={{ marginTop: 24, fontWeight: 400, fontSize: 16, lineHeight: 1.6, color: '#A8A29B' }}
+            style={{ marginTop: 24, fontWeight: 400, fontSize: 16, lineHeight: 1.6, color: '#9A9A9A' }}
           >
             Something still feels off — like you're living adjacent to your actual
             life. Enter your birth data. Find out why.
@@ -163,7 +112,7 @@ export default function HeroPage({ onStart }: Props) {
               fontFamily: 'var(--sv-font)',
               fontWeight: 400,
               fontSize: 13,
-              color: '#6E6A66',
+              color: '#9A9A9A',
             }}
           >
             Free · 5 minutes · No account required
@@ -184,7 +133,7 @@ export default function HeroPage({ onStart }: Props) {
           className="sv-label"
           style={{
             fontSize: 11,
-            color: '#F4F1EA',
+            color: '#1A1A1A',
             letterSpacing: '0.2em',
             fontWeight: 700,
             textAlign: 'center',
@@ -198,17 +147,17 @@ export default function HeroPage({ onStart }: Props) {
             <div
               key={card.title}
               className="sv-card"
-              style={{ borderLeft: `3px solid ${card.accent}`, textAlign: 'left' }}
+              style={{ borderLeft: `2px solid ${card.accent}`, textAlign: 'left' }}
             >
               <h3
                 className="sv-label"
-                style={{ fontSize: 13, color: '#F4F1EA', fontWeight: 700, lineHeight: 1.3 }}
+                style={{ fontSize: 13, color: '#1A1A1A', fontWeight: 700, lineHeight: 1.3 }}
               >
                 {card.title}
               </h3>
               <p
                 className="sv-serif"
-                style={{ marginTop: 12, fontSize: 15, lineHeight: 1.6, color: '#A8A29B' }}
+                style={{ marginTop: 12, fontSize: 15, lineHeight: 1.6, color: '#9A9A9A' }}
               >
                 {card.body}
               </p>
@@ -229,32 +178,31 @@ export default function HeroPage({ onStart }: Props) {
           >
             <div
               className="sv-card"
-              style={{ borderLeft: '3px solid #F4F1EA', textAlign: 'left', maxWidth: 360, margin: '0 auto' }}
+              style={{ borderLeft: '2px solid #1A1A1A', textAlign: 'left', maxWidth: 360, margin: '0 auto' }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                <span className="sv-label" style={{ fontSize: 10, color: '#6E6A66', letterSpacing: '0.18em' }}>
-                  Soul Architecture
+                <span className="sv-label" style={{ fontSize: 10, color: '#9A9A9A', letterSpacing: '0.18em' }}>
+                  Who you are
                 </span>
-                <span className="sv-label" style={{ fontSize: 11, color: '#F4F1EA' }}>01</span>
               </div>
-              <div className="sv-display" style={{ fontWeight: 700, fontSize: 24, color: '#F4F1EA', marginTop: 10 }}>
+              <div className="sv-display" style={{ fontWeight: 700, fontSize: 24, color: '#1A1A1A', marginTop: 10 }}>
                 THE PIONEER
               </div>
-              <p className="sv-serif" style={{ marginTop: 12, fontSize: 14, lineHeight: 1.7, color: '#A8A29B' }}>
+              <p className="sv-serif" style={{ marginTop: 12, fontSize: 14, lineHeight: 1.7, color: '#9A9A9A' }}>
                 Your Aries Sun at 14° burns in the first house — the raw signature
                 of someone built to go first, to break the trail the rest will only
                 later find the courage to follow.
               </p>
               <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
-                {['Initiator', 'Fire', 'Cardinal'].map((t) => (
+                {['Who you are', 'The pattern', 'One act'].map((t) => (
                   <span
                     key={t}
                     style={{
                       fontFamily: 'var(--sv-font)',
                       fontSize: 11,
-                      color: '#F4F1EA',
+                      color: '#1A1A1A',
                       padding: '6px 12px',
-                      border: '1px solid rgba(244,241,234,0.3)',
+                      border: '1px solid #E4E0D6',
                       borderRadius: 999,
                     }}
                   >
@@ -271,7 +219,7 @@ export default function HeroPage({ onStart }: Props) {
               fontFamily: 'var(--sv-font)',
               fontWeight: 400,
               fontSize: 14,
-              color: '#A8A29B',
+              color: '#9A9A9A',
               textAlign: 'center',
             }}
           >
@@ -294,7 +242,7 @@ export default function HeroPage({ onStart }: Props) {
             fontWeight: 400,
             fontSize: 11,
             letterSpacing: '0.1em',
-            color: '#6E6A66',
+            color: '#9A9A9A',
             textAlign: 'center',
           }}
         >

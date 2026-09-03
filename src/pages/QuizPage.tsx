@@ -237,7 +237,7 @@ export default function QuizPage({ onComplete, onBack }: Props) {
     <div style={{ minHeight: '100svh', display: 'flex', flexDirection: 'column', padding: '0 20px' }}>
       {/* Progress bar — persistent across quiz + reveal so it animates 48 → 55 → 64 */}
       <div style={{ paddingTop: 24, maxWidth: 480, width: '100%', margin: '0 auto' }}>
-        <div style={{ height: 3, borderRadius: 999, background: '#2A272B', overflow: 'hidden' }}>
+        <div style={{ height: 3, borderRadius: 999, background: '#E4E0D6', overflow: 'hidden' }}>
           <motion.div
             style={{ height: '100%', borderRadius: 999, background: '#000000' }}
             initial={false}
@@ -254,13 +254,13 @@ export default function QuizPage({ onComplete, onBack }: Props) {
             <p className="sv-label" style={{ fontSize: 12, color: '#9A9A9A', letterSpacing: '0.22em', fontWeight: 500 }}>
               Your chart has been calculated
             </p>
-            <div className="sv-display" style={{ marginTop: 16, fontWeight: 700, fontSize: 28, color: '#F4F1EA', letterSpacing: '0.02em' }}>
+            <div className="sv-display" style={{ marginTop: 16, fontWeight: 700, fontSize: 28, color: '#1A1A1A', letterSpacing: '0.02em' }}>
               {revealArchetype}
             </div>
-            <p style={{ marginTop: 6, fontFamily: 'var(--sv-font)', fontSize: 14, color: '#A8A29B', letterSpacing: '0.06em' }}>
+            <p style={{ marginTop: 6, fontFamily: 'var(--sv-font)', fontSize: 14, color: '#9A9A9A', letterSpacing: '0.06em' }}>
               {revealSign} Sun
             </p>
-            <p className="sv-display" style={{ marginTop: 12, fontStyle: 'italic', fontSize: 15, color: '#A8A29B' }}>
+            <p className="sv-display" style={{ marginTop: 12, fontStyle: 'italic', fontSize: 15, color: '#9A9A9A' }}>
               Four questions remain.
             </p>
           </motion.div>
@@ -273,7 +273,7 @@ export default function QuizPage({ onComplete, onBack }: Props) {
           <div
             className="sv-label"
             aria-hidden="true"
-            style={{ position: 'absolute', top: -64, right: 0, fontSize: 48, fontWeight: 700, color: 'rgba(244,241,234,0.14)' }}
+            style={{ position: 'absolute', top: -64, right: 0, fontSize: 48, fontWeight: 700, color: 'rgba(26,26,26,0.08)' }}
           >
             {q.n}
           </div>
@@ -290,7 +290,7 @@ export default function QuizPage({ onComplete, onBack }: Props) {
             >
               <h2
                 className="sv-display"
-                style={{ fontWeight: 700, fontSize: 'clamp(22px, 6.4vw, 26px)', lineHeight: 1.25, color: '#F4F1EA' }}
+                style={{ fontWeight: 700, fontSize: 'clamp(22px, 6.4vw, 26px)', lineHeight: 1.25, color: '#1A1A1A' }}
               >
                 {q.label}
               </h2>
@@ -344,7 +344,7 @@ export default function QuizPage({ onComplete, onBack }: Props) {
                         cursor: 'pointer',
                         fontFamily: 'var(--sv-font)',
                         fontSize: 13,
-                        color: '#F4F1EA',
+                        color: '#1A1A1A',
                         textDecoration: 'underline',
                         textUnderlineOffset: 3,
                       }}
@@ -371,10 +371,10 @@ export default function QuizPage({ onComplete, onBack }: Props) {
                           style={{
                             listStyle: 'none', margin: 0, padding: 0,
                             position: 'absolute', top: 'calc(100% + 8px)', left: 0, right: 0, zIndex: 20,
-                            background: 'rgba(15, 18, 35, 0.95)',
+                            background: '#FBFAF7',
                             WebkitBackdropFilter: 'blur(12px)', backdropFilter: 'blur(12px)',
-                            border: '1px solid rgba(255, 255, 255, 0.12)', borderRadius: 12,
-                            overflow: 'hidden', boxShadow: '0 12px 40px rgba(0,0,0,0.5)',
+                            border: '1px solid #E4E0D6', borderRadius: 12,
+                            overflow: 'hidden', boxShadow: 'none',
                           }}
                         >
                           {placeResults.map((item, idx) => (
@@ -386,10 +386,10 @@ export default function QuizPage({ onComplete, onBack }: Props) {
                                   display: 'flex', alignItems: 'center', width: '100%', minHeight: 48,
                                   padding: '10px 14px', textAlign: 'left', cursor: 'pointer',
                                   background: 'transparent', border: 'none',
-                                  borderTop: idx === 0 ? 'none' : '1px solid rgba(255,255,255,0.06)',
-                                  color: '#F4F1EA', fontFamily: 'var(--sv-font)', fontSize: 15, lineHeight: 1.4,
+                                  borderTop: idx === 0 ? 'none' : '1px solid #E4E0D6',
+                                  color: '#1A1A1A', fontFamily: 'var(--sv-font)', fontSize: 15, lineHeight: 1.4,
                                 }}
-                                onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.08)')}
+                                onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(26,26,26,0.05)')}
                                 onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                               >
                                 {formatPlace(item)}
@@ -452,18 +452,18 @@ export default function QuizPage({ onComplete, onBack }: Props) {
                         required
                         checked={consented}
                         onChange={(e) => setConsented(e.target.checked)}
-                        style={{ width: 20, height: 20, marginTop: 1, flexShrink: 0, accentColor: '#F4F1EA', cursor: 'pointer' }}
+                        style={{ width: 20, height: 20, marginTop: 1, flexShrink: 0, accentColor: '#1A1A1A', cursor: 'pointer' }}
                       />
-                      <span style={{ fontFamily: 'var(--sv-font)', fontSize: 13, lineHeight: 1.6, color: '#A8A29B' }}>
+                      <span style={{ fontFamily: 'var(--sv-font)', fontSize: 13, lineHeight: 1.6, color: '#9A9A9A' }}>
                         I understand my birth data and answers are used to generate my
                         Blueprint and are stored to keep my Ledger.
                       </span>
                     </label>
 
-                    <p style={{ marginTop: 10, marginLeft: 32, fontFamily: 'var(--sv-font)', fontSize: 13, color: '#6E6A66' }}>
-                      <a href="/privacy" style={{ color: '#F4F1EA' }}>Privacy</a>
+                    <p style={{ marginTop: 10, marginLeft: 32, fontFamily: 'var(--sv-font)', fontSize: 13, color: '#9A9A9A' }}>
+                      <a href="/privacy" style={{ color: '#1A1A1A' }}>Privacy</a>
                       <span style={{ padding: '0 8px' }}>·</span>
-                      <a href="/terms" style={{ color: '#F4F1EA' }}>Terms</a>
+                      <a href="/terms" style={{ color: '#1A1A1A' }}>Terms</a>
                     </p>
                   </>
                 )}
@@ -490,7 +490,7 @@ export default function QuizPage({ onComplete, onBack }: Props) {
                 cursor: 'pointer',
                 fontFamily: 'var(--sv-font)',
                 fontSize: 14,
-                color: '#6E6A66',
+                color: '#9A9A9A',
               }}
             >
               ← Back

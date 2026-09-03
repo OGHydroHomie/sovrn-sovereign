@@ -1,27 +1,28 @@
 @import "tailwindcss";
 
 /* ============================================================= *
- *  SOVRN — DESIGN SYSTEM · "Obsidian Oracle"
- *  Deep night sky + frosted glass + paper-white light.
- *  DESIGN_FROZEN.md: no gold, no ember, no purple.
+ *  SOVRN — DESIGN SYSTEM · paper
+ *  Cream ground, black line art, Geist Sans. Nothing else.
+ *  Governed by DESIGN_FROZEN.md: no gold, no purple, no ember,
+ *  no display font, no cosmic imagery.
  * ============================================================= */
 
 @theme {
-  --color-bg: #0A0E1A;          /* deep midnight blue-black */
-  --color-bone: #F4F1EA;        /* warm white text          */
-  --color-body: #A8A29B;        /* secondary text           */
-  --color-muted: #6E6A66;       /* captions / labels        */
-  --color-line: #2A272B;        /* hairline borders         */
+  --color-paper: #FBFAF7;   /* the ground                */
+  --color-ink: #1A1A1A;     /* body text                 */
+  --color-black: #000000;   /* headings, rules, controls */
+  --color-mute: #6E6A66;    /* secondary text            */
+  --color-faint: #9A9A9A;   /* captions                  */
+  --color-line: #E4E0D6;    /* hairlines                 */
 }
 
 :root {
-  --sv-bg: #0A0E1A;
-  --sv-bone: #F4F1EA;
-  --sv-body: #A8A29B;
-  --sv-muted: #6E6A66;
-  --sv-line: #2A272B;
-
-  --sv-glass-bg: rgba(15, 18, 35, 0.25);
+  --sv-paper: #FBFAF7;
+  --sv-ink: #1A1A1A;
+  --sv-black: #000000;
+  --sv-mute: #6E6A66;
+  --sv-faint: #9A9A9A;
+  --sv-line: #E4E0D6;
 
   /* DESIGN_FROZEN.md: Geist Sans only, Inter the sole fallback, no display font.
      The three legacy roles all resolve to the same family — there is no second
@@ -47,9 +48,9 @@
   }
 
   body {
-    font-family: var(--font-body);
-    background-color: var(--sv-bg);
-    color: var(--sv-body);
+    font-family: var(--sv-font);
+    background-color: var(--sv-paper);
+    color: var(--sv-ink);
     font-size: 16px;
     line-height: 1.6;
     overflow-x: hidden;
@@ -58,45 +59,21 @@
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-display);
-    color: var(--sv-bone);
-    line-height: 1.1;
+    font-family: var(--sv-font);
+    color: var(--sv-black);
+    line-height: 1.15;
     text-wrap: balance;
   }
 
-  /* Avoid single-word orphan lines site-wide — including dynamic
-     streamed blueprint text. Progressive; ignored by older engines. */
+  /* Avoid single-word orphan lines site-wide. */
   p {
     text-wrap: pretty;
   }
 
   ::selection {
-    background-color: rgba(244,241,234,0.28);
-    color: var(--sv-bone);
+    background-color: rgba(26, 26, 26, 0.14);
+    color: var(--sv-black);
   }
-}
-
-/* ============================================================= *
- *  NIGHT-SKY BACKDROP — fixed layer behind all content
- * ============================================================= */
-.sv-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background-color: #0A0E1A;
-  /* pale dawn-glow at the crown + faint star salt */
-  background-image:
-    radial-gradient(130% 70% at 50% -8%, rgba(244,241,234,0.12) 0%, rgba(244,241,234,0) 46%),
-    radial-gradient(100% 60% at 50% 108%, rgba(28, 34, 66, 0.55) 0%, rgba(10, 14, 26, 0) 55%),
-    radial-gradient(1.2px 1.2px at 24px 40px, rgba(244, 241, 234, 0.28), transparent),
-    radial-gradient(1.2px 1.2px at 130px 90px, rgba(244, 241, 234, 0.18), transparent),
-    radial-gradient(1px 1px at 70px 160px, rgba(244, 241, 234, 0.20), transparent),
-    radial-gradient(1px 1px at 190px 30px, rgba(244,241,234,0.22), transparent),
-    radial-gradient(1.4px 1.4px at 250px 200px, rgba(244, 241, 234, 0.16), transparent),
-    radial-gradient(1px 1px at 300px 120px, rgba(244, 241, 234, 0.14), transparent);
-  background-repeat: no-repeat, no-repeat, repeat, repeat, repeat, repeat, repeat, repeat;
-  background-size: 100% 100%, 100% 100%, 340px 260px, 340px 260px, 340px 260px, 340px 260px, 340px 260px, 340px 260px;
 }
 
 /* ============================================================= *
@@ -105,25 +82,25 @@
 @layer components {
 
   .sv-eyebrow {
-    font-family: var(--font-ui);
+    font-family: var(--sv-font);
     text-transform: uppercase;
     letter-spacing: 0.15em;
     font-weight: 700;
-    color: var(--sv-muted);
+    color: var(--sv-mute);
   }
 
   .sv-label {
-    font-family: var(--font-ui);
+    font-family: var(--sv-font);
     text-transform: uppercase;
     letter-spacing: 0.1em;
     font-weight: 700;
   }
 
-  .sv-serif { font-family: var(--font-body); }
-  .sv-display { font-family: var(--font-display); }
+  .sv-serif { font-family: var(--sv-font); font-weight: 300; }
+  .sv-display { font-family: var(--sv-font); }
 
   /* ----------------------------------------------------------- *
-   *  PRIMARY BUTTON — paper on night, breathing pulse
+   *  PRIMARY BUTTON — black on paper
    * ----------------------------------------------------------- */
   .sv-btn {
     display: inline-flex;
@@ -132,31 +109,28 @@
     width: 100%;
     max-width: 340px;
     min-height: 48px;
-    background: var(--sv-bone);
-    color: var(--sv-bg);
-    font-family: var(--font-ui);
+    background: var(--sv-black);
+    color: var(--sv-paper);
+    font-family: var(--sv-font);
     font-weight: 700;
-    font-size: 14px;
+    font-size: 13px;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.12em;
     padding: 18px 24px;
     border: none;
-    border-radius: 12px;
+    border-radius: 2px;
     cursor: pointer;
-    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
-    animation: sv-pulse 2.5s ease-in-out infinite;
+    transition: opacity 0.2s ease, transform 0.15s ease;
   }
-  .sv-btn:hover { background: #E4E0D6; }
-  .sv-btn:active { transform: scale(0.99); }
+  .sv-btn:hover { opacity: 0.86; }
+  .sv-btn:active { transform: scale(0.995); }
   .sv-btn:disabled {
-    background: rgba(244,241,234,0.18);
-    color: rgba(244,241,234,0.40);
+    background: var(--sv-line);
+    color: var(--sv-faint);
     cursor: not-allowed;
-    animation: none;
-    box-shadow: none;
   }
 
-  /* Outlined secondary — bone edge */
+  /* Outlined secondary */
   .sv-btn-ghost {
     display: inline-flex;
     align-items: center;
@@ -165,160 +139,91 @@
     max-width: 340px;
     min-height: 48px;
     background: transparent;
-    color: var(--sv-bone);
-    font-family: var(--font-ui);
+    color: var(--sv-ink);
+    font-family: var(--sv-font);
     font-weight: 700;
-    font-size: 14px;
+    font-size: 13px;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.12em;
     padding: 18px 24px;
-    border: 1px solid rgba(244, 241, 234, 0.4);
-    border-radius: 12px;
+    border: 1px solid var(--sv-ink);
+    border-radius: 2px;
     cursor: pointer;
-    transition: background 0.2s ease, border-color 0.2s ease;
+    transition: background 0.2s ease;
   }
-  .sv-btn-ghost:hover {
-    background: rgba(244, 241, 234, 0.06);
-    border-color: rgba(244, 241, 234, 0.7);
-  }
+  .sv-btn-ghost:hover { background: rgba(26, 26, 26, 0.04); }
 
   /* ----------------------------------------------------------- *
-   *  GLASS CARD — frosted night-glass, faint pale edge
+   *  CARD — hairline on paper. No fill, no shadow, no blur.
    * ----------------------------------------------------------- */
   .sv-card {
-    background: rgba(255, 255, 255, 0.06);
-    -webkit-backdrop-filter: blur(20px) saturate(1.2);
-    backdrop-filter: blur(20px) saturate(1.2);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 16px;
-    padding: 24px;
-    box-shadow: 0 0 40px rgba(244,241,234,0.08);
+    background: transparent;
+    border: 1px solid var(--sv-line);
+    border-radius: 2px;
+    padding: 22px;
   }
 
   .sv-divider {
     height: 1px;
     width: 100%;
-    background: rgba(244, 241, 234, 0.1);
+    background: var(--sv-line);
     border: none;
   }
 
   /* ----------------------------------------------------------- *
    *  FORM FIELDS
    * ----------------------------------------------------------- */
-  /* Underline field — text / date / time / email */
   .sv-field {
     width: 100%;
     background: transparent;
     border: none;
-    border-bottom: 2px solid rgba(244, 241, 234, 0.15);
+    border-bottom: 1px solid var(--sv-line);
     padding: 12px 2px;
-    color: #F4F1EA;
-    font-family: var(--font-body);
+    color: var(--sv-ink);
+    font-family: var(--sv-font);
+    font-weight: 400;
     font-size: 16px;
     outline: none;
     transition: border-color 0.2s ease;
-    color-scheme: dark;
+    color-scheme: light;
   }
-  .sv-field:focus { border-color: #F4F1EA; scroll-margin-bottom: 140px; scroll-margin-top: 24px; }
-  .sv-field::placeholder { color: #6E6A66; }
+  .sv-field:focus { border-color: var(--sv-black); scroll-margin-bottom: 140px; scroll-margin-top: 24px; }
+  .sv-field::placeholder { color: var(--sv-faint); }
   .sv-field:disabled { opacity: 0.35; }
 
-  /* Frosted textarea — the deep questions */
   .sv-textarea {
     width: 100%;
-    background: rgba(15, 18, 35, 0.4);
-    -webkit-backdrop-filter: blur(12px);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(244,241,234,0.15);
-    border-radius: 12px;
-    padding: 16px;
+    background: transparent;
+    border: 1px solid var(--sv-line);
+    border-radius: 2px;
+    padding: 14px;
     min-height: 120px;
     max-height: 200px;
     overflow-y: auto;
-    color: #F4F1EA;
-    font-family: var(--font-body);
+    color: var(--sv-ink);
+    font-family: var(--sv-font);
+    font-weight: 300;
     font-size: 16px;
     line-height: 1.6;
     outline: none;
     resize: none;
     transition: border-color 0.2s ease;
   }
-  .sv-textarea:focus { border-color: #F4F1EA; scroll-margin-bottom: 140px; scroll-margin-top: 24px; }
-  .sv-textarea::placeholder { color: #6E6A66; }
+  .sv-textarea:focus { border-color: var(--sv-black); scroll-margin-bottom: 140px; scroll-margin-top: 24px; }
+  .sv-textarea::placeholder { color: var(--sv-faint); }
 }
 
 /* ============================================================= *
  *  ANIMATIONS
  * ============================================================= */
 
-/* Breathing pulse on the primary CTA — pale glow */
-@keyframes sv-pulse {
-  0%, 100% {
-    transform: scale(1);
-    box-shadow: 0 0 22px rgba(244,241,234,0.30);
-  }
-  50% {
-    transform: scale(1.02);
-    box-shadow: 0 0 40px rgba(244,241,234,0.55);
-  }
-}
-
-/* Constellation dot twinkle — gentle opacity oscillation */
-@keyframes sv-twinkle {
-  0%, 100% { opacity: 0.3; }
-  50% { opacity: 0.5; }
-}
-.sv-star { animation: sv-twinkle 3s ease-in-out infinite; }
-
-/* Loading dots — pale wave lighting left → right */
-@keyframes sv-wave {
-  0%, 100% { background-color: #6E6A66; box-shadow: 0 0 0 rgba(244,241,234,0); }
-  18% { background-color: #F4F1EA; box-shadow: 0 0 10px rgba(244,241,234,0.7); }
-  42% { background-color: #6E6A66; box-shadow: 0 0 0 rgba(244,241,234,0); }
-}
-.sv-wave-dot {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  border-radius: 999px;
-  background: #6E6A66;
-  animation: sv-wave 1.4s ease-in-out infinite;
-}
-
 /* Gentle down-chevron bounce */
 @keyframes sv-bounce {
-  0%, 100% { transform: translateY(0); opacity: 0.5; }
-  50% { transform: translateY(6px); opacity: 1; }
+  0%, 100% { transform: translateY(0); opacity: 0.45; }
+  50% { transform: translateY(6px); opacity: 0.9; }
 }
 .sv-chevron { animation: sv-bounce 2s ease-in-out infinite; }
 
-/* Streaming cursor (Blueprint) — paper */
-@keyframes sv-blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
-}
-.sv-cursor {
-  display: inline-block;
-  width: 2px;
-  height: 20px;
-  background: var(--sv-bone);
-  margin-left: 2px;
-  vertical-align: text-bottom;
-  box-shadow: 0 0 8px rgba(244,241,234,0.6);
-  animation: sv-blink 0.8s step-end infinite;
-}
-
-/* Streaming cursor on the light Blueprint page — black on paper, no glow */
-.sv-cursor-light {
-  display: inline-block;
-  width: 2px;
-  height: 20px;
-  background: #000000;
-  margin-left: 2px;
-  vertical-align: text-bottom;
-  animation: sv-blink 0.8s step-end infinite;
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .sv-btn, .sv-chevron, .sv-cursor, .sv-cursor-light, .sv-star, .sv-wave-dot { animation: none; }
+  .sv-chevron { animation: none; }
 }

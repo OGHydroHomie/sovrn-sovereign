@@ -145,9 +145,7 @@ export default function App() {
   const handleQuizComplete = (data: QuizData) => handleGenerate(data);
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#0A0E1A', position: 'relative' }}>
-      {/* Night-sky backdrop (fixed, behind everything) */}
-      <div className="sv-backdrop" aria-hidden="true" />
+    <div className="min-h-screen" style={{ backgroundColor: '#FBFAF7', position: 'relative' }}>
 
       {/* Error banner */}
       {error && (
@@ -155,11 +153,11 @@ export default function App() {
           className="fixed top-4 left-1/2 -translate-x-1/2 z-50 rounded-xl px-6 py-3 max-w-md text-center"
           style={{ background: 'rgba(244,241,234,0.12)', border: '1px solid rgba(244,241,234,0.3)', backdropFilter: 'blur(12px)' }}
         >
-          <p className="text-sm" style={{ color: '#F4F1EA', fontFamily: 'var(--sv-font)' }}>{error}</p>
+          <p className="text-sm" style={{ color: '#1A1A1A', fontFamily: 'var(--sv-font)' }}>{error}</p>
           <button
             onClick={() => setError(null)}
             className="text-xs mt-1"
-            style={{ color: 'rgba(244,241,234,0.6)', fontFamily: 'var(--sv-font)' }}
+            style={{ color: '#6E6A66', fontFamily: 'var(--sv-font)' }}
           >
             Dismiss
           </button>
@@ -237,10 +235,9 @@ export default function App() {
           onClick={() => setPage('blueprint')}
           className="fixed bottom-6 right-6 z-20 text-xs tracking-widest uppercase px-4 py-2 rounded-lg transition-all"
           style={{
-            background: 'rgba(15,18,35,0.7)',
-            color: '#F4F1EA',
-            border: '1px solid rgba(244,241,234,0.25)',
-            backdropFilter: 'blur(12px)',
+            background: '#FBFAF7',
+            color: '#1A1A1A',
+            border: '1px solid #1A1A1A',
             fontFamily: 'var(--sv-font)',
             letterSpacing: '0.1em',
           }}
