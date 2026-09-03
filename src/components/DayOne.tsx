@@ -107,7 +107,7 @@ export default function DayOne({ entry: initialEntry }: Props) {
             style={{
               marginTop: 20, width: '100%', minHeight: 48,
               background: '#000000', color: '#FFFFFF', border: 'none', borderRadius: 12,
-              fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: 14,
+              fontFamily: 'var(--sv-font)', fontWeight: 700, fontSize: 14,
               textTransform: 'uppercase', letterSpacing: '0.08em', padding: '16px 24px', cursor: 'pointer',
             }}
           >
@@ -136,7 +136,7 @@ export default function DayOne({ entry: initialEntry }: Props) {
                 marginTop: 10, width: '100%', minHeight: 48, boxSizing: 'border-box',
                 background: '#FBFAF7', color: '#1A1A1A',
                 border: '1px solid #E8E6E1', borderRadius: 10,
-                fontFamily: 'Georgia, serif', fontSize: 16, padding: '12px 14px',
+                fontFamily: 'var(--sv-font)', fontSize: 16, padding: '12px 14px',
               }}
             />
             <button
@@ -147,7 +147,7 @@ export default function DayOne({ entry: initialEntry }: Props) {
                 background: ready ? '#000000' : '#E8E6E1',
                 color: ready ? '#FFFFFF' : '#9A9A9A',
                 border: 'none', borderRadius: 12,
-                fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: 14,
+                fontFamily: 'var(--sv-font)', fontWeight: 700, fontSize: 14,
                 textTransform: 'uppercase', letterSpacing: '0.08em', padding: '16px 24px',
                 cursor: ready && !saving ? 'pointer' : 'not-allowed',
               }}

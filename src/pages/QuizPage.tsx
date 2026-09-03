@@ -250,10 +250,10 @@ export default function QuizPage({ onComplete, onBack }: Props) {
             <p className="sv-label" style={{ fontSize: 12, color: '#9A9A9A', letterSpacing: '0.22em', fontWeight: 500 }}>
               Your chart has been calculated
             </p>
-            <div className="sv-display" style={{ marginTop: 16, fontWeight: 800, fontSize: 28, color: '#D93A2B', letterSpacing: '0.02em' }}>
+            <div className="sv-display" style={{ marginTop: 16, fontWeight: 700, fontSize: 28, color: '#D93A2B', letterSpacing: '0.02em' }}>
               {revealArchetype}
             </div>
-            <p style={{ marginTop: 6, fontFamily: "'Space Grotesk', sans-serif", fontSize: 14, color: '#A8A29B', letterSpacing: '0.06em' }}>
+            <p style={{ marginTop: 6, fontFamily: 'var(--sv-font)', fontSize: 14, color: '#A8A29B', letterSpacing: '0.06em' }}>
               {revealSign} Sun
             </p>
             <p className="sv-display" style={{ marginTop: 12, fontStyle: 'italic', fontSize: 15, color: '#A8A29B' }}>
@@ -286,7 +286,7 @@ export default function QuizPage({ onComplete, onBack }: Props) {
             >
               <h2
                 className="sv-display"
-                style={{ fontWeight: 600, fontSize: 'clamp(22px, 6.4vw, 26px)', lineHeight: 1.25, color: '#F4F1EA' }}
+                style={{ fontWeight: 700, fontSize: 'clamp(22px, 6.4vw, 26px)', lineHeight: 1.25, color: '#F4F1EA' }}
               >
                 {q.label}
               </h2>
@@ -338,7 +338,7 @@ export default function QuizPage({ onComplete, onBack }: Props) {
                         border: 'none',
                         padding: '0 2px',
                         cursor: 'pointer',
-                        fontFamily: "'Space Grotesk', sans-serif",
+                        fontFamily: 'var(--sv-font)',
                         fontSize: 13,
                         color: '#E8B04B',
                         textDecoration: 'underline',
@@ -383,7 +383,7 @@ export default function QuizPage({ onComplete, onBack }: Props) {
                                   padding: '10px 14px', textAlign: 'left', cursor: 'pointer',
                                   background: 'transparent', border: 'none',
                                   borderTop: idx === 0 ? 'none' : '1px solid rgba(255,255,255,0.06)',
-                                  color: '#F4F1EA', fontFamily: 'Georgia, serif', fontSize: 15, lineHeight: 1.4,
+                                  color: '#F4F1EA', fontFamily: 'var(--sv-font)', fontSize: 15, lineHeight: 1.4,
                                 }}
                                 onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.08)')}
                                 onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
@@ -458,7 +458,7 @@ export default function QuizPage({ onComplete, onBack }: Props) {
                 border: 'none',
                 padding: '0 2px',
                 cursor: 'pointer',
-                fontFamily: "'Space Grotesk', sans-serif",
+                fontFamily: 'var(--sv-font)',
                 fontSize: 14,
                 color: '#6E6A66',
               }}

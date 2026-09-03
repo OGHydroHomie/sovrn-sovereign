@@ -173,11 +173,11 @@ export default function App() {
           className="fixed top-4 left-1/2 -translate-x-1/2 z-50 rounded-xl px-6 py-3 max-w-md text-center"
           style={{ background: 'rgba(217,58,43,0.12)', border: '1px solid rgba(217,58,43,0.3)', backdropFilter: 'blur(12px)' }}
         >
-          <p className="text-sm" style={{ color: '#F4F1EA', fontFamily: 'Georgia, serif' }}>{error}</p>
+          <p className="text-sm" style={{ color: '#F4F1EA', fontFamily: 'var(--sv-font)' }}>{error}</p>
           <button
             onClick={() => setError(null)}
             className="text-xs mt-1"
-            style={{ color: 'rgba(244,241,234,0.6)', fontFamily: "'Space Grotesk', sans-serif" }}
+            style={{ color: 'rgba(244,241,234,0.6)', fontFamily: 'var(--sv-font)' }}
           >
             Dismiss
           </button>
@@ -268,7 +268,7 @@ export default function App() {
             color: '#E8B04B',
             border: '1px solid rgba(232,176,75,0.25)',
             backdropFilter: 'blur(12px)',
-            fontFamily: "'Space Grotesk', sans-serif",
+            fontFamily: 'var(--sv-font)',
             letterSpacing: '0.1em',
           }}
         >

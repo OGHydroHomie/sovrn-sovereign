@@ -131,7 +131,7 @@ export default function HeroPage({ onStart }: Props) {
             className="sv-display"
             style={{
               marginTop: 32,
-              fontWeight: 800,
+              fontWeight: 700,
               fontSize: 'clamp(30px, 8.2vw, 48px)',
               lineHeight: 1.1,
               color: '#F4F1EA',
@@ -160,7 +160,7 @@ export default function HeroPage({ onStart }: Props) {
           <p
             style={{
               marginTop: 20,
-              fontFamily: "'Space Grotesk', sans-serif",
+              fontFamily: 'var(--sv-font)',
               fontWeight: 400,
               fontSize: 13,
               color: '#6E6A66',
@@ -186,7 +186,7 @@ export default function HeroPage({ onStart }: Props) {
             fontSize: 11,
             color: '#E8B04B',
             letterSpacing: '0.2em',
-            fontWeight: 600,
+            fontWeight: 700,
             textAlign: 'center',
           }}
         >
@@ -237,7 +237,7 @@ export default function HeroPage({ onStart }: Props) {
                 </span>
                 <span className="sv-label" style={{ fontSize: 11, color: '#E8B04B' }}>01</span>
               </div>
-              <div className="sv-display" style={{ fontWeight: 800, fontSize: 24, color: '#E8B04B', marginTop: 10 }}>
+              <div className="sv-display" style={{ fontWeight: 700, fontSize: 24, color: '#E8B04B', marginTop: 10 }}>
                 THE PIONEER
               </div>
               <p className="sv-serif" style={{ marginTop: 12, fontSize: 14, lineHeight: 1.7, color: '#A8A29B' }}>
@@ -250,7 +250,7 @@ export default function HeroPage({ onStart }: Props) {
                   <span
                     key={t}
                     style={{
-                      fontFamily: "'Space Grotesk', sans-serif",
+                      fontFamily: 'var(--sv-font)',
                       fontSize: 11,
                       color: '#F4F1EA',
                       padding: '6px 12px',
@@ -268,7 +268,7 @@ export default function HeroPage({ onStart }: Props) {
           <p
             style={{
               marginTop: 16,
-              fontFamily: "'Space Grotesk', sans-serif",
+              fontFamily: 'var(--sv-font)',
               fontWeight: 400,
               fontSize: 14,
               color: '#A8A29B',
@@ -290,7 +290,7 @@ export default function HeroPage({ onStart }: Props) {
         <p
           style={{
             marginTop: 40,
-            fontFamily: "'Space Grotesk', sans-serif",
+            fontFamily: 'var(--sv-font)',
             fontWeight: 400,
             fontSize: 11,
             letterSpacing: '0.1em',

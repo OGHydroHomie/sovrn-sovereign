@@ -28,9 +28,14 @@
   --sv-glass-bg: rgba(15, 18, 35, 0.25);
   --sv-glass-edge: rgba(232, 176, 75, 0.25);
 
-  --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
-  --font-ui: 'Space Grotesk', system-ui, sans-serif;
-  --font-body: Georgia, 'Times New Roman', serif;
+  /* DESIGN_FROZEN.md: Geist Sans only, Inter the sole fallback, no display font.
+     The three legacy roles all resolve to the same family — there is no second
+     typeface for headings, quotes, or body. The .sv-serif / .sv-display class
+     names are kept so call sites stay untouched; both are sans now. */
+  --sv-font: 'Geist', Inter, sans-serif;
+  --font-display: var(--sv-font);
+  --font-ui: var(--sv-font);
+  --font-body: var(--sv-font);
 }
 
 @layer base {
@@ -108,7 +113,7 @@
     font-family: var(--font-ui);
     text-transform: uppercase;
     letter-spacing: 0.15em;
-    font-weight: 600;
+    font-weight: 700;
     color: var(--sv-muted);
   }
 
@@ -135,7 +140,7 @@
     background: var(--sv-ember);
     color: #fff;
     font-family: var(--font-ui);
-    font-weight: 600;
+    font-weight: 700;
     font-size: 14px;
     text-transform: uppercase;
     letter-spacing: 0.08em;
@@ -167,7 +172,7 @@
     background: transparent;
     color: var(--sv-bone);
     font-family: var(--font-ui);
-    font-weight: 600;
+    font-weight: 700;
     font-size: 14px;
     text-transform: uppercase;
     letter-spacing: 0.08em;

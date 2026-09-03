@@ -118,7 +118,9 @@ export default function BlueprintPage({ text, isDone, quizData, dayOne }: Props)
     fill();
     const checkPage = (needed: number) => { if (y + needed > 272) { doc.addPage(); fill(); y = 20; } };
 
-    doc.setFont('times', 'normal');
+    // jsPDF ships only courier/helvetica/times; helvetica is the sans of the
+    // three. Embedding Geist would mean bundling the font binary.
+    doc.setFont('helvetica', 'normal');
     doc.setFontSize(10); doc.setTextColor(...black);
     doc.text('SOVRN', pageWidth / 2, y, { align: 'center' }); y += 10;
     doc.setFontSize(20); doc.setTextColor(...ink);
@@ -252,7 +254,7 @@ export default function BlueprintPage({ text, isDone, quizData, dayOne }: Props)
                   width: '100%', maxWidth: 340, minHeight: 48,
                   background: 'transparent', color: '#1A1A1A',
                   border: '1px solid #1A1A1A', borderRadius: 12,
-                  fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: 14,
+                  fontFamily: 'var(--sv-font)', fontWeight: 700, fontSize: 14,
                   textTransform: 'uppercase', letterSpacing: '0.08em', padding: '18px 24px', cursor: 'pointer',
                 }}
               >
@@ -261,7 +263,7 @@ export default function BlueprintPage({ text, isDone, quizData, dayOne }: Props)
             </div>
 
             <p
-              style={{ marginTop: 40, fontFamily: "'Space Grotesk', sans-serif", fontWeight: 400, fontSize: 11, letterSpacing: '0.1em', color: '#9A9A9A', textAlign: 'center' }}
+              style={{ marginTop: 40, fontFamily: 'var(--sv-font)', fontWeight: 400, fontSize: 11, letterSpacing: '0.1em', color: '#9A9A9A', textAlign: 'center' }}
             >
               SOVRN — 2026
             </p>
