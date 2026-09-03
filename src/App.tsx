@@ -8,6 +8,7 @@ import BlueprintPage from './pages/BlueprintPage';
 import type { AppPage, QuizData } from './types';
 import { generateBlueprint } from './utils/api';
 import { saveBlueprint, getBlueprint, getQuizData, trackEvent } from './utils/storage';
+import { ensureUser } from './lib/session';
 
 const API_KEY_STORAGE = 'sovrn_api_key';
 
@@ -48,6 +49,11 @@ export default function App() {
 
   useEffect(() => {
     trackEvent('pageView', 'hero');
+
+    // First visit: anonymous sign-in, then the `users` row keyed to auth.uid().
+    // Fire-and-forget — nothing on screen waits for it.
+    void ensureUser();
+
     const existing = getBlueprint();
     const existingQuiz = getQuizData();
     if (existing && existingQuiz) {

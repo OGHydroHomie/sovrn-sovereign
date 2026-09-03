@@ -1,0 +1,7 @@
+project_id = "ptoeeupkjsmnggxfzlrw"
+
+[auth]
+enabled = true
+# Identity for SOVRN is an anonymous session. users.id IS auth.uid().
+enable_anonymous_sign_ins = true
+enable_manual_linking = true
