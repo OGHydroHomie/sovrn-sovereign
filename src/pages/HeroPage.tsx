@@ -9,18 +9,18 @@ interface Props {
 const REVEALS = [
   {
     accent: '#1A1A1A',
-    title: 'The architecture you were born with',
-    body: 'Your Sun, Rising, and North Node decoded as a map of who you were built to become — before anyone could talk you out of it.',
+    title: "A name for who you're becoming",
+    body: 'Not a personality type and not a compliment. One name, chosen from thirteen, for the person your own answers keep pointing at.',
   },
   {
     accent: '#1A1A1A',
-    title: "The pattern that's been running your life",
-    body: "Your blueprint names the exact loop. You'll recognize it immediately — and it loses its grip the moment you see it.",
+    title: "The loop you're running now",
+    body: 'The specific thing you do that keeps it from happening. Named precisely enough to be uncomfortable, and plainly enough to stop today.',
   },
   {
     accent: '#1A1A1A',
-    title: 'Where your life is actually trying to go',
-    body: 'The direction your entire chart has been pulling you toward since the moment you arrived. Not a suggestion. A coordinate.',
+    title: 'One thing to do today',
+    body: 'Two options, both doable in under twenty minutes. You pick one, do it, and write down what actually happened.',
   },
 ];
 
@@ -88,7 +88,7 @@ export default function HeroPage({ onStart }: Props) {
               letterSpacing: '-0.02em',
             }}
           >
-            Remember who you are.
+            Find out who you're becoming.
           </h1>
 
           {/* 24px → body */}
@@ -185,13 +185,19 @@ export default function HeroPage({ onStart }: Props) {
                   Who you are
                 </span>
               </div>
-              <div className="sv-display" style={{ fontWeight: 700, fontSize: 24, color: '#1A1A1A', marginTop: 10 }}>
-                THE PIONEER
+              <div
+                className="sv-display"
+                style={{ fontWeight: 100, fontSize: 30, color: '#000000', marginTop: 10, letterSpacing: '0.01em' }}
+              >
+                THE HEADLINER
               </div>
-              <p className="sv-serif" style={{ marginTop: 12, fontSize: 14, lineHeight: 1.7, color: '#9A9A9A' }}>
-                Your Aries Sun at 14° burns in the first house — the raw signature
-                of someone built to go first, to break the trail the rest will only
-                later find the courage to follow.
+              <p style={{ marginTop: 8, fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 13, color: '#6E6A66' }}>
+                Right now you&rsquo;re the Opening Act.
+              </p>
+              <p className="sv-serif" style={{ marginTop: 14, fontSize: 14, lineHeight: 1.7, color: '#1A1A1A' }}>
+                You were built to be heard. Not to be approved of, not to be safe —
+                to be heard, with your name on it, in a room full of strangers who
+                don&rsquo;t owe you anything.
               </p>
               <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
                 {['Who you are', 'The pattern', 'One act'].map((t) => (
@@ -230,7 +236,7 @@ export default function HeroPage({ onStart }: Props) {
         {/* Second CTA — a different angle from the hero button */}
         <div style={{ marginTop: 32, display: 'flex', justifyContent: 'center' }}>
           <button className="sv-btn" onClick={handleStart}>
-            See what your chart says
+            See which one you are
           </button>
         </div>
 
