@@ -9,7 +9,6 @@
 @theme {
   --color-bg: #0A0E1A;          /* deep midnight blue-black */
   --color-ember: #D93A2B;       /* initiation fire (glows)  */
-  --color-ember-deep: #C21F2C;  /* brand red variant        */
   --color-gilt: #E8B04B;        /* oracle gold (sparing)    */
   --color-bone: #F4F1EA;        /* warm white text          */
   --color-body: #A8A29B;        /* secondary text           */
@@ -20,7 +19,6 @@
 :root {
   --sv-bg: #0A0E1A;
   --sv-ember: #D93A2B;
-  --sv-ember-deep: #C21F2C;
   --sv-gilt: #E8B04B;
   --sv-bone: #F4F1EA;
   --sv-body: #A8A29B;
@@ -310,12 +308,12 @@
   animation: sv-blink 0.8s step-end infinite;
 }
 
-/* Streaming cursor on the light Blueprint page — crimson on white, no glow */
+/* Streaming cursor on the light Blueprint page — black on paper, no glow */
 .sv-cursor-light {
   display: inline-block;
   width: 2px;
   height: 20px;
-  background: #C21F2C;
+  background: #000000;
   margin-left: 2px;
   vertical-align: text-bottom;
   animation: sv-blink 0.8s step-end infinite;

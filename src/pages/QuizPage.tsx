@@ -235,7 +235,7 @@ export default function QuizPage({ onComplete, onBack }: Props) {
       <div style={{ paddingTop: 24, maxWidth: 480, width: '100%', margin: '0 auto' }}>
         <div style={{ height: 3, borderRadius: 999, background: '#2A272B', overflow: 'hidden' }}>
           <motion.div
-            style={{ height: '100%', borderRadius: 999, background: '#C21F2C', boxShadow: '0 0 10px rgba(194,31,44,0.5)' }}
+            style={{ height: '100%', borderRadius: 999, background: '#000000' }}
             initial={false}
             animate={{ width: `${progressValue}%` }}
             transition={{ duration: 0.5, ease: 'easeOut' }}

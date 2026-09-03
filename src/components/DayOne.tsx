@@ -39,7 +39,7 @@ function formatStamp(iso: string): string {
 const CARD: React.CSSProperties = {
   background: '#FFFFFF',
   border: '1px solid #E8E6E1',
-  borderLeft: '3px solid #C21F2C',
+  borderLeft: '3px solid #000000',
   borderRadius: 12,
   boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
   padding: 24,
@@ -106,7 +106,7 @@ export default function DayOne({ entry: initialEntry }: Props) {
             onClick={() => setAsking(true)}
             style={{
               marginTop: 20, width: '100%', minHeight: 48,
-              background: '#C21F2C', color: '#FFFFFF', border: 'none', borderRadius: 12,
+              background: '#000000', color: '#FFFFFF', border: 'none', borderRadius: 12,
               fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: 14,
               textTransform: 'uppercase', letterSpacing: '0.08em', padding: '16px 24px', cursor: 'pointer',
             }}
@@ -120,7 +120,7 @@ export default function DayOne({ entry: initialEntry }: Props) {
             <label
               htmlFor="what-happened"
               className="sv-label"
-              style={{ display: 'block', fontSize: 11, color: '#C21F2C', letterSpacing: '0.14em', fontWeight: 500 }}
+              style={{ display: 'block', fontSize: 11, color: '#000000', letterSpacing: '0.14em', fontWeight: 500 }}
             >
               What actually happened?
             </label>
@@ -144,7 +144,7 @@ export default function DayOne({ entry: initialEntry }: Props) {
               disabled={!ready || saving}
               style={{
                 marginTop: 12, width: '100%', minHeight: 48,
-                background: ready ? '#C21F2C' : '#E8E6E1',
+                background: ready ? '#000000' : '#E8E6E1',
                 color: ready ? '#FFFFFF' : '#9A9A9A',
                 border: 'none', borderRadius: 12,
                 fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: 14,
@@ -155,7 +155,7 @@ export default function DayOne({ entry: initialEntry }: Props) {
               {saving ? 'Recording…' : 'Record it'}
             </button>
             {failed && (
-              <p className="sv-serif" style={{ fontSize: 14, color: '#C21F2C', marginTop: 10 }}>
+              <p className="sv-serif" style={{ fontSize: 14, color: '#000000', marginTop: 10 }}>
                 That did not save. Check your connection and try again.
               </p>
             )}

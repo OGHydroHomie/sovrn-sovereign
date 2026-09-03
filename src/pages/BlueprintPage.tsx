@@ -69,7 +69,7 @@ function renderBody(lines: string[], showCursor: boolean) {
         <p
           key={i}
           className="sv-display"
-          style={{ fontStyle: 'italic', fontWeight: 400, fontSize: 18, lineHeight: 1.5, color: '#C21F2C', margin: '10px 0' }}
+          style={{ fontStyle: 'italic', fontWeight: 400, fontSize: 18, lineHeight: 1.5, color: '#000000', margin: '10px 0' }}
         >
           {line}{cursor}
         </p>
@@ -99,7 +99,7 @@ export default function BlueprintPage({ text, isDone, quizData, dayOne }: Props)
   }, [text, isDone]);
 
   const { preamble, sections } = parseBlueprint(text);
-  const twoTone = ['#C21F2C', '#1A1A1A']; // alternating left bars: ember / ink
+  const twoTone = ['#000000', '#1A1A1A']; // alternating left bars: black / ink
 
   const handleDownload = () => {
     const doc = new jsPDF({ unit: 'mm', format: 'a4' });
@@ -109,7 +109,7 @@ export default function BlueprintPage({ text, isDone, quizData, dayOne }: Props)
     const contentWidth = pageWidth - margin * 2;
     let y = 20;
 
-    const ember: [number, number, number] = [194, 31, 44];
+    const black: [number, number, number] = [0, 0, 0];
     const ink: [number, number, number] = [26, 26, 26];
     const body: [number, number, number] = [74, 74, 74];
     const muted: [number, number, number] = [154, 154, 154];
@@ -119,7 +119,7 @@ export default function BlueprintPage({ text, isDone, quizData, dayOne }: Props)
     const checkPage = (needed: number) => { if (y + needed > 272) { doc.addPage(); fill(); y = 20; } };
 
     doc.setFont('times', 'normal');
-    doc.setFontSize(10); doc.setTextColor(...ember);
+    doc.setFontSize(10); doc.setTextColor(...black);
     doc.text('SOVRN', pageWidth / 2, y, { align: 'center' }); y += 10;
     doc.setFontSize(20); doc.setTextColor(...ink);
     doc.text('SOVEREIGN BLUEPRINT', pageWidth / 2, y, { align: 'center' }); y += 9;
@@ -139,7 +139,7 @@ export default function BlueprintPage({ text, isDone, quizData, dayOne }: Props)
       } else {
         const quote = isQuoteLine(t);
         doc.setFontSize(quote ? 12 : 10);
-        doc.setTextColor(...(quote ? ember : body));
+        doc.setTextColor(...(quote ? black : body));
         const wrapped = doc.splitTextToSize(line, contentWidth);
         checkPage(wrapped.length * 5 + 2);
         doc.text(wrapped, margin, y); y += wrapped.length * (quote ? 6 : 5) + 2;
@@ -171,7 +171,7 @@ export default function BlueprintPage({ text, isDone, quizData, dayOne }: Props)
           </span>
         </div>
         <div style={{ height: 1, background: '#E8E6E1', margin: '14px 0 18px' }} />
-        <p className="sv-label" style={{ fontSize: 11, color: '#C21F2C', letterSpacing: '0.18em', fontWeight: 500 }}>
+        <p className="sv-label" style={{ fontSize: 11, color: '#000000', letterSpacing: '0.18em', fontWeight: 500 }}>
           Results · Verified Reading
         </p>
 
@@ -182,7 +182,7 @@ export default function BlueprintPage({ text, isDone, quizData, dayOne }: Props)
             style={{
               fontStyle: 'italic', fontWeight: 400,
               fontSize: 'clamp(24px, 6.6vw, 28px)', lineHeight: 1.35,
-              color: '#C21F2C', textAlign: 'center', maxWidth: 480,
+              color: '#000000', textAlign: 'center', maxWidth: 480,
               margin: '48px auto', padding: '0 4px',
             }}
           >
