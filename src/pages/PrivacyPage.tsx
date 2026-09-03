@@ -61,7 +61,7 @@ export default function PrivacyPage() {
       <H2>Getting in touch</H2>
       <P>
         Questions about any of this can go to{' '}
-        <a href="mailto:hello@sovrn.app" style={{ color: '#000000' }}>hello@sovrn.app</a>.
+        <a href="mailto:elijahpitts@gmail.com" style={{ color: '#000000' }}>elijahpitts@gmail.com</a>.
       </P>
     </PaperPage>
   );
