@@ -100,8 +100,8 @@ Q1=12%, Q2=24%, Q3=36%, Q4=48%, reveal=55%, Q5=64%,
 Q6=76%, Q7=88%, Q8=100%
 
 On Q8 submit:
-1. Fire Formspree POST (fire and forget) to 
-   https://formspree.io/f/xdarebvj with ALL fields
+1. Capture the email into the Supabase `emails` table
+   (fire and forget)
 2. Trigger existing chart calculation + Claude API streaming
 3. Transition to loading screen
 
@@ -109,7 +109,7 @@ On Q8 submit:
 - React + Vite + TypeScript
 - Chart engine: astronomy-engine library (chart.ts)
 - AI: Claude Sonnet 4.6 via Vercel serverless (SSE streaming)
-- Email: Formspree (endpoint: xdarebvj)
+- Email capture: Supabase `emails` table
 - Hosting: Vercel Pro
 - Repo: github.com/OGHydroHomie/sovrn-sovereign
 

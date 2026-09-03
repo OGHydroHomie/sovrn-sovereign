@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { QuizData } from '../types';
 import { saveQuizData, saveLead } from '../utils/storage';
+import { captureEmail } from '../lib/capture';
 
 interface Props {
   onComplete: (data: QuizData) => void;
@@ -13,8 +14,6 @@ const TOTAL = 8;
    Q1..Q8, with the chart reveal sitting at 55% between Q4 (48) and Q5 (64). */
 const PROGRESS = [12, 24, 36, 48, 64, 76, 88, 100];
 const REVEAL_PROGRESS = 55;
-
-const FORMSPREE_ENDPOINT = 'https://formspree.io/f/xdarebvj';
 
 /* ── Sun-sign preview (date-range math only; the real chart lives in chart.ts) ── */
 const SIGN_RANGES: { sign: string; from: [number, number]; to: [number, number] }[] = [
@@ -56,26 +55,6 @@ function sunSignFromDate(dateStr: string): string {
     if (to[0] === month && day <= to[1]) return sign;
   }
   return 'Aries';
-}
-
-/* Fire the lead to Formspree — non-blocking, runs alongside chart calc + stream. */
-function fireFormspree(data: QuizData): void {
-  const payload = {
-    name: data.name,
-    birthDate: data.birthDate,
-    birthTime: data.birthTime,
-    birthTimeUnknown: data.birthTimeUnknown,
-    birthPlace: data.birthPlace,
-    fear: data.deepestFear,
-    desiredReality: data.desiredReality,
-    repeatingPattern: data.repeatingPattern,
-    email: data.email,
-  };
-  fetch(FORMSPREE_ENDPOINT, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-    body: JSON.stringify(payload),
-  }).catch((err) => console.warn('Formspree capture failed:', err));
 }
 
 /* ── Location autocomplete (OpenStreetMap Nominatim — free, no key) ── */
@@ -197,10 +176,11 @@ export default function QuizPage({ onComplete, onBack }: Props) {
       window.scrollTo(0, 0);
       goTo(step + 1, 1);
     } else {
-      // Q8 submit — persist, capture lead, fire Formspree, kick off generation
+      // Q8 submit — persist, capture the lead in Supabase, kick off generation.
+      // Capture is non-blocking: it runs alongside chart calc + stream.
       saveQuizData(data);
       saveLead(data.name, data.email);
-      fireFormspree(data);
+      void captureEmail(data.email, 'quiz');
       onComplete(data);
     }
   };

@@ -8,7 +8,7 @@
       streaming section cards, core-quote screenshot moment)
 - [x] Chart engine (astronomy-engine — protected)
 - [x] Claude Sonnet streaming via Vercel serverless (protected)
-- [x] Formspree lead capture on Q8 submit
+- [x] Supabase lead capture on Q8 submit
 - [x] Living specification docs (/docs)
 
 > Note: the roadmap content in the source request was truncated after
