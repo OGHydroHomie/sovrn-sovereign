@@ -3,6 +3,8 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
 import DeletePage from './pages/DeletePage.tsx'
+import PrivacyPage from './pages/PrivacyPage.tsx'
+import TermsPage from './pages/TermsPage.tsx'
 
 /* Standalone paper pages, routed on pathname. vercel.json already rewrites every
    non-/api path to index.html, so these URLs reach the SPA and are matched here.
@@ -13,6 +15,10 @@ function rootFor(pathname: string) {
   switch (pathname.replace(/\/+$/, '') || '/') {
     case '/delete':
       return <DeletePage />
+    case '/privacy':
+      return <PrivacyPage />
+    case '/terms':
+      return <TermsPage />
     default:
       return <App />
   }
