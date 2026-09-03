@@ -106,10 +106,15 @@ const NON_IMPERATIVE_OPENERS = new Set([
   'you', 'your', 'i', 'my', 'we', 'our', 'they', 'their', 'he', 'she', 'it',
   'the', 'a', 'an', 'this', 'that', 'there', 'today', 'tomorrow',
   'maybe', 'perhaps', 'try', 'consider', 'reflect', 'think', 'sit',
-  'allow', 'let', 'begin', 'start',
+  'allow', 'let',
 ]);
 
-const HEDGE_RE = /\b(you should|you could|you might|you may|try to|try and|maybe|perhaps|if you can|if you feel|when you feel|when you are ready|at some point|as needed)\b/i;
+/* Only phrases that actually turn an instruction into a suggestion. This list was
+   trimmed after it rejected two out of three valid missions in production: an
+   over-eager validator sends real users to the hard-coded default, which is a
+   worse outcome than a slightly loose sentence. Vagueness is caught by the
+   under-20-minutes and verifiable constraints, not here. */
+const HEDGE_RE = /\b(you should|you could|you might|you may want|try to|try and|maybe|perhaps|if you can|if you feel like|when you are ready|at some point|as needed|consider whether)\b/i;
 
 function sentenceCount(text: string): number {
   return (text.match(/[.!?](\s|$)/g) ?? []).length;
@@ -326,7 +331,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const problems = draft ? validateMission(draft) : ['generation returned nothing'];
       if (problems.length) {
-        console.warn(`Mission rejected on attempt ${attempt + 1}:`, problems);
+        console.warn(
+          `Mission rejected on attempt ${attempt + 1}:`,
+          problems,
+          JSON.stringify(draft?.mission ?? null)
+        );
         corrections = problems;
         continue;
       }
