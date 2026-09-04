@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { listEntries, completeEntry, type LedgerEntry } from '../lib/ledger';
 import PaperPage from '../components/PaperPage';
 import NextMorning from '../components/NextMorning';
+import { signalVillain, villainUnlocked } from '../lib/villain';
 
 type State = 'loading' | 'signed-out' | 'ready';
 
@@ -25,6 +26,9 @@ export default function LedgerPage() {
   const [text, setText] = useState('');
   const [saving, setSaving] = useState(false);
   const [failed, setFailed] = useState(false);
+  /* null until they tap. Then 'ok' or 'failed' — the placeholder must not claim
+     they were counted if the write did not land. */
+  const [villain, setVillain] = useState<'ok' | 'failed' | null>(null);
 
   const load = useCallback(async () => {
     setEntries(await listEntries());
@@ -43,6 +47,12 @@ export default function LedgerPage() {
       void load();
     });
   }, [load]);
+
+  const unlocked = villainUnlocked(entries);
+
+  const tapVillain = async () => {
+    setVillain((await signalVillain()) ? 'ok' : 'failed');
+  };
 
   const current = pickCurrent(entries);
   const past = entries.filter((e) => e.id !== current?.id).sort((a, b) => b.day_number - a.day_number);
@@ -81,6 +91,36 @@ export default function LedgerPage() {
         <p style={{ marginTop: 12, fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 15, lineHeight: 1.7, color: '#6E6A66' }}>
           Open the most recent link from your email, on the device you want to use.
         </p>
+      </PaperPage>
+    );
+  }
+
+  /* The placeholder. There is nothing behind the button yet and the screen says
+     so — the tap is the product for now, and pretending otherwise would be the
+     one thing this app is not allowed to do. */
+  if (villain) {
+    return (
+      <PaperPage title="Noted.">
+        <p style={{ fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 16, lineHeight: 1.7, color: '#1A1A1A' }}>
+          Villain mode doesn&rsquo;t exist yet. This screen is a counter &mdash; it is here to
+          find out how many people would say yes to seven days of harder acts with no way out.
+        </p>
+        <p style={{ marginTop: 16, fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 16, lineHeight: 1.7, color: '#6E6A66' }}>
+          {villain === 'ok'
+            ? 'You are counted. If enough people are, it gets built.'
+            : 'That did not record. Check your connection and tap it again.'}
+        </p>
+        <button
+          onClick={() => setVillain(null)}
+          style={{
+            marginTop: 32, minHeight: 48, minWidth: 200,
+            background: 'none', color: '#1A1A1A', border: '1px solid #1A1A1A', borderRadius: 2,
+            fontFamily: 'var(--sv-font)', fontWeight: 700, fontSize: 12,
+            textTransform: 'uppercase', letterSpacing: '0.12em', padding: '16px 24px', cursor: 'pointer',
+          }}
+        >
+          Back to your Ledger
+        </button>
       </PaperPage>
     );
   }
@@ -197,6 +237,39 @@ export default function LedgerPage() {
       {/* Only once there is something to explain. Before the first commit there
           is no tomorrow to describe. */}
       {entries.length > 0 && <NextMorning />}
+
+      {/* Earned, not advertised. Three days both committed and completed, or it
+          does not exist — offering it to someone on day one would make it a
+          feature to browse rather than a door that opens. */}
+      {unlocked && (
+        <div style={{ marginTop: 40, borderTop: '1px solid #E4E0D6', paddingTop: 22 }}>
+          <button
+            onClick={() => void tapVillain()}
+            style={{
+              display: 'block', width: '100%', textAlign: 'left',
+              background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+              fontFamily: 'var(--sv-font)',
+            }}
+          >
+            <span
+              style={{
+                display: 'block', fontSize: 12, fontWeight: 700,
+                letterSpacing: '0.18em', color: '#000000', textTransform: 'uppercase',
+              }}
+            >
+              Become the villain
+            </span>
+            <span
+              style={{
+                display: 'block', marginTop: 8, fontWeight: 300,
+                fontSize: 14, lineHeight: 1.6, color: '#6E6A66',
+              }}
+            >
+              Seven days. Harder acts. No opt-out. Not built yet.
+            </span>
+          </button>
+        </div>
+      )}
     </PaperPage>
   );
 }
