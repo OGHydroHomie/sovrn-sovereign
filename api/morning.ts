@@ -85,6 +85,24 @@ interface Entry {
   what_happened: string | null;
 }
 
+/* The seventh day is not an act. Instead of a mission it carries one question,
+   asked in the person's own words from intake, and the week read that sits above
+   the record on the Day 7 screen. */
+const RECALIBRATION_DAY = 7;
+
+function adminClient(url: string, key: string) {
+  return createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
+}
+type AdminClient = ReturnType<typeof adminClient>;
+
+function recalibrationQuestion(desiredReality?: string | null): string {
+  const want = (desiredReality ?? '').trim();
+  const closer = 'Reading what you actually did — is that still it?';
+  return want
+    ? `Seven days ago you said you wanted ${want}\n${closer}`
+    : `Seven days ago you said what you wanted.\n${closer}`;
+}
+
 /* Model-written text goes into an HTML document, so it gets escaped. An
    ampersand in someone's declaration would otherwise open an entity and eat the
    next few characters of their own line. */
@@ -104,7 +122,7 @@ export function emailHtml(declaration: string, read: string, mission: string, li
     <div style="height:1px;background:#E4E0D6;margin:14px 0 32px;"></div>
     ${declaration ? `<p style="margin:0 0 22px;font-size:17px;line-height:1.55;font-weight:400;color:#1A1A1A;">${esc(declaration)}</p>` : ''}
     ${read ? `<p style="margin:0 0 20px;font-size:15px;line-height:1.65;font-weight:300;color:#6E6A66;">${esc(read)}</p>` : ''}
-    <p style="margin:0;font-size:19px;line-height:1.5;font-weight:400;color:#1A1A1A;">${esc(mission)}</p>
+    <p style="margin:0;font-size:19px;line-height:1.5;font-weight:400;color:#1A1A1A;">${esc(mission).replace(/\n/g, '<br>')}</p>
     <a href="${link}" style="display:inline-block;margin-top:32px;padding:16px 28px;background:#000000;color:#FBFAF7;text-decoration:none;font-size:13px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;border-radius:2px;">Open your Ledger</a>
     <div style="height:1px;background:#E4E0D6;margin:40px 0 16px;"></div>
     <p style="margin:0;font-size:12px;color:#9A9A9A;">
@@ -132,6 +150,89 @@ async function sendViaResend(to: string, subject: string, html: string, text: st
   });
   if (!res.ok) return { sent: false, reason: `resend ${res.status}: ${(await res.text()).slice(0, 200)}` };
   return { sent: true, reason: '' };
+}
+
+/**
+ * The seventh morning.
+ *
+ * No mission is generated and no act is chosen. The week read is written from
+ * all six days — gaps included, because a week with a hole in it is a different
+ * week — and stored on a day 7 entry alongside the one question. The email is
+ * deliberately thin: it carries the question and a way in, and the week read
+ * waits on the screen rather than being spent in an inbox.
+ */
+async function sendRecalibration(
+  admin: AdminClient,
+  uid: string,
+  address: string,
+  row: { archetype?: string; blueprint_json?: unknown; timezone?: string | null; declaration_line?: string | null; desired_reality?: string | null } | null,
+  record: Entry[],
+  report: { generated: number; skipped: string[] }
+): Promise<boolean> {
+  const bp = (row?.blueprint_json ?? {}) as { becoming?: string; loop?: string };
+
+  // Days one to six, holes included as themselves.
+  const byDay = new Map(record.map((e) => [e.day_number, e]));
+  const week = Array.from({ length: 6 }, (_, i) => {
+    const e = byDay.get(i + 1);
+    return {
+      day_number: i + 1,
+      mission_text: e?.mission_text ?? null,
+      committed_at: e?.committed_at ?? null,
+      completed_at: e?.completed_at ?? null,
+      what_happened: e?.what_happened ?? null,
+    };
+  });
+
+  const genRes = await fetch(`${SITE}/api/day7`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      becoming: row?.archetype ?? bp.becoming ?? 'THE HEADLINER',
+      loop: bp.loop ?? 'Opening Act',
+      week,
+      timezone: row?.timezone ?? null,
+    }),
+  });
+  if (!genRes.ok) {
+    report.skipped.push(`${uid}: day 7 generation ${genRes.status}`);
+    return false;
+  }
+  const day7 = (await genRes.json()) as { read?: string };
+  report.generated += 1;
+
+  const question = recalibrationQuestion(row?.desired_reality);
+
+  const { error: insErr } = await admin.from('ledger_entries').insert({
+    user_id: uid,
+    day_number: RECALIBRATION_DAY,
+    mission_text: question,
+    committed_at: new Date().toISOString(),
+    read_line: (day7.read ?? '').trim() || null,
+  });
+  if (insErr) {
+    report.skipped.push(`${uid}: day 7 insert ${insErr.message}`);
+    return false;
+  }
+
+  const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
+    type: 'magiclink', email: address,
+    options: { redirectTo: `${SITE}/ledger` },
+  });
+  if (linkErr || !linkData?.properties?.action_link) {
+    report.skipped.push(`${uid}: link ${linkErr?.message ?? 'no action_link'}`);
+    return false;
+  }
+
+  const declaration = (row?.declaration_line ?? '').trim();
+  const out = await sendViaResend(
+    address,
+    'Seven days.',
+    emailHtml(declaration, '', question, linkData.properties.action_link),
+    emailText(declaration, '', question, linkData.properties.action_link)
+  );
+  if (!out.sent) report.skipped.push(`${uid}: ${out.reason}`);
+  return out.sent;
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -171,7 +272,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   }
 
-  const admin = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
+  const admin = adminClient(url, key);
   const report = { due: 0, considered: 0, generated: 0, sent: 0, skipped: [] as string[] };
 
   /* force=1 ignores the 6am window. The endpoint is otherwise unrunnable by hand
@@ -207,16 +308,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (error) return res.status(500).json({ error: error.message });
 
   const latest = new Map<string, Entry>();
-  for (const e of (entries ?? []) as Entry[]) if (!latest.has(e.user_id)) latest.set(e.user_id, e);
+  const byUser = new Map<string, Entry[]>();
+  for (const e of (entries ?? []) as Entry[]) {
+    if (!latest.has(e.user_id)) latest.set(e.user_id, e);
+    const list = byUser.get(e.user_id) ?? [];
+    list.push(e);
+    byUser.set(e.user_id, list);
+  }
 
   for (const [uid, previous] of latest) {
     report.considered += 1;
 
     const { data: userRow } = await admin
-      .from('users').select('archetype, blueprint_json, timezone, declaration_line').eq('id', uid).maybeSingle();
+      .from('users')
+      .select('archetype, blueprint_json, timezone, declaration_line, desired_reality')
+      .eq('id', uid)
+      .maybeSingle();
     const row = userRow as {
       archetype?: string; blueprint_json?: unknown;
       timezone?: string | null; declaration_line?: string | null;
+      desired_reality?: string | null;
     } | null;
     const bp = (row?.blueprint_json ?? {}) as {
       becoming?: string; loop?: string; acts?: { hard?: string; next?: string }; chosen?: string;
@@ -231,22 +342,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .from('ledger_entries').select('id').eq('user_id', uid).eq('day_number', nextDay).maybeSingle();
     if (exists) { report.skipped.push(`${uid}: day ${nextDay} already exists`); continue; }
 
+    const record = (byUser.get(uid) ?? []).slice().sort((a, b) => a.day_number - b.day_number);
+
+    if (nextDay === RECALIBRATION_DAY) {
+      const out = await sendRecalibration(admin, uid, address, row, record, report);
+      if (out) report.sent += 1;
+      continue;
+    }
+
     const genRes = await fetch(`${SITE}/api/day2`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         dayNumber: nextDay,
-        becoming: bp.becoming ?? row?.archetype ?? 'THE HEADLINER',
+        becoming: row?.archetype ?? bp.becoming ?? 'THE HEADLINER',
         loop: bp.loop ?? 'Opening Act',
         previous,
         // Without this the model renders UTC and tells someone in Detroit they
         // committed at 3am when their own Ledger says 10:06 PM.
         timezone: row?.timezone ?? null,
+        // From day 8 the generator reads the whole record, not only yesterday.
+        history: nextDay >= 8 ? record : undefined,
         notChosen: bp.chosen === 'hard' ? bp.acts?.next : bp.acts?.hard,
       }),
     });
     if (!genRes.ok) { report.skipped.push(`${uid}: generation ${genRes.status}`); continue; }
-    const day = await genRes.json();
+    const day = (await genRes.json()) as { read?: string; hard: string; next: string };
     report.generated += 1;
 
     // THE HARD ONE is the one that ships. The second option is a choice the app
