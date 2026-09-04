@@ -20,7 +20,13 @@ export const config = {
  * triggered by a stranger with the URL.
  */
 
-const FROM = process.env.MORNING_FROM ?? 'SOVRN <hello@sovrn.app>';
+/* onboarding@resend.dev is Resend's shared sender. It only delivers to the
+   address on the Resend account, which makes it right for a first end-to-end
+   test and useless for launch — every other recipient fails silently. Set
+   MORNING_FROM to an address on a verified domain before any real send.
+   hello@sovrn.app was the previous default and does not exist in the account at
+   all, so every send would have failed on an unverified sender. */
+const FROM = process.env.MORNING_FROM ?? 'SOVRN <onboarding@resend.dev>';
 const SITE = process.env.SITE_URL ?? 'https://sovrn-sovereign.vercel.app';
 
 interface Entry {
