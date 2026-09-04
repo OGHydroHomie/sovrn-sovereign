@@ -96,6 +96,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const key = process.env.SUPABASE_SECRET_KEY;
   if (!url || !key) return res.status(500).json({ error: 'Server configuration error' });
 
+  /* Read-only config check. Reports what this build actually resolved, so a
+     misconfigured sender or site URL is caught before 6am rather than by a
+     morning of failed sends. Presence only for anything secret — never a value.
+     Generates nothing, writes nothing, sends nothing. */
+  if (req.query.dry === '1') {
+    return res.status(200).json({
+      dry: true,
+      from: FROM,
+      site: SITE,
+      resendKeyPresent: Boolean(process.env.RESEND_API_KEY),
+      supabaseUrlHost: new URL(url).host,
+      morningFromIsExplicit: Boolean(process.env.MORNING_FROM),
+      siteUrlIsExplicit: Boolean(process.env.SITE_URL),
+    });
+  }
+
   const admin = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
   const report = { considered: 0, generated: 0, sent: 0, skipped: [] as string[] };
 
