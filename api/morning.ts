@@ -15,9 +15,13 @@ export const config = {
  * Runs with SUPABASE_SECRET_KEY: it reads across users and writes entries on
  * their behalf, which is not reachable from the browser and must not be.
  *
- * Scheduled by vercel.json. Vercel sends CRON_SECRET as a bearer token on
- * scheduled invocations; the endpoint refuses anything else so it cannot be
- * triggered by a stranger with the URL.
+ * Scheduled by vercel.json every 15 minutes. Each run sends only to the people
+ * for whom it is 6am where they are, so the tick count is high and the send
+ * count per tick is usually zero.
+ *
+ * Vercel sends CRON_SECRET as a bearer token on scheduled invocations; the
+ * endpoint refuses anything else so it cannot be triggered by a stranger with
+ * the URL.
  */
 
 /* onboarding@resend.dev is Resend's shared sender. It only delivers to the
@@ -28,6 +32,48 @@ export const config = {
    all, so every send would have failed on an unverified sender. */
 const FROM = process.env.MORNING_FROM ?? 'SOVRN <onboarding@resend.dev>';
 const SITE = process.env.SITE_URL ?? 'https://sovrn-sovereign.vercel.app';
+
+/* 6am in the recipient's own morning, not 6am UTC.
+
+   The cron ticks every 15 minutes and each run sends only to the people whose
+   local clock has just turned 6. A Ledger in Chicago and a Ledger in Delhi both
+   arrive at 6am rather than at whatever hour 6am UTC happens to be where the
+   person actually lives.
+
+   Every current UTC offset is a whole multiple of 15 minutes — including the
+   :30 and :45 zones, India, Nepal, Chatham — so every zone lands on a tick. An
+   hourly schedule would silently never fire for any of them.
+
+   The window is the full quarter hour rather than the instant, because a
+   scheduled invocation is not guaranteed to fire on the second. If drift puts
+   two ticks inside one window, the day_number check further down is what stops
+   the second one from sending anything. */
+const SEND_HOUR = 6;
+const WINDOW_MINUTES = 15;
+
+/** Wall-clock hour and minute in a zone, or null if the zone is unusable. */
+function localClock(timezone: string, at: Date): { hour: number; minute: number } | null {
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone, hourCycle: 'h23', hour: '2-digit', minute: '2-digit',
+    }).formatToParts(at);
+    const hour = Number(parts.find((part) => part.type === 'hour')?.value);
+    const minute = Number(parts.find((part) => part.type === 'minute')?.value);
+    if (!Number.isFinite(hour) || !Number.isFinite(minute)) return null;
+    return { hour, minute };
+  } catch {
+    return null;
+  }
+}
+
+/* A missing or unrecognised zone falls back to UTC rather than being dropped.
+   Everyone who signed up before the timezone column existed is in that bucket,
+   and mail at the wrong hour is a smaller failure than no mail at all. */
+export function isDue(timezone: string | null | undefined, at: Date): boolean {
+  const clock = (timezone ? localClock(timezone, at) : null)
+    ?? { hour: at.getUTCHours(), minute: at.getUTCMinutes() };
+  return clock.hour === SEND_HOUR && clock.minute < WINDOW_MINUTES;
+}
 
 interface Entry {
   id: string;
@@ -109,16 +155,43 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       supabaseUrlHost: new URL(url).host,
       morningFromIsExplicit: Boolean(process.env.MORNING_FROM),
       siteUrlIsExplicit: Boolean(process.env.SITE_URL),
+      sendHour: SEND_HOUR,
+      windowMinutes: WINDOW_MINUTES,
     });
   }
 
   const admin = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
-  const report = { considered: 0, generated: 0, sent: 0, skipped: [] as string[] };
+  const report = { due: 0, considered: 0, generated: 0, sent: 0, skipped: [] as string[] };
 
-  // Everyone with at least one entry. The most recent one is what today reads.
+  /* force=1 ignores the 6am window. The endpoint is otherwise unrunnable by hand
+     outside a 15-minute slice of the day, which makes it untestable; the bearer
+     token above is still required either way. The schedule never sets it. */
+  const force = req.query.force === '1';
+  const now = new Date();
+
+  const { data: zoneRows, error: zoneErr } = await admin.from('users').select('id, timezone');
+  if (zoneErr) return res.status(500).json({ error: zoneErr.message });
+
+  const dueIds = ((zoneRows ?? []) as { id: string; timezone: string | null }[])
+    .filter((row) => force || isDue(row.timezone, now))
+    .map((row) => row.id);
+  report.due = dueIds.length;
+
+  // Most of the 96 daily ticks are nobody's morning, and cost exactly the one
+  // query above.
+  if (!dueIds.length) {
+    console.log('[morning]', JSON.stringify(report));
+    return res.status(200).json(report);
+  }
+
+  /* Their most recent day is what today reads. Filtering by id keeps this to the
+     people actually being written to — it does put the due list in the query
+     string, so this wants to become a server-side filter before any single zone
+     holds more users than a URL can carry. */
   const { data: entries, error } = await admin
     .from('ledger_entries')
     .select('id, user_id, day_number, mission_text, committed_at, completed_at, what_happened')
+    .in('user_id', dueIds)
     .order('day_number', { ascending: false });
   if (error) return res.status(500).json({ error: error.message });
 
