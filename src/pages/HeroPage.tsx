@@ -187,7 +187,7 @@ export default function HeroPage({ onStart }: Props) {
               </div>
               <div
                 className="sv-display"
-                style={{ fontWeight: 100, fontSize: 30, color: '#000000', marginTop: 10, letterSpacing: '0.01em' }}
+                style={{ fontWeight: 300, fontSize: 30, color: '#000000', marginTop: 10, letterSpacing: '0.01em' }}
               >
                 THE HEADLINER
               </div>

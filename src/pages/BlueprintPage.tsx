@@ -154,7 +154,7 @@ export default function BlueprintPage({ text, quizData, dayOne, onChooseAct }: P
           <h1
             style={{
               fontFamily: 'var(--sv-font)',
-              fontWeight: 100,
+              fontWeight: 300,
               fontSize: 'clamp(38px, 11.5vw, 60px)',
               lineHeight: 1.04,
               letterSpacing: '0.01em',
