@@ -254,9 +254,11 @@ export default function LedgerPage() {
         </div>
       )}
 
-      {/* Only once there is something to explain. Before the first commit there
-          is no tomorrow to describe. */}
-      {entries.length > 0 && <NextMorning />}
+      {/* Only while it is still a promise. Before the first commit there is no
+          tomorrow to describe; once a second day exists the promise has been
+          kept in front of them, and a card explaining what already happened is
+          just something to read past. */}
+      {entries.length > 0 && !entries.some((e) => e.day_number > 1) && <NextMorning />}
 
       {/* Earned, not advertised. Three days both committed and completed, or it
           does not exist — offering it to someone on day one would make it a
