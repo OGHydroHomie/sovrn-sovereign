@@ -4,6 +4,7 @@ import { listEntries, completeEntry, type LedgerEntry } from '../lib/ledger';
 import PaperPage from '../components/PaperPage';
 import NextMorning from '../components/NextMorning';
 import { signalVillain, villainUnlocked } from '../lib/villain';
+import { getRecognitionLine } from '../lib/blueprint';
 
 type State = 'loading' | 'signed-out' | 'ready';
 
@@ -29,9 +30,12 @@ export default function LedgerPage() {
   /* null until they tap. Then 'ok' or 'failed' — the placeholder must not claim
      they were counted if the write did not land. */
   const [villain, setVillain] = useState<'ok' | 'failed' | null>(null);
+  const [recognition, setRecognition] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    setEntries(await listEntries());
+    const [rows, line] = await Promise.all([listEntries(), getRecognitionLine()]);
+    setEntries(rows);
+    setRecognition(line);
     setState('ready');
   }, []);
 
@@ -130,6 +134,22 @@ export default function LedgerPage() {
       {/* ── Today, at the top ── */}
       {current ? (
         <>
+        {/* Their own line, standing above the day. It closed WHO YOU ARE on the
+            reveal and has not been seen since; it comes back while a day is
+            open, because that is the stretch where the act is still a decision
+            rather than a record. Quiet — it is not news, it is the premise. */}
+        {recognition && (
+          <p
+            style={{
+              margin: '0 0 20px',
+              fontFamily: 'var(--sv-font)', fontWeight: 400,
+              fontSize: 15, lineHeight: 1.6, color: '#6E6A66',
+            }}
+          >
+            {recognition}
+          </p>
+        )}
+
         {/* The read, before anything else and larger than the act it introduces.
             This sentence is the app saying it watched — the reason there is any
             point coming back — and it used to exist only inside the 6am email,

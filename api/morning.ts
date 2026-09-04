@@ -85,15 +85,26 @@ interface Entry {
   what_happened: string | null;
 }
 
+/* Model-written text goes into an HTML document, so it gets escaped. An
+   ampersand in someone's declaration would otherwise open an entity and eat the
+   next few characters of their own line. */
+function esc(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
 /* Plain text on paper. No images, no columns, no tracking pixel — this is one
    line, one mission, one link, and it should look the same in every client. */
-function emailHtml(read: string, mission: string, link: string): string {
+export function emailHtml(declaration: string, read: string, mission: string, link: string): string {
   return `<!doctype html><html><body style="margin:0;padding:0;background:#FBFAF7;">
   <div style="max-width:520px;margin:0 auto;padding:48px 24px;font-family:Geist,Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1A1A1A;">
     <div style="font-size:13px;letter-spacing:0.22em;font-weight:700;color:#1A1A1A;">SOVRN</div>
     <div style="height:1px;background:#E4E0D6;margin:14px 0 32px;"></div>
-    ${read ? `<p style="margin:0 0 20px;font-size:15px;line-height:1.65;font-weight:300;color:#6E6A66;">${read}</p>` : ''}
-    <p style="margin:0;font-size:19px;line-height:1.5;font-weight:400;color:#1A1A1A;">${mission}</p>
+    ${declaration ? `<p style="margin:0 0 22px;font-size:17px;line-height:1.55;font-weight:400;color:#1A1A1A;">${esc(declaration)}</p>` : ''}
+    ${read ? `<p style="margin:0 0 20px;font-size:15px;line-height:1.65;font-weight:300;color:#6E6A66;">${esc(read)}</p>` : ''}
+    <p style="margin:0;font-size:19px;line-height:1.5;font-weight:400;color:#1A1A1A;">${esc(mission)}</p>
     <a href="${link}" style="display:inline-block;margin-top:32px;padding:16px 28px;background:#000000;color:#FBFAF7;text-decoration:none;font-size:13px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;border-radius:2px;">Open your Ledger</a>
     <div style="height:1px;background:#E4E0D6;margin:40px 0 16px;"></div>
     <p style="margin:0;font-size:12px;color:#9A9A9A;">
@@ -103,8 +114,8 @@ function emailHtml(read: string, mission: string, link: string): string {
   </div></body></html>`;
 }
 
-function emailText(read: string, mission: string, link: string): string {
-  return `${read ? read + '\n\n' : ''}${mission}\n\nOpen your Ledger: ${link}\n\n—\n${SITE}/delete to remove everything.`;
+export function emailText(declaration: string, read: string, mission: string, link: string): string {
+  return `${declaration ? declaration + '\n\n' : ''}${read ? read + '\n\n' : ''}${mission}\n\nOpen your Ledger: ${link}\n\n—\n${SITE}/delete to remove everything.`;
 }
 
 async function sendViaResend(to: string, subject: string, html: string, text: string) {
@@ -202,8 +213,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     report.considered += 1;
 
     const { data: userRow } = await admin
-      .from('users').select('archetype, blueprint_json, timezone').eq('id', uid).maybeSingle();
-    const row = userRow as { archetype?: string; blueprint_json?: unknown; timezone?: string | null } | null;
+      .from('users').select('archetype, blueprint_json, timezone, declaration_line').eq('id', uid).maybeSingle();
+    const row = userRow as {
+      archetype?: string; blueprint_json?: unknown;
+      timezone?: string | null; declaration_line?: string | null;
+    } | null;
     const bp = (row?.blueprint_json ?? {}) as {
       becoming?: string; loop?: string; acts?: { hard?: string; next?: string }; chosen?: string;
     };
@@ -257,11 +271,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     const link = linkData.properties.action_link;
 
+    /* Their own declaration opens the email, above the read. It is the line they
+       wrote themselves into on day one, and it is the reason the act underneath
+       it is theirs rather than an instruction from an app. */
+    const declaration = (row?.declaration_line ?? '').trim();
     const out = await sendViaResend(
       address,
       `Day ${nextDay}`,
-      emailHtml(day.read ?? '', day.hard, link),
-      emailText(day.read ?? '', day.hard, link)
+      emailHtml(declaration, day.read ?? '', day.hard, link),
+      emailText(declaration, day.read ?? '', day.hard, link)
     );
     if (out.sent) report.sent += 1;
     else report.skipped.push(`${uid}: ${out.reason}`);

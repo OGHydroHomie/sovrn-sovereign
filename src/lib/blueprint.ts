@@ -10,6 +10,10 @@ export interface ParsedBlueprint {
   thePattern: string;
   /** Everything in ONE ACT that is not one of the two options. */
   oneActTail: string;
+  /** The quoted line closing WHO YOU ARE — the sentence meant to stop them. */
+  recognitionLine: string;
+  /** The quoted first-person line closing ONE ACT. */
+  declarationLine: string;
   hardOne: string;
   nextOne: string;
 }
@@ -22,6 +26,24 @@ export function teaser(body: string, max = 96): string {
   const end = flat.search(/[.!?](\s|$)/);
   const first = end === -1 ? flat : flat.slice(0, end + 1);
   return first.length > max ? first.slice(0, max - 1).trimEnd() + '…' : first;
+}
+
+/**
+ * The last line of a block that is wrapped in quotation marks.
+ *
+ * Both recurring lines are specified as the closing line of their section, so
+ * the last quoted line is the one — scanning from the end also means a quotation
+ * used mid-paragraph cannot win. The quotation marks are kept: the line is a
+ * quotation everywhere it appears, and stripping them here would only mean every
+ * surface had to put them back. Straight and typographic quotes both match,
+ * because the model produces either.
+ */
+export function lastQuotedLine(body: string): string {
+  const lines = body.split('\n').map((l) => l.trim()).filter(Boolean);
+  for (let i = lines.length - 1; i >= 0; i--) {
+    if (/^["\u201C].*["\u201D][.]?$/.test(lines[i])) return lines[i];
+  }
+  return '';
 }
 
 /**
@@ -86,15 +108,44 @@ export function parseBlueprint(text: string): ParsedBlueprint {
     .join('\n')
     .trim();
 
+  const whoYouAre = join('WHO YOU ARE');
+
   return {
     becoming,
     loop,
-    whoYouAre: join('WHO YOU ARE'),
+    whoYouAre,
     thePattern: join('THE PATTERN'),
     oneActTail,
+    recognitionLine: lastQuotedLine(whoYouAre),
+    declarationLine: lastQuotedLine(oneActTail),
     hardOne,
     nextOne,
   };
+}
+
+/**
+ * The recognition line already on this person's record.
+ *
+ * Read back rather than re-derived: the blueprint text lives in localStorage on
+ * one device, and /ledger is the surface someone reaches from a link in their
+ * email, frequently on another one. `users_select_own` scopes the read to
+ * id = auth.uid().
+ */
+export async function getRecognitionLine(): Promise<string | null> {
+  const uid = await ensureUser();
+  if (!uid) return null;
+
+  const { data, error } = await supabase
+    .from('users')
+    .select('recognition_line')
+    .eq('id', uid)
+    .maybeSingle();
+
+  if (error) {
+    console.warn('Recognition line read failed:', error.message);
+    return null;
+  }
+  return (data as { recognition_line: string | null } | null)?.recognition_line ?? null;
 }
 
 /**
@@ -116,6 +167,11 @@ export async function saveBlueprintRecord(
     .from('users')
     .update({
       archetype: parsed.becoming || null,
+      // Kept as columns rather than only inside blueprint_json: both are read
+      // back on other surfaces — one on the Ledger, one by the morning send —
+      // and neither should require re-parsing prose to find.
+      recognition_line: parsed.recognitionLine || null,
+      declaration_line: parsed.declarationLine || null,
       blueprint_json: {
         becoming: parsed.becoming,
         loop: parsed.loop,
