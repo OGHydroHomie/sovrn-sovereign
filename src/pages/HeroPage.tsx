@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { trackEvent } from '../utils/storage';
+import ReturnLink from '../components/ReturnLink';
 
 interface Props {
   onStart: () => void;
@@ -117,6 +118,11 @@ export default function HeroPage({ onStart }: Props) {
           >
             Free · 5 minutes · No account required
           </p>
+
+          {/* The way back in for someone on a new device. */}
+          <div style={{ marginTop: 26 }}>
+            <ReturnLink />
+          </div>
         </div>
 
         {/* Scroll hint */}
