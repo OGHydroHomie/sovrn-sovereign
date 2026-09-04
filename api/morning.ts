@@ -72,9 +72,17 @@ async function sendViaResend(to: string, subject: string, html: string, text: st
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // Fail closed. This endpoint spends model tokens, writes entries on people's
+  // behalf, and sends mail, so an absent CRON_SECRET must refuse rather than
+  // wave everyone through — the permissive version answered 200 to an
+  // unauthenticated POST in production.
   const secret = process.env.CRON_SECRET;
   const auth = req.headers.authorization ?? '';
-  if (secret && auth !== `Bearer ${secret}`) {
+  if (!secret) {
+    console.error('[morning] refused: CRON_SECRET is not configured');
+    return res.status(503).json({ error: 'Scheduler not configured' });
+  }
+  if (auth !== `Bearer ${secret}`) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
