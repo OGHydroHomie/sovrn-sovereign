@@ -5,6 +5,7 @@ import App from './App.tsx'
 import DeletePage from './pages/DeletePage.tsx'
 import PrivacyPage from './pages/PrivacyPage.tsx'
 import TermsPage from './pages/TermsPage.tsx'
+import LedgerPage from './pages/LedgerPage.tsx'
 
 /* Standalone paper pages, routed on pathname. vercel.json already rewrites every
    non-/api path to index.html, so these URLs reach the SPA and are matched here.
@@ -19,6 +20,8 @@ function rootFor(pathname: string) {
       return <PrivacyPage />
     case '/terms':
       return <TermsPage />
+    case '/ledger':
+      return <LedgerPage />
     default:
       return <App />
   }
