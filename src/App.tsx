@@ -52,6 +52,11 @@ export default function App() {
   const [blueprint, setBlueprint] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [dayOne, setDayOne] = useState<LedgerEntry | null>(null);
+  /* Set the moment the reading arrives, while the loading screen is still up.
+     The square resolves into this name, and only then does the reading open —
+     so the name is revealed once, in one continuous movement, rather than
+     appearing on one screen and again on the next. */
+  const [archetype, setArchetype] = useState<string | null>(null);
   const blueprintRef = useRef('');
 
   /* On reveal, keep the parsed reading — including the act not taken — on the
@@ -121,6 +126,7 @@ export default function App() {
     setPage('loading');
     setError(null);
     setBlueprint('');
+    setArchetype(null);
     setQuizData(data);
     trackEvent('quizComplete');
 
@@ -131,7 +137,10 @@ export default function App() {
         saveBlueprint({ text: fullText });
         setBlueprint(fullText);
         blueprintRef.current = fullText;
-        setPage('blueprint');
+        // Stay on the loading screen. Naming the archetype starts the dissolve;
+        // LoadingPage calls back when the name has landed and the page turns
+        // then. The fallback matches the reveal's so the two never disagree.
+        setArchetype(parseBlueprint(fullText).becoming || 'YOUR BLUEPRINT');
         void openBlueprint(fullText);
       },
       // Stay on the loading screen. Sending someone who just typed their
@@ -146,6 +155,10 @@ export default function App() {
   }, [openBlueprint]);
 
   const handleQuizComplete = (data: QuizData) => handleGenerate(data);
+
+  /* Stable identity: LoadingPage holds this in a timer, and a new function on
+     every render would restart the hold and never fire. */
+  const handleRevealed = useCallback(() => setPage('blueprint'), []);
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#FBFAF7', position: 'relative' }}>
@@ -195,7 +208,12 @@ export default function App() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
           >
-            <LoadingPage error={error} onRetry={() => quizData && handleGenerate(quizData)} />
+            <LoadingPage
+              error={error}
+              archetype={archetype}
+              onRevealed={handleRevealed}
+              onRetry={() => quizData && handleGenerate(quizData)}
+            />
           </motion.div>
         )}
 
