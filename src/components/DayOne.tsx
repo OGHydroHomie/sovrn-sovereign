@@ -97,6 +97,16 @@ export default function DayOne({ entry: initialEntry, embedded = false }: Props)
           {entry.mission_text}
         </p>
 
+        {/* The moment after committing, which said nothing at all until now.
+            This is also the only place the app asks for the thing the whole next
+            day is generated from — and that a day where nothing happened is
+            still worth writing down is the part nobody assumes. */}
+        {!isComplete && (
+          <p style={{ marginTop: 14, fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 15, lineHeight: 1.65, color: '#6E6A66' }}>
+            Committed. Come back and say what happened &mdash; especially if nothing did.
+          </p>
+        )}
+
         {!isComplete && (
           <div style={{ marginTop: 18 }}>
             <p className="sv-label" style={{ fontSize: 11, color: '#6E6A66', letterSpacing: '0.12em' }}>
@@ -144,7 +154,7 @@ export default function DayOne({ entry: initialEntry, embedded = false }: Props)
             </button>
             {failed && (
               <p style={{ marginTop: 10, fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 14, color: '#1A1A1A' }}>
-                That did not save. Check your connection and try again.
+                That didn&rsquo;t save. Your words are still in the box &mdash; try again.
               </p>
             )}
           </div>

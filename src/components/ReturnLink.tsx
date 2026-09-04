@@ -105,7 +105,7 @@ export default function ReturnLink() {
       </button>
       {state === 'failed' && (
         <p style={{ marginTop: 10, fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 13, color: '#1A1A1A' }}>
-          That did not send. Try again in a moment.
+          That didn&rsquo;t send. Give it a second and try again.
         </p>
       )}
     </div>

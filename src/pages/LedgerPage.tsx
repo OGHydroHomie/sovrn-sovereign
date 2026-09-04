@@ -80,7 +80,7 @@ export default function LedgerPage() {
     return (
       <PaperPage title="Your Ledger">
         <p style={{ fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 15, color: '#6E6A66' }}>
-          One moment.
+          Looking you up.
         </p>
       </PaperPage>
     );
@@ -90,10 +90,10 @@ export default function LedgerPage() {
     return (
       <PaperPage title="Your Ledger">
         <p style={{ fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 15, lineHeight: 1.7, color: '#1A1A1A' }}>
-          This link has expired, or it was opened in a browser that is not signed in.
+          This link has expired, or this browser doesn&rsquo;t know you yet.
         </p>
         <p style={{ marginTop: 12, fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 15, lineHeight: 1.7, color: '#6E6A66' }}>
-          Open the most recent link from your email, on the device you want to use.
+          Open the newest link from your email, on the device you actually want to use.
         </p>
       </PaperPage>
     );
@@ -104,7 +104,7 @@ export default function LedgerPage() {
      one thing this app is not allowed to do. */
   if (villain) {
     return (
-      <PaperPage title="Noted.">
+      <PaperPage title="Counted.">
         <p style={{ fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 16, lineHeight: 1.7, color: '#1A1A1A' }}>
           Villain mode doesn&rsquo;t exist yet. This screen is a counter &mdash; it is here to
           find out how many people would say yes to seven days of harder acts with no way out.
@@ -216,7 +216,7 @@ export default function LedgerPage() {
           </button>
           {failed && (
             <p style={{ marginTop: 10, fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 14, color: '#1A1A1A' }}>
-              That did not save. Check your connection and try again.
+              That didn&rsquo;t save. Your words are still in the box &mdash; try again.
             </p>
           )}
         </div>
@@ -224,7 +224,7 @@ export default function LedgerPage() {
       ) : (
         <div style={{ borderTop: '1px solid #E4E0D6', paddingTop: 22 }}>
           <p style={{ fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 15, lineHeight: 1.7, color: '#6E6A66' }}>
-            Nothing open. The next one arrives in the morning.
+            Nothing open. The next one is being written. It lands at 6am.
           </p>
         </div>
       )}

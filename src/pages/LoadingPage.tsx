@@ -99,7 +99,7 @@ export default function LoadingPage({ error = null, onRetry, archetype = null, o
               fontSize: 15, lineHeight: 1.6, color: '#6E6A66', maxWidth: 320,
             }}
           >
-            Your answers are safe. Nothing was lost.
+            Your eight answers are still here. Nothing you typed was lost.
           </p>
 
           <button
