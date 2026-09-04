@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { listEntries, completeEntry, type LedgerEntry } from '../lib/ledger';
 import PaperPage from '../components/PaperPage';
+import NextMorning from '../components/NextMorning';
 
 type State = 'loading' | 'signed-out' | 'ready';
 
@@ -192,6 +193,10 @@ export default function LedgerPage() {
           ))}
         </div>
       )}
+
+      {/* Only once there is something to explain. Before the first commit there
+          is no tomorrow to describe. */}
+      {entries.length > 0 && <NextMorning />}
     </PaperPage>
   );
 }
