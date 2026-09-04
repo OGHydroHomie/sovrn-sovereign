@@ -129,8 +129,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     report.considered += 1;
 
     const { data: userRow } = await admin
-      .from('users').select('archetype, blueprint_json').eq('id', uid).maybeSingle();
-    const bp = (userRow?.blueprint_json ?? {}) as {
+      .from('users').select('archetype, blueprint_json, timezone').eq('id', uid).maybeSingle();
+    const row = userRow as { archetype?: string; blueprint_json?: unknown; timezone?: string | null } | null;
+    const bp = (row?.blueprint_json ?? {}) as {
       becoming?: string; loop?: string; acts?: { hard?: string; next?: string }; chosen?: string;
     };
 
@@ -148,9 +149,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         dayNumber: nextDay,
-        becoming: bp.becoming ?? userRow?.archetype ?? 'THE HEADLINER',
+        becoming: bp.becoming ?? row?.archetype ?? 'THE HEADLINER',
         loop: bp.loop ?? 'Opening Act',
         previous,
+        // Without this the model renders UTC and tells someone in Detroit they
+        // committed at 3am when their own Ledger says 10:06 PM.
+        timezone: row?.timezone ?? null,
         notChosen: bp.chosen === 'hard' ? bp.acts?.next : bp.acts?.hard,
       }),
     });

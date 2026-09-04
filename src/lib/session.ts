@@ -55,9 +55,19 @@ export async function recordConsent(): Promise<void> {
   const uid = await ensureUser();
   if (!uid) return;
 
+  // The browser is the only place that knows where the person actually is, and
+  // intake is the only moment we are guaranteed to be in it. Everything sent to
+  // them later — every time rendered in an email — depends on this.
+  let timezone: string | null = null;
+  try {
+    timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || null;
+  } catch {
+    timezone = null;
+  }
+
   const { error } = await supabase
     .from('users')
-    .update({ consent_at: new Date().toISOString() })
+    .update({ consent_at: new Date().toISOString(), timezone })
     .eq('id', uid);
 
   if (error) console.warn('Consent stamp failed:', error.message);
