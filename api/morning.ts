@@ -273,21 +273,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const admin = adminClient(url, key);
-  const report = { due: 0, considered: 0, generated: 0, sent: 0, skipped: [] as string[] };
+  const report = { due: 0, considered: 0, generated: 0, sent: 0, scope: 'all', skipped: [] as string[] };
 
   /* force=1 ignores the 6am window. The endpoint is otherwise unrunnable by hand
      outside a 15-minute slice of the day, which makes it untestable; the bearer
-     token above is still required either way. The schedule never sets it. */
+     token above is still required either way. The schedule never sets it.
+
+     only=<uid> restricts the run to one account. Without it, a forced run walks
+     every user with an entry and generates their next day too — so testing day 7
+     against a seeded account would also hand a real person tomorrow's act at one
+     in the morning and leave the 6am send with nothing to deliver. A test must
+     not be able to spend someone else's day. The schedule never sets this
+     either. */
   const force = req.query.force === '1';
+  const only = typeof req.query.only === 'string' ? req.query.only.trim() : '';
   const now = new Date();
 
   const { data: zoneRows, error: zoneErr } = await admin.from('users').select('id, timezone');
   if (zoneErr) return res.status(500).json({ error: zoneErr.message });
 
   const dueIds = ((zoneRows ?? []) as { id: string; timezone: string | null }[])
-    .filter((row) => force || isDue(row.timezone, now))
+    .filter((row) => (!only || row.id === only) && (force || isDue(row.timezone, now)))
     .map((row) => row.id);
   report.due = dueIds.length;
+  report.scope = only ? `only:${only}` : force ? 'forced:all' : 'scheduled';
 
   // Most of the 96 daily ticks are nobody's morning, and cost exactly the one
   // query above.
