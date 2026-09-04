@@ -123,29 +123,51 @@ export function parseBlueprint(text: string): ParsedBlueprint {
   };
 }
 
+export interface Profile {
+  becoming: string | null;
+  recognitionLine: string | null;
+  /** Set on day 7. Null while the becoming still reads "in progress". */
+  becomingResolvedAt: string | null;
+  /** IANA zone captured at intake. The Ledger renders times in it, not the device's. */
+  timezone: string | null;
+}
+
 /**
- * The recognition line already on this person's record.
+ * What is already on this person's record.
  *
  * Read back rather than re-derived: the blueprint text lives in localStorage on
  * one device, and /ledger is the surface someone reaches from a link in their
  * email, frequently on another one. `users_select_own` scopes the read to
  * id = auth.uid().
  */
-export async function getRecognitionLine(): Promise<string | null> {
+export async function getProfile(): Promise<Profile | null> {
   const uid = await ensureUser();
   if (!uid) return null;
 
   const { data, error } = await supabase
     .from('users')
-    .select('recognition_line')
+    .select('archetype, recognition_line, becoming_resolved_at, timezone')
     .eq('id', uid)
     .maybeSingle();
 
   if (error) {
-    console.warn('Recognition line read failed:', error.message);
+    console.warn('Profile read failed:', error.message);
     return null;
   }
-  return (data as { recognition_line: string | null } | null)?.recognition_line ?? null;
+  const row = data as {
+    archetype: string | null;
+    recognition_line: string | null;
+    becoming_resolved_at: string | null;
+    timezone: string | null;
+  } | null;
+  if (!row) return null;
+
+  return {
+    becoming: row.archetype,
+    recognitionLine: row.recognition_line,
+    becomingResolvedAt: row.becoming_resolved_at,
+    timezone: row.timezone,
+  };
 }
 
 /**
@@ -158,7 +180,11 @@ export async function getRecognitionLine(): Promise<string | null> {
  */
 export async function saveBlueprintRecord(
   parsed: ParsedBlueprint,
-  chosen: 'hard' | 'next' | null
+  chosen: 'hard' | 'next' | null,
+  /* Their own words for what they want. Day 7 quotes this back verbatim and
+     cannot ask its question without it — and the reading text it came with only
+     ever exists in the browser that generated it. */
+  desiredReality?: string
 ): Promise<void> {
   const uid = await ensureUser();
   if (!uid) return;
@@ -172,6 +198,7 @@ export async function saveBlueprintRecord(
       // and neither should require re-parsing prose to find.
       recognition_line: parsed.recognitionLine || null,
       declaration_line: parsed.declarationLine || null,
+      ...(desiredReality?.trim() ? { desired_reality: desiredReality.trim() } : {}),
       blueprint_json: {
         becoming: parsed.becoming,
         loop: parsed.loop,

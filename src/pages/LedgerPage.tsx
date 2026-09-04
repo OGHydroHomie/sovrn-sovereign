@@ -4,9 +4,14 @@ import { listEntries, completeEntry, type LedgerEntry } from '../lib/ledger';
 import PaperPage from '../components/PaperPage';
 import NextMorning from '../components/NextMorning';
 import { signalVillain, villainUnlocked } from '../lib/villain';
-import { getRecognitionLine } from '../lib/blueprint';
+import { getProfile, type Profile } from '../lib/blueprint';
+import DaySeven from '../components/DaySeven';
 
 type State = 'loading' | 'signed-out' | 'ready';
+
+/* Day 7 is the recalibration. It has an entry like any other day, but the entry
+   carries a question instead of an act. */
+const RECALIBRATION_DAY = 7;
 
 function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
@@ -30,12 +35,12 @@ export default function LedgerPage() {
   /* null until they tap. Then 'ok' or 'failed' — the placeholder must not claim
      they were counted if the write did not land. */
   const [villain, setVillain] = useState<'ok' | 'failed' | null>(null);
-  const [recognition, setRecognition] = useState<string | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
 
   const load = useCallback(async () => {
-    const [rows, line] = await Promise.all([listEntries(), getRecognitionLine()]);
+    const [rows, me] = await Promise.all([listEntries(), getProfile()]);
     setEntries(rows);
-    setRecognition(line);
+    setProfile(me);
     setState('ready');
   }, []);
 
@@ -99,6 +104,35 @@ export default function LedgerPage() {
     );
   }
 
+  /* The seventh day is not a mission with a Ledger under it. It is the week,
+     the read, and the question, and it replaces the page rather than sitting
+     inside it. */
+  if (current?.day_number === RECALIBRATION_DAY && profile?.becoming) {
+    return (
+      <div
+        style={{
+          minHeight: '100svh', background: '#FBFAF7', color: '#1A1A1A',
+          fontFamily: 'var(--sv-font)', padding: '32px 20px 80px',
+        }}
+      >
+        <div style={{ maxWidth: 620, margin: '0 auto' }}>
+          <a
+            href="/"
+            style={{ fontSize: 13, letterSpacing: '0.22em', fontWeight: 700, color: '#1A1A1A', textDecoration: 'none' }}
+          >
+            SOVRN
+          </a>
+        </div>
+        <DaySeven
+          entry={current}
+          entries={entries}
+          becoming={profile.becoming}
+          timezone={profile.timezone}
+        />
+      </div>
+    );
+  }
+
   /* The placeholder. There is nothing behind the button yet and the screen says
      so — the tap is the product for now, and pretending otherwise would be the
      one thing this app is not allowed to do. */
@@ -129,8 +163,14 @@ export default function LedgerPage() {
     );
   }
 
+  const becomingLine = profile?.becoming
+    ? profile.becomingResolvedAt
+      ? profile.becoming
+      : `${profile.becoming} · in progress`
+    : undefined;
+
   return (
-    <PaperPage title="Your Ledger">
+    <PaperPage title="Your Ledger" standfirst={becomingLine}>
       {/* ── Today, at the top ── */}
       {current ? (
         <>
@@ -138,7 +178,7 @@ export default function LedgerPage() {
             reveal and has not been seen since; it comes back while a day is
             open, because that is the stretch where the act is still a decision
             rather than a record. Quiet — it is not news, it is the premise. */}
-        {recognition && (
+        {profile?.recognitionLine && (
           <p
             style={{
               margin: '0 0 20px',
@@ -146,7 +186,7 @@ export default function LedgerPage() {
               fontSize: 15, lineHeight: 1.6, color: '#6E6A66',
             }}
           >
-            {recognition}
+            {profile.recognitionLine}
           </p>
         )}
 

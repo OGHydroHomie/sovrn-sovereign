@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
+import SquareReveal from '../components/SquareReveal';
 
 interface Props {
   /* Set when generation failed. The person stays here rather than being sent
@@ -126,56 +127,9 @@ export default function LoadingPage({ error = null, onRetry, archetype = null, o
         </>
       ) : (
         <>
-          <div style={{ position: 'relative', width: SIZE, height: SIZE }}>
-            {/* Breathing sits on its own wrapper so it cannot fight the dissolve
-                for control of the same transform. */}
-            <motion.div
-              animate={reduceMotion || done ? { scale: 1 } : { scale: [1, 1.03, 1] }}
-              transition={
-                reduceMotion || done
-                  ? { duration: 0.2 }
-                  : { duration: 4, repeat: Infinity, ease: 'easeInOut' }
-              }
-              style={{ width: '100%', height: '100%' }}
-            >
-              <motion.div
-                aria-hidden="true"
-                animate={done ? { scale: reduceMotion ? 1 : 1.5, opacity: 0 } : { scale: 1, opacity: 1 }}
-                transition={done ? { duration: reduceMotion ? 0 : 0.9, ease: 'easeIn' } : { duration: 0 }}
-                style={{
-                  width: '100%', height: '100%', position: 'relative', overflow: 'hidden',
-                  border: '2px solid #000000', background: '#FBFAF7', boxSizing: 'border-box',
-                }}
-              >
-                {/* Fills from the bottom. Outline and cream interior at zero,
-                    solid black at one. */}
-                <motion.div
-                  animate={{ height: `${level * 100}%` }}
-                  transition={done && !reduceMotion ? { duration: 0.45, ease: 'easeOut' } : { duration: 0 }}
-                  style={{ position: 'absolute', left: 0, right: 0, bottom: 0, background: '#000000' }}
-                />
-              </motion.div>
-            </motion.div>
-
-            {/* The name lands where the square was, in the type the reading uses. */}
-            {done && (
-              <motion.h1
-                initial={reduceMotion ? false : { opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: reduceMotion ? 0 : 0.7, delay: reduceMotion ? 0 : 0.45, ease: 'easeOut' }}
-                style={{
-                  position: 'absolute', top: '50%', left: '50%',
-                  transform: 'translate(-50%, -50%)',
-                  width: '90vw', maxWidth: 560,
-                  fontFamily: 'var(--sv-font)', fontWeight: 300,
-                  fontSize: 'clamp(38px, 11.5vw, 60px)', lineHeight: 1.04,
-                  letterSpacing: '0.01em', color: '#000000', textTransform: 'uppercase',
-                }}
-              >
-                {archetype}
-              </motion.h1>
-            )}
-          </div>
+          {/* The same mark, and the same motion, the becoming resolves with on
+              day 7. One component so the two cannot drift apart. */}
+          <SquareReveal name={archetype} fill={level} breathe size={SIZE} />
 
           <motion.p
             initial={reduceMotion ? false : { opacity: 0 }}

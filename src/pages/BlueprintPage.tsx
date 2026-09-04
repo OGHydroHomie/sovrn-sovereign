@@ -165,6 +165,22 @@ export default function BlueprintPage({ text, quizData, dayOne, onChooseAct }: P
             {bp.becoming || 'YOUR BLUEPRINT'}
           </h1>
 
+          {/* DESIGN_FROZEN: a visual change to a shipped surface, and the reason
+              is that day 7 resolves the becoming. A name cannot resolve if it
+              was never provisional — this is the qualifier it drops. */}
+          <motion.p
+            initial={reduceMotion ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.7, ease: 'easeOut', delay: reduceMotion ? 0 : 0.55 }}
+            style={{
+              marginTop: 14, fontFamily: 'var(--sv-font)', fontWeight: 700,
+              fontSize: 11, letterSpacing: '0.22em', color: '#9A9A9A',
+              textTransform: 'uppercase',
+            }}
+          >
+            In progress
+          </motion.p>
+
           {bp.loop && (
             <motion.p
               initial={reduceMotion ? false : { opacity: 0 }}

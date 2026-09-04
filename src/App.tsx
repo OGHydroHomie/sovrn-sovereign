@@ -58,20 +58,18 @@ export default function App() {
      appearing on one screen and again on the next. */
   const [archetype, setArchetype] = useState<string | null>(null);
   const blueprintRef = useRef('');
+  /* Mirrors quizData for callbacks that must not re-create on every answer. */
+  const quizRef = useRef<QuizData | null>(null);
 
   /* On reveal, keep the parsed reading — including the act not taken — on the
      users row, and recover an existing Day 1 entry for a returning visitor. The
      ledger entry itself is written when the person chooses an act, not before:
      the choice is the commitment. */
-  const openBlueprint = useCallback(async (blueprintText: string) => {
+  const openBlueprint = useCallback(async (blueprintText: string, desiredReality?: string) => {
     const parsed = parseBlueprint(blueprintText);
     const existing = await getEntryForDay(1);
-    if (existing) {
-      setDayOne(existing);
-      void saveBlueprintRecord(parsed, null);
-      return;
-    }
-    void saveBlueprintRecord(parsed, null);
+    if (existing) setDayOne(existing);
+    void saveBlueprintRecord(parsed, null, desiredReality);
   }, []);
 
   const handleChooseAct = useCallback(
@@ -79,7 +77,7 @@ export default function App() {
       if (!missionText.trim()) return;
       const entry = await createDayOneEntry(missionText.trim());
       if (entry) setDayOne(entry);
-      void saveBlueprintRecord(parseBlueprint(blueprintRef.current), chosen);
+      void saveBlueprintRecord(parseBlueprint(blueprintRef.current), chosen, quizRef.current?.desiredReality);
     },
     []
   );
@@ -99,7 +97,8 @@ export default function App() {
       setQuizData(existingQuiz);
       // Returning visitor: recover the ledger row written on the first pass, or
       // derive it now if the blueprint predates the mission.
-      void openBlueprint(existing.text);
+      quizRef.current = existingQuiz;
+      void openBlueprint(existing.text, existingQuiz.desiredReality);
     }
 
     // DEV-only: preview a screen in isolation via ?screen=loading|quiz|blueprint.
@@ -128,6 +127,7 @@ export default function App() {
     setBlueprint('');
     setArchetype(null);
     setQuizData(data);
+    quizRef.current = data;
     trackEvent('quizComplete');
 
     generateBlueprint(data, {
@@ -141,7 +141,7 @@ export default function App() {
         // LoadingPage calls back when the name has landed and the page turns
         // then. The fallback matches the reveal's so the two never disagree.
         setArchetype(parseBlueprint(fullText).becoming || 'YOUR BLUEPRINT');
-        void openBlueprint(fullText);
+        void openBlueprint(fullText, data.desiredReality);
       },
       // Stay on the loading screen. Sending someone who just typed their
       // deepest fear back to "what's your first name" loses eight answers to a
