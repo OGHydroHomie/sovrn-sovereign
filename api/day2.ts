@@ -23,8 +23,8 @@ interface RequestBody {
   becoming: string;
   loop: string;
   previous: PreviousEntry;
-  /** The act they did not take on the previous day. */
-  notChosen: string;
+  /** The act they did not take on day one. Offered once, on day two, then retired. */
+  notChosen?: string;
 }
 
 const SCHEMA = {
@@ -64,6 +64,8 @@ One sentence. It names what yesterday was. It is allowed to be blunt and is neve
 
 THE HARD ONE — acts against the fear. The uncomfortable one.
 THE NEXT ONE — acts toward what they said they want. The concrete step.
+
+If you are given an untaken act from day one, day two may offer it as THE NEXT ONE, reworded to fit today. From day three onward there is no untaken act: THE NEXT ONE is written fresh out of what they wrote and what they have actually been doing. An act they were offered once and did not take is stale — do not re-serve it, and do not reach back for it.
 
 Each is ONE sentence. One. It opens with a verb and ends with a period. No second sentence, no "Do not..." clarifiers, no explanation of how to verify it — the act is self-evidently verifiable or it is too big.
 
@@ -119,12 +121,18 @@ ${p.what_happened ?? '(nothing — they never marked it done)'}
 }
 
 function buildUser(d: RequestBody, corrections?: string[]): string {
+  // The untaken day-one act is offered once, on day two. From day three it is
+  // withheld entirely — an option already declined is not a fresh option, and
+  // re-serving it makes the practice feel like it stopped watching.
+  const untaken =
+    d.dayNumber === 2 && d.notChosen
+      ? `\nThe act they did NOT take on day one: ${d.notChosen}\n`
+      : '\nThere is no untaken act to carry forward. Write THE NEXT ONE fresh, out of what they wrote.\n';
+
   const base = `They are becoming ${d.becoming}. The loop they run is the ${d.loop}.
 
 ${describePrevious(d.previous)}
-
-The act they did NOT take that day: ${d.notChosen || '(none recorded)'}
-
+${untaken}
 Write day ${d.dayNumber}.`;
   if (!corrections?.length) return base;
   return `${base}
