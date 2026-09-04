@@ -342,9 +342,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       becoming?: string; loop?: string; acts?: { hard?: string; next?: string }; chosen?: string;
     };
 
-    const { data: authUser } = await admin.auth.admin.getUserById(uid);
+    /* Report what actually went wrong. This discarded the error and called every
+       failure "no confirmed email", which sent a day 7 test down a two-round
+       diagnosis of a confirmation flag that was set the whole time — the real
+       fault was GoTrue refusing to read a user whose token columns were NULL. An
+       admin call that fails and a user who genuinely has no address are not the
+       same event and must not print the same line. */
+    const { data: authUser, error: authErr } = await admin.auth.admin.getUserById(uid);
+    if (authErr) { report.skipped.push(`${uid}: auth lookup failed — ${authErr.message}`); continue; }
     const address = authUser?.user?.email;
-    if (!address) { report.skipped.push(`${uid}: no confirmed email on the account`); continue; }
+    if (!address) { report.skipped.push(`${uid}: no email on the account`); continue; }
 
     const nextDay = previous.day_number + 1;
     const { data: exists } = await admin
