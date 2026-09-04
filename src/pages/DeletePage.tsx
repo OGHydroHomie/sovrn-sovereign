@@ -114,8 +114,8 @@ export default function DeletePage() {
 
           {state === 'failed' && (
             <P>
-              The deletion did not complete and nothing was removed. Check your
-              connection and try again.
+              The deletion did not complete and nothing was removed. Your data is
+              exactly as it was &mdash; try again.
             </P>
           )}
 
