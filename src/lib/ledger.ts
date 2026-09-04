@@ -7,14 +7,16 @@ export interface LedgerEntry {
   created_at: string;
   day_number: number;
   mission_text: string;
+  /** When they committed to the act. Never null — an entry exists because of it. */
+  committed_at: string;
   completed_at: string | null;
   what_happened: string | null;
 }
 
-const COLUMNS = 'id, user_id, created_at, day_number, mission_text, completed_at, what_happened';
+const COLUMNS = 'id, user_id, created_at, day_number, mission_text, committed_at, completed_at, what_happened';
 
 /**
- * Write the Day 1 mission at generation time, not completion time.
+ * Write the Day 1 mission at the moment they commit to it.
  *
  * The entry exists the moment the mission is shown, so an uncompleted day is a
  * visible open row rather than an absence. A unique index on (user_id, day_number)
@@ -27,7 +29,7 @@ export async function createDayOneEntry(missionText: string): Promise<LedgerEntr
 
   const { data, error } = await supabase
     .from('ledger_entries')
-    .insert({ user_id: uid, day_number: 1, mission_text: missionText })
+    .insert({ user_id: uid, day_number: 1, mission_text: missionText, committed_at: new Date().toISOString() })
     .select(COLUMNS)
     .single();
 

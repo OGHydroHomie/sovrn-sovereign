@@ -28,14 +28,8 @@ function buildRows(entries: LedgerEntry[]): LedgerRow[] {
   }));
 }
 
-function formatStamp(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  });
+function formatTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 }
 
 const CARD: React.CSSProperties = {
@@ -49,7 +43,6 @@ const CARD: React.CSSProperties = {
 
 export default function DayOne({ entry: initialEntry, embedded = false }: Props) {
   const [entry, setEntry] = useState<LedgerEntry>(initialEntry);
-  const [asking, setAsking] = useState(false);
   const [text, setText] = useState('');
   const [saving, setSaving] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -84,7 +77,6 @@ export default function DayOne({ entry: initialEntry, embedded = false }: Props)
       return;
     }
     setEntry(updated);
-    setAsking(false);
   };
 
   return (
@@ -105,26 +97,19 @@ export default function DayOne({ entry: initialEntry, embedded = false }: Props)
           {entry.mission_text}
         </p>
 
-        {!isComplete && !asking && (
-          <button
-            onClick={() => setAsking(true)}
-            style={{
-              marginTop: 20, width: '100%', minHeight: 48,
-              background: '#000000', color: '#FFFFFF', border: 'none', borderRadius: 12,
-              fontFamily: 'var(--sv-font)', fontWeight: 700, fontSize: 14,
-              textTransform: 'uppercase', letterSpacing: '0.08em', padding: '16px 24px', cursor: 'pointer',
-            }}
-          >
-            Complete
-          </button>
-        )}
+        {!isComplete && (
+          <div style={{ marginTop: 18 }}>
+            <p className="sv-label" style={{ fontSize: 11, color: '#6E6A66', letterSpacing: '0.12em' }}>
+              Committed {formatTime(entry.committed_at)}
+            </p>
 
-        {!isComplete && asking && (
-          <div style={{ marginTop: 20 }}>
             <label
               htmlFor="what-happened"
-              className="sv-label"
-              style={{ display: 'block', fontSize: 11, color: '#000000', letterSpacing: '0.14em', fontWeight: 500 }}
+              style={{
+                display: 'block', marginTop: 18, fontFamily: 'var(--sv-font)',
+                fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', color: '#000000',
+                textTransform: 'uppercase',
+              }}
             >
               What actually happened?
             </label>
@@ -132,15 +117,14 @@ export default function DayOne({ entry: initialEntry, embedded = false }: Props)
               id="what-happened"
               type="text"
               value={text}
-              autoFocus
               required
               onChange={(e) => setText(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') void submit(); }}
               style={{
                 marginTop: 10, width: '100%', minHeight: 48, boxSizing: 'border-box',
-                background: '#FBFAF7', color: '#1A1A1A',
-                border: '1px solid #E8E6E1', borderRadius: 10,
-                fontFamily: 'var(--sv-font)', fontSize: 16, padding: '12px 14px',
+                background: 'transparent', color: '#1A1A1A',
+                border: '1px solid #E4E0D6', borderRadius: 2,
+                fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 16, padding: '12px 14px',
               }}
             />
             <button
@@ -148,18 +132,18 @@ export default function DayOne({ entry: initialEntry, embedded = false }: Props)
               disabled={!ready || saving}
               style={{
                 marginTop: 12, width: '100%', minHeight: 48,
-                background: ready ? '#000000' : '#E8E6E1',
-                color: ready ? '#FFFFFF' : '#9A9A9A',
-                border: 'none', borderRadius: 12,
-                fontFamily: 'var(--sv-font)', fontWeight: 700, fontSize: 14,
-                textTransform: 'uppercase', letterSpacing: '0.08em', padding: '16px 24px',
+                background: ready ? '#000000' : '#E4E0D6',
+                color: ready ? '#FBFAF7' : '#9A9A9A',
+                border: 'none', borderRadius: 2,
+                fontFamily: 'var(--sv-font)', fontWeight: 700, fontSize: 13,
+                textTransform: 'uppercase', letterSpacing: '0.12em', padding: '16px 24px',
                 cursor: ready && !saving ? 'pointer' : 'not-allowed',
               }}
             >
-              {saving ? 'Recording…' : 'Record it'}
+              {saving ? 'Saving…' : "It's done"}
             </button>
             {failed && (
-              <p className="sv-serif" style={{ fontSize: 14, color: '#000000', marginTop: 10 }}>
+              <p style={{ marginTop: 10, fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 14, color: '#1A1A1A' }}>
                 That did not save. Check your connection and try again.
               </p>
             )}
@@ -168,8 +152,8 @@ export default function DayOne({ entry: initialEntry, embedded = false }: Props)
 
         {isComplete && (
           <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid #E8E6E1' }}>
-            <p className="sv-label" style={{ fontSize: 11, color: '#9A9A9A', letterSpacing: '0.12em' }}>
-              {formatStamp(entry.completed_at!)}
+            <p className="sv-label" style={{ fontSize: 11, color: '#6E6A66', letterSpacing: '0.12em' }}>
+              Committed {formatTime(entry.committed_at)} · Completed {formatTime(entry.completed_at!)}
             </p>
             <p className="sv-serif" style={{ fontSize: 16, lineHeight: 1.6, color: '#4A4A4A', marginTop: 8 }}>
               {entry.what_happened}
@@ -188,27 +172,31 @@ export default function DayOne({ entry: initialEntry, embedded = false }: Props)
           {rows.map(({ dayNumber, entry: row }) => (
             <div
               key={dayNumber}
-              style={{ display: 'flex', gap: 14, padding: '14px 0', borderBottom: '1px solid #E8E6E1' }}
+              style={{ padding: '14px 0', borderBottom: '1px solid #E4E0D6' }}
             >
-              <span
-                className="sv-label"
-                style={{ fontSize: 11, color: row?.completed_at ? '#1A1A1A' : '#C9C6C0', letterSpacing: '0.1em', fontWeight: 700, minWidth: 46 }}
-              >
-                DAY {dayNumber}
-              </span>
               <div style={{ flex: 1 }}>
-                {row?.completed_at ? (
-                  <>
-                    <p className="sv-label" style={{ fontSize: 11, color: '#9A9A9A', letterSpacing: '0.1em' }}>
-                      {formatStamp(row.completed_at)}
-                    </p>
-                    <p className="sv-serif" style={{ fontSize: 15, lineHeight: 1.6, color: '#4A4A4A', marginTop: 6 }}>
-                      {row.what_happened}
-                    </p>
-                  </>
-                ) : (
-                  <p className="sv-serif" style={{ fontSize: 15, lineHeight: 1.6, color: '#C9C6C0', fontStyle: 'italic' }}>
-                    {row ? 'Open.' : 'No entry.'}
+                {/* One line carrying both times. A committed-but-unfinished day
+                    stays on the record exactly as it is — no red, no nudge, no
+                    shame copy. The Ledger reports; it does not editorialise. */}
+                <p
+                  className="sv-label"
+                  style={{ fontSize: 11, color: row ? '#1A1A1A' : '#C9C6C0', letterSpacing: '0.1em', fontWeight: 700 }}
+                >
+                  DAY {dayNumber}
+                  {row && ` · Committed ${formatTime(row.committed_at)}`}
+                  {row && (row.completed_at
+                    ? ` · Completed ${formatTime(row.completed_at)}`
+                    : ' · Open')}
+                </p>
+
+                {row?.completed_at && (
+                  <p style={{ marginTop: 8, fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 15, lineHeight: 1.6, color: '#1A1A1A' }}>
+                    {row.what_happened}
+                  </p>
+                )}
+                {!row && (
+                  <p style={{ marginTop: 6, fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 15, lineHeight: 1.6, color: '#C9C6C0' }}>
+                    No entry.
                   </p>
                 )}
               </div>
