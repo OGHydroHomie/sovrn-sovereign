@@ -240,6 +240,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { error: insErr } = await admin.from('ledger_entries').insert({
       user_id: uid, day_number: nextDay, mission_text: day.hard,
       committed_at: new Date().toISOString(),
+      // The read is the app noticing what they did. It used to exist only in
+      // this email and was thrown away afterwards; it now travels with the day
+      // so the Ledger can lead with it.
+      read_line: (day.read ?? '').trim() || null,
     });
     if (insErr) { report.skipped.push(`${uid}: insert ${insErr.message}`); continue; }
 

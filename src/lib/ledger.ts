@@ -11,9 +11,13 @@ export interface LedgerEntry {
   committed_at: string;
   completed_at: string | null;
   what_happened: string | null;
+  /* One sentence naming what the previous day actually was, written when this
+     day was generated. Null on day one and on anything generated before the
+     column existed. */
+  read_line: string | null;
 }
 
-const COLUMNS = 'id, user_id, created_at, day_number, mission_text, committed_at, completed_at, what_happened';
+const COLUMNS = 'id, user_id, created_at, day_number, mission_text, committed_at, completed_at, what_happened, read_line';
 
 /**
  * Write the Day 1 mission at the moment they commit to it.

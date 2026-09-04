@@ -88,6 +88,25 @@ export default function LedgerPage() {
     <PaperPage title="Your Ledger">
       {/* ── Today, at the top ── */}
       {current ? (
+        <>
+        {/* The read, before anything else and larger than the act it introduces.
+            This sentence is the app saying it watched — the reason there is any
+            point coming back — and it used to exist only inside the 6am email,
+            read once and then gone. It leads the page now. Null on day one and
+            on anything generated before the column existed, in which case the
+            page simply opens on the act as it always did. */}
+        {current.read_line && (
+          <p
+            style={{
+              margin: '0 0 28px',
+              fontFamily: 'var(--sv-font)', fontWeight: 300,
+              fontSize: 'clamp(20px, 5.4vw, 24px)', lineHeight: 1.42,
+              letterSpacing: '-0.01em', color: '#000000',
+            }}
+          >
+            {current.read_line}
+          </p>
+        )}
         <div style={{ borderTop: '1px solid #E4E0D6', paddingTop: 22 }}>
           <p className="sv-label" style={{ fontSize: 11, color: '#000000', letterSpacing: '0.14em' }}>
             DAY {current.day_number} · Committed {formatTime(current.committed_at)} · Open
@@ -140,6 +159,7 @@ export default function LedgerPage() {
             </p>
           )}
         </div>
+        </>
       ) : (
         <div style={{ borderTop: '1px solid #E4E0D6', paddingTop: 22 }}>
           <p style={{ fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 15, lineHeight: 1.7, color: '#6E6A66' }}>
