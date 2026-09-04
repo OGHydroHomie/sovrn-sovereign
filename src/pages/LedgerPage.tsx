@@ -112,7 +112,7 @@ export default function LedgerPage() {
         <p style={{ marginTop: 16, fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 16, lineHeight: 1.7, color: '#6E6A66' }}>
           {villain === 'ok'
             ? 'You are counted. If enough people are, it gets built.'
-            : 'That did not record. Check your connection and tap it again.'}
+            : 'That didn\u2019t record. Nothing was counted \u2014 tap it again.'}
         </p>
         <button
           onClick={() => setVillain(null)}
