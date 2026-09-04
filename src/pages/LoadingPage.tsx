@@ -10,6 +10,9 @@ interface Props {
 
 /* The anticipation beat. Paper ground, one line, one line of movement.
 
+   The copy states the wait rather than narrating what the machine is doing.
+   Placeholder until the logo animation lands.
+
    DESIGN_FROZEN.md: cream ground, black, Geist Sans, no cosmic imagery — so the
    constellation, the star field, and the rotating oracle copy are gone. No
    spinner either: a spinner says "the machine is busy," and this moment is
@@ -92,7 +95,7 @@ export default function LoadingPage({ error = null, onRetry }: Props) {
               maxWidth: 320,
             }}
           >
-            Finding the name for what you&rsquo;re becoming.
+            This takes about twenty seconds.
           </motion.p>
 
           {/* The one motion. Draws to full over ~22s, then holds. */}
