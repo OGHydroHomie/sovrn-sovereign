@@ -131,3 +131,43 @@ sweep claiming to have removed the last "Check your connection" and had not —
 it and I claimed a completeness I had not verified; found by grepping the
 deployed bundle instead. **Open:** nothing; zero occurrences ship, verified
 across `src/` and `api/`.
+
+## 2026-09-04 · Day 7, the recalibration
+
+**Shipped** `a9bbfff`, `f5917da`, `e6007cd`, `9214bb8`, `eb317f9`. The product had
+a beginning and a middle and nothing pulling anyone through it. Day 7 now routes
+away from the mission generator entirely: a pattern-level read of the whole week,
+the full record with gaps rendered as gaps and nothing scored, the becoming
+resolving out of the square with the same motion the loading screen uses, and one
+question in their own words from intake — is that still what you want. The answer
+re-runs the becoming against the same thirteen, held by default. From day 8 the
+daily generator reads the whole record rather than only yesterday. **What broke:**
+plenty, and all of it before it shipped. `max_tokens: 1024` was silently
+truncating — thinking is spent before the JSON is written — so two of three first
+attempts came back unparseable and one leaked a `"}` into the prose. The app grew
+a narrator ("What I want to say plainly is…") when it has never spoken as "I". The
+recalibration reason was written in the third person about the person reading it.
+The first cut of the read ran to 170 words of chained clauses on the one screen
+that is meant to be a payoff. The selection moved HEADLINER to LOCKSMITH off "I
+want to stop needing to be certain before I move" — which is the Opening Act's own
+loop, not a new want — and justified it with the word "authorized", the same
+justify-after-choosing failure the blueprint prompt was fixed for. And a run that
+needed all three attempts took 70 seconds against a 60-second `maxDuration`, which
+would have timed out in production. Every one of those is fixed and re-verified.
+**Open:** `/api/morning`'s day 7 branch has never executed — it needs
+`SUPABASE_SECRET_KEY`, which is not in `.env.local`, so the routing, the entry
+insert, the magic link and the send are reviewed but unrun; the same is true of
+`/api/recalibrate`'s auth and write path, though the selection itself ran for
+real. No Day 7 screen has been seen in a browser. Nobody is on day 7 yet, so the
+first real one will be the first one anybody sees.
+
+## 2026-09-04 · api/ was never type-checked
+
+**Shipped** `eb317f9`. `npm run build` runs `tsc -b`, which never looked at `api/`
+— Vite does not compile it and the app's tsconfig does not include it. Adding
+`tsconfig.api.json` to the project references caught two errors in the new day 7
+code and three unknown-typed values in `generate.ts` and `morning.ts` that had
+already shipped. `CLAUDE.md` now records this alongside two other rules, each
+written next to the failure that produced it. **What broke:** nothing new — this
+is the fix for a class of failure that had already produced one production 500
+from an extensionless ESM import. **Open:** nothing.
