@@ -21,8 +21,11 @@ alphanumerics collapsed to hyphens — so it is never written down twice.
 
 DESIGN_FROZEN.md applies. Black line art on cream, nothing else.
 
-- Square viewBox, `viewBox="0 0 100 100"`, no width/height attributes so the
-  slot can size it.
+- Square, with BOTH a viewBox and intrinsic dimensions:
+  `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">`.
+  The viewBox alone is enough for an `<img>`, but a dimensionless SVG drawn into
+  a canvas rasterises at zero in some browsers, and the card is a canvas export.
+  Both surfaces scale it explicitly, so the intrinsic size is only a base.
 - Stroke or fill in `#000000`. No gold, no purple, no gradients, no cosmic
   imagery.
 - Transparent background. The cream comes from the page underneath.

@@ -7,6 +7,7 @@ import type { LedgerEntry } from '../lib/ledger';
 import { parseBlueprint, teaser } from '../lib/blueprint';
 import RevealCard from '../components/RevealCard';
 import ArchetypeMark from '../components/ArchetypeMark';
+import SaveCard from '../components/SaveCard';
 import DayOne from '../components/DayOne';
 
 interface Props {
@@ -245,6 +246,12 @@ export default function BlueprintPage({ text, quizData, dayOne, onChooseAct }: P
           >
             Download
           </button>
+          {bp.becoming && (
+            <div style={{ marginTop: 12, display: 'flex', justifyContent: 'center' }}>
+              <SaveCard becoming={bp.becoming} loop={bp.loop} />
+            </div>
+          )}
+
           <p style={{ marginTop: 28, fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 11, letterSpacing: '0.1em', color: '#9A9A9A' }}>
             {quizData.name} - No. {blueprintNo}
           </p>

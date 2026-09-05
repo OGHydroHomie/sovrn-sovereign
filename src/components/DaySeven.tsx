@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import SquareReveal from './SquareReveal';
+import SaveCard from './SaveCard';
 import { submitRecalibration, type Recalibration } from '../lib/recalibrate';
 import type { LedgerEntry } from '../lib/ledger';
 
@@ -258,6 +259,12 @@ export default function DaySeven({ entry, entries, becoming, timezone }: Props) 
             <p style={{ marginTop: 18, fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 'clamp(16px, 4.4vw, 19px)', lineHeight: 1.6, color: '#1A1A1A' }}>
               {result.reason}
             </p>
+            {/* The resolved name, and the day it resolved. No loop line — that
+                week is closed. */}
+            <div style={{ marginTop: 30, display: 'flex', justifyContent: 'center' }}>
+              <SaveCard becoming={result.becoming} earnedAt={new Date()} />
+            </div>
+
             <p style={{ marginTop: 26, fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 14, lineHeight: 1.65, color: '#6E6A66' }}>
               Tomorrow at 6am the daily act starts again, written from all of this rather than from yesterday alone.
             </p>
