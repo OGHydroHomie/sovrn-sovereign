@@ -81,6 +81,23 @@ This sentence is shown to them. Write it TO them, in the second person — "you"
 
 One sentence means one, and a short one. Not one sentence with four clauses bolted on by dashes and "while" and "and". If you cannot say it plainly, you have not found the reason yet.
 
+### THE ANSWER IS THE WHAT. THE RECORD IS THE EVIDENCE.
+
+Their answer tells you what they now want. It is never the proof. The proof is the six days.
+
+Cite at least one specific thing from the record: an act, the hour something was committed, the hour it was completed, a day that stayed open, a day with no entry at all, or something they wrote in an entry. The actual thing — not "your week", not "what you did", not "the pattern".
+
+Repeating their own answer back at them is the cheapest move available and it is what every horoscope does. They just told you what they want; you are not informing them of it. The only thing you know that they did not just say is what the six days show, so that is what you say.
+
+Wrong — the answer used as its own evidence:
+"You still want the record out under your name — you played it for the museum owner and the bar, and what you're waiting on now is what more people say about it."
+Every fact in that sentence came from them thirty seconds earlier.
+
+Right — the answer names the want, the record proves it:
+"You still want it out under your name, and the two acts you left open were the deposit and the clip, the only two with nobody on the other end."
+
+If nothing in the six days supports the answer, that is itself the finding, and the becoming holds.
+
 If it held: say why it held, and reference something specific in the week. Confirmation is only worth something when the alternative was live and the app could plainly have said otherwise. Do not congratulate.
 
 If it changed: name what in the week or in their answer moved it. Be specific about the actual thing — never "you have grown", never "you are evolving". If you cannot name the move without arguing for it, it did not move.
@@ -96,6 +113,60 @@ const THIRD_PERSON = /(^|[^\w'])(they|their|them|theirs)([^\w']|$)/i;
 const APP_NARRATOR = /(^|[^\w'])(I|I'm|I've|we|we're|our|us)([^\w']|$)/;
 
 const BRIDGE = /\b(which is really|another way of saying|in other words|essentially|is basically|amounts to|boils down to|could be read as)\b/i;
+
+/* Short and structural words carry no evidence, so they cannot be what makes a
+   reason count as citing the record. */
+const NOT_EVIDENCE = new Set([
+  // Ordinary English.
+  'that', 'this', 'with', 'from', 'your', 'yours', 'you', 'they', 'them', 'their',
+  'have', 'been', 'were', 'what', 'when', 'then', 'than', 'and', 'the', 'for',
+  'not', 'but', 'about', 'into', 'onto', 'over', 'under', 'after', 'before',
+  'because', 'which', 'would', 'could', 'should', 'more', 'most', 'only', 'just',
+  'even', 'also', 'same', 'some', 'many', 'much', 'like', 'well', 'very', 'here',
+  'there', 'where', 'while', 'until', 'again', 'other', 'others', 'another',
+  'each', 'every', 'both', 'anything', 'something', 'someone', 'everything',
+  'never', 'always', 'still', 'yet',
+  // Generic across every act and every entry, so matching on one proves nothing.
+  'want', 'wants', 'wanted', 'said', 'says', 'thing', 'things', 'week', 'days',
+  'day', 'name', 'named', 'will', 'own', 'person', 'people', 'today', 'tomorrow',
+  'tell', 'told', 'telling', 'send', 'sent', 'give', 'given', 'know', 'known',
+  'knew', 'back', 'going', 'come', 'comes', 'came', 'take', 'taken', 'took',
+  'make', 'made', 'find', 'found', 'open', 'opened', 'close', 'closed', 'done',
+  'doing', 'first', 'last', 'next', 'real', 'right', 'left', 'night', 'morning',
+  'evening', 'hour', 'hours', 'minute', 'minutes', 'time', 'times', 'year',
+  'years', 'commit', 'commits', 'committed', 'complete', 'completed', 'entry',
+  'entries', 'wrote', 'write', 'written', 'answer', 'answered', 'three', 'four',
+  'five', 'seven', 'reply', 'replied',
+]);
+
+function evidenceWords(text: string): Set<string> {
+  return new Set(
+    (text.toLowerCase().match(/[a-z']{4,}/g) ?? []).filter((w) => !NOT_EVIDENCE.has(w))
+  );
+}
+
+/**
+ * Does the reason point at the record, or only at what they just said?
+ *
+ * A clock time or an explicit day number always counts: the answer never
+ * contains them, and a day nobody opened can only be referred to by its number.
+ * Otherwise it needs at least one substantial word that appears in an act or in
+ * something they wrote, and does NOT appear in the answer — reflecting their own
+ * sentence back is the failure this exists to catch.
+ */
+export function citesRecord(reason: string, week: WeekDay[], answer: string): boolean {
+  if (/\b\d{1,2}:\d{2}\b/.test(reason)) return true;
+  if (/\bday\s*(one|two|three|four|five|six|[1-6])\b/i.test(reason)) return true;
+
+  const record = evidenceWords(
+    week.map((d) => `${d.mission_text ?? ''} ${d.what_happened ?? ''}`).join(' ')
+  );
+  const theirs = evidenceWords(answer);
+  for (const w of evidenceWords(reason)) {
+    if (record.has(w) && !theirs.has(w)) return true;
+  }
+  return false;
+}
 
 export function validateReason(reason: string, changed = false): string | null {
   if (!reason) return 'reason is empty';
@@ -207,7 +278,7 @@ export async function selectBecoming(client: Anthropic, input: SelectionInput): 
   const userMessage = buildSelectionMessage(input);
   let corrections: string[] | undefined;
 
-  for (let attempt = 0; attempt < 2; attempt++) {
+  for (let attempt = 0; attempt < 3; attempt++) {
     const draft = await generate(client, userMessage, corrections);
     if (!draft) {
       corrections = ['generation returned nothing'];
@@ -224,6 +295,12 @@ export async function selectBecoming(client: Anthropic, input: SelectionInput): 
     const reasonProblem = validateReason(reason, normalise(name) !== normalise(input.previous));
     if (reasonProblem) {
       corrections = [reasonProblem];
+      continue;
+    }
+    if (!citesRecord(reason, input.week, input.answer)) {
+      corrections = [
+        'the reason cites nothing from the six days — every fact in it came from their own answer, which they told you thirty seconds ago. Name an act, a time, an open day, a day with no entry, or something they wrote in an entry.',
+      ];
       continue;
     }
     if (!(await safetyCheck(client, reason, 'recalibrate:reason'))) {
