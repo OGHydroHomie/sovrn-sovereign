@@ -198,3 +198,15 @@ record-citation check passed the exact sentence it existed to reject, because
 "name" and "will" appear in act text. **Open:** `/api/morning`'s day 7 branch is
 now verified, but nobody real has reached day 7, so the next one will be the first
 unattended run.
+
+## 2026-09-04 · Day 7 sentence cap relaxed to 33
+
+**Shipped** `9ecfe80`. The thirty-word per-sentence cap on the week read was the
+binding constraint on four of five generations, costing a retry each time. That
+matters more than latency: a run that exhausts its three attempts does not surface
+as a long sentence, it silently falls back to a paragraph with no pattern claim in
+it and still returns 200. Retries across the five shapes drop from five to three,
+and all three remaining are genuine runaways at 39, 41 and 46 words rather than
+marginal misses at 31 and 32. **What broke:** nothing — the word total, not the
+sentence cap, is what keeps the read from becoming an essay, and it is unchanged
+at 80 to 110. **Open:** nothing.
