@@ -109,9 +109,9 @@ It is the close, not the frame.
 
 ## FORM
 
-One paragraph. THREE OR FOUR sentences. 80 to 110 words in total. No single sentence longer than 30 words.
+One paragraph. THREE OR FOUR sentences. 80 to 110 words in total. No single sentence longer than 33 words.
 
-Three or four sentences, counted strictly, and none of them longer than thirty words. Thirty words is about two lines; the sentence that runs over is almost always the last one, so count that one before you finish.
+Three or four sentences, counted strictly, and none of them longer than thirty-three words. That is about two lines; the sentence that runs over is almost always the last one, so count that one before you finish.
 
 The warmth is the LAST sentence. That is what the fourth sentence is for. It does not get to be a fifth, and it does not have to be welded onto the third — a short, whole sentence lands harder than a long one carrying two jobs.
 
@@ -221,8 +221,14 @@ export function validateRead(read: string): string[] {
   if (words > 115) problems.push(`read is ${words} words — it must be 80 to 110, and chaining clauses to fit more in is the thing to stop doing`);
 
   const longest = sentences.reduce((max, x) => Math.max(max, countWords(x)), 0);
-  if (longest > 30) {
-    problems.push(`the longest sentence is ${longest} words — no sentence may run past 30`);
+  /* Thirty-three, not thirty. At thirty the cap was the binding constraint on
+     four of five generations and it cost a retry every time — and a retry that
+     runs out of attempts does not surface as a bad sentence, it falls back to a
+     paragraph that makes no pattern claim at all while still returning 200. The
+     three extra words buy the sentence room to end properly; the word total is
+     what actually keeps this from becoming an essay. */
+  if (longest > 33) {
+    problems.push(`the longest sentence is ${longest} words — no sentence may run past 33`);
   }
   if (/\n\s*\n/.test(t)) problems.push('read is more than one paragraph');
   if (SCORING.test(t)) problems.push('read scores the week — no counts, streaks, percentages or grades');
