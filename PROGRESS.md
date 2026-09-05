@@ -171,3 +171,30 @@ already shipped. `CLAUDE.md` now records this alongside two other rules, each
 written next to the failure that produced it. **What broke:** nothing new — this
 is the fix for a class of failure that had already produced one production 500
 from an extensionless ESM import. **Open:** nothing.
+
+## 2026-09-04 · Day 7 verified live, then two voice failures fixed
+
+**Shipped** `76e24a1`, `34121d4`, `36174cc`, `2aa5622`. Day 7 ran end to end against
+a seeded six-day account — email, screen, week read, record with the gap, and a
+recalibration that held with a week-referencing reason — and the seed was deleted
+before it could become a day 8 in the morning cron. Two failures showed up only
+once a real person read the output. The week read's warmth was not landing on
+mixed weeks: the prompt named warmth's target for thin weeks and for strong ones
+but not for the most common shape, and it contradicted itself, because the line
+added to stop a five-sentence overrun also forbade the closing turn that makes
+warmth work. And the recalibration reason cited the person's own answer as its own
+evidence — museum owner, bar, all of it from their sentence thirty seconds
+earlier, which is what a horoscope does. The reason must now cite the record: an
+act, a time, an open day, a gap, or something they wrote, enforced by a check
+tuned against the real failing sentence. **What broke:** three of my own fixes
+broke something else on the way. Naming the warmth mechanism with two concrete
+examples turned them into templates — three of five generations closed on "rarer
+than any single act on this list" verbatim. Requiring the warmth to be welded to
+the final sentence made that sentence too long for the thirty-word cap, and the
+strong week was rejected three times and silently fell back to the hard-coded
+paragraph, losing its pattern read; that was caught only by checking `source` on
+the response rather than reading the prose. The first version of the
+record-citation check passed the exact sentence it existed to reject, because
+"name" and "will" appear in act text. **Open:** `/api/morning`'s day 7 branch is
+now verified, but nobody real has reached day 7, so the next one will be the first
+unattended run.
