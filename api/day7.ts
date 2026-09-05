@@ -80,15 +80,40 @@ For six days this voice has been accurate and dry and has not flattered them onc
 
 Warmth here is recognition of what this specific person actually did, said in the same unflinching voice. It is not praise, not congratulation, not a trophy. It lands precisely because nothing before it has been generous.
 
-If the week was thin, the warmth goes to the fact that they came back on day seven at all. Most people do not. Say that plainly, once, without pity and without making it the consolation for a bad week.
+### What makes it warmth rather than a nice sentence
 
-One or two sentences of the paragraph carry the warmth. It is the close, not the frame.
+The warm clause has to say something THE RECORD CANNOT SAY BY ITSELF: what it cost, how rare it is, what it means that they did it at all. The six days are printed directly underneath your paragraph. Restating one of them more kindly adds nothing they cannot already see.
+
+Wrong — description wearing warmth's clothes:
+"What you did Thursday morning was the hardest thing on the list, and you stayed on the phone through a question you could not answer."
+
+Right — the same material, with a clause that turns. These are ILLUSTRATIONS OF THE MOVE, NOT PHRASINGS TO REUSE:
+- cost: "...and you stayed on the line with no answer ready, which cost more than anything you sent all week."
+- rarity: "...and you were the one who wrote down the part you softened, which almost nobody does unprompted."
+- what it reveals: "...and you found out the thing you were braced for does not actually arrive."
+- what it means they can do now: "...and the room did not need convincing, which changes what next week is for."
+
+The difference is not tone. The first only reports. The second makes a claim about them that the record cannot make on its own.
+
+Never reuse the wording of an example. Vary the KIND of claim as well as the words — cost, rarity, what it reveals, what it makes possible. If your closing clause could be pasted into a different person's week unchanged, it is not about this person and you have not written it yet.
+
+### Where to aim it
+
+If the week was strong, aim at what they found out about themselves that they did not know on day one.
+
+If the week was MIXED — some finished, some abandoned, maybe a day never opened — aim at the single act that cost them the most, named as having cost something. Not the easiest completion. Never the number of them. A mixed week is the most common shape and it has neither an obvious triumph nor an obvious comeback, so this is the one you have to work for.
+
+If the week was thin, aim at the fact that they came back on day seven at all. Most people do not. Say it plainly, once, without pity and without making it the consolation for a bad week.
+
+It is the close, not the frame.
 
 ## FORM
 
 One paragraph. THREE OR FOUR sentences. 80 to 110 words in total. No single sentence longer than 30 words.
 
-The warmth belongs INSIDE one of those three or four sentences. Do not write three sentences of pattern and then add a warm line on the end — that fifth sentence is the most common way this gets written wrong, and it is still five sentences.
+Three or four sentences, counted strictly, and none of them longer than thirty words. Thirty words is about two lines; the sentence that runs over is almost always the last one, so count that one before you finish.
+
+The warmth is the LAST sentence. That is what the fourth sentence is for. It does not get to be a fifth, and it does not have to be welded onto the third — a short, whole sentence lands harder than a long one carrying two jobs.
 
 This is the payoff screen, not an essay. Do not chain clauses with dashes and "and" and "which" to fit more in — if the paragraph only works as one long sentence, you have not decided what the week shows yet. Say the one thing, support it once, and stop.
 
@@ -161,6 +186,9 @@ Fix every one of them.`;
    ban is enforced after generation as well as in the prompt. */
 const SCORING = /\b(\d+\s*(of|out of|\/)\s*\d+|streak|percent|percentage|\d+%|score[ds]?|grade[ds]?|batting|success rate|completion rate|half of them|most of them)\b/i;
 const AT_LEAST = /\bat least you\b/i;
+/* Phrases lifted straight from the prompt's own examples. An illustration that
+   turns into a template gives every person on the system the same closing line. */
+const LIFTED = /\b(rarer than any|which almost nobody does unprompted|cost more than anything you sent all week)\b/i;
 /* The app is not a person and has never used "I". Day 7 softens the voice; it
    does not introduce a narrator. */
 const FIRST_PERSON = /(^|[^\w'])(I|I'm|I've|I'll|we|we're|we've|us|our)([^\w']|$)/;
@@ -200,6 +228,9 @@ export function validateRead(read: string): string[] {
   if (SCORING.test(t)) problems.push('read scores the week — no counts, streaks, percentages or grades');
   if (AT_LEAST.test(t)) problems.push('read uses "at least", which is a consolation prize');
   if (t.trim().endsWith('?')) problems.push('read ends on a question');
+  if (LIFTED.test(t)) {
+    problems.push('the closing clause reuses the wording of an example — write the claim that fits this week, not the one in the instructions');
+  }
   if (FIRST_PERSON.test(t)) {
     problems.push('read speaks as "I" or "we" — the app has no narrator, only second person');
   }
