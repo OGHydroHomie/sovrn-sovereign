@@ -2,8 +2,9 @@ import type { ReactNode } from 'react';
 
 interface Props {
   title: string;
-  /* Rendered under the title in smaller type — e.g. a last-updated line. */
-  standfirst?: string;
+  /* Rendered under the title in smaller type — a last-updated line, or the
+     becoming and its mark. A node rather than a string so it can carry both. */
+  standfirst?: ReactNode;
   children: ReactNode;
 }
 
@@ -40,9 +41,9 @@ export default function PaperPage({ title, standfirst, children }: Props) {
         </h1>
 
         {standfirst && (
-          <p style={{ marginTop: 10, fontSize: 14, color: '#6E6A66', lineHeight: 1.6 }}>
+          <div style={{ marginTop: 10, fontSize: 14, color: '#6E6A66', lineHeight: 1.6 }}>
             {standfirst}
-          </p>
+          </div>
         )}
 
         <div style={{ marginTop: 28 }}>{children}</div>

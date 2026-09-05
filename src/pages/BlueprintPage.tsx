@@ -6,6 +6,7 @@ import { trackEvent } from '../utils/storage';
 import type { LedgerEntry } from '../lib/ledger';
 import { parseBlueprint, teaser } from '../lib/blueprint';
 import RevealCard from '../components/RevealCard';
+import ArchetypeMark from '../components/ArchetypeMark';
 import DayOne from '../components/DayOne';
 
 interface Props {
@@ -151,6 +152,12 @@ export default function BlueprintPage({ text, quizData, dayOne, onChooseAct }: P
           transition={{ duration: 0.9, ease: 'easeOut' }}
           style={{ paddingTop: '22vh', textAlign: 'center' }}
         >
+          {/* The mark, above the name. Falls back to the square until the art
+              exists, which is what it renders today. */}
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 30 }}>
+            <ArchetypeMark becoming={bp.becoming} size={96} />
+          </div>
+
           <h1
             style={{
               fontFamily: 'var(--sv-font)',

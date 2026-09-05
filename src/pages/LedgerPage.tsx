@@ -6,6 +6,7 @@ import NextMorning from '../components/NextMorning';
 import { signalVillain, villainUnlocked } from '../lib/villain';
 import { getProfile, type Profile } from '../lib/blueprint';
 import DaySeven from '../components/DaySeven';
+import ArchetypeMark from '../components/ArchetypeMark';
 
 type State = 'loading' | 'signed-out' | 'ready';
 
@@ -163,11 +164,15 @@ export default function LedgerPage() {
     );
   }
 
-  const becomingLine = profile?.becoming
-    ? profile.becomingResolvedAt
-      ? profile.becoming
-      : `${profile.becoming} · in progress`
-    : undefined;
+  const becomingLine = profile?.becoming ? (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
+      <ArchetypeMark becoming={profile.becoming} size={16} inline />
+      <span>
+        {profile.becoming}
+        {profile.becomingResolvedAt ? '' : ' · in progress'}
+      </span>
+    </span>
+  ) : undefined;
 
   return (
     <PaperPage title="Your Ledger" standfirst={becomingLine}>
