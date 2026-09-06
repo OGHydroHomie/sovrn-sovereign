@@ -210,3 +210,29 @@ and all three remaining are genuine runaways at 39, 41 and 46 words rather than
 marginal misses at 31 and 32. **What broke:** nothing — the word total, not the
 sentence cap, is what keeps the read from becoming an essay, and it is unchanged
 at 80 to 110. **Open:** nothing.
+
+## 2026-09-05 · The thirteen archetype marks
+
+**Shipped** `8795177`. The art landed and needed four fixes before it could go
+out. Twelve files were missing the `the-` prefix the app derives from the
+becoming name, so every one would have 404'd and fallen back to the square; a
+thirteenth arrived as `bartender.svg`, which is not a becoming — it is THE CLEAN
+SLATE, renamed only after confirmation, because the file carries no title and its
+metadata names only the generator. All thirteen opened with a full-bleed opaque
+white path, which on cream is a white tile behind every mark and in the middle of
+the PNG export. Each carried a C2PA provenance manifest worth roughly half its
+bytes: stripping it took the set from 263KB to 122KB. The reveal gives the mark
+room it did not have — 96px to `clamp(220px, 58vw, 280px)`, the gap to the name
+down to 14px so they read as one object, top padding to 9vh to pay for the extra
+height, and the 16vh of dead space above the cards replaced with a fixed 56px.
+The Ledger header keeps the solid square: at 16px a shaded illustration is a
+smudge. `README.md` now allows greyscale, records the header decision and the
+metadata rule, so the next batch does not repeat any of it. **What broke:** my
+backup step silently failed before I edited thirteen files — the shell was still
+inside `public/marks` from a previous command, so `cp public/marks/*.svg` matched
+nothing and I proceeded on a backup that did not exist. Nothing was lost, because
+the edit was one known path per file and every removal was logged, but the copy
+should have been checked before the write. **Open:** the marks have never been
+seen rendering in a real browser — there is none in this environment — so the
+reveal, the Ledger header and the PNG export are verified structurally and by a
+composite preview, not by looking at the running app.
