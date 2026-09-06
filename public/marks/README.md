@@ -26,13 +26,20 @@ DESIGN_FROZEN.md applies. Black line art on cream, nothing else.
   The viewBox alone is enough for an `<img>`, but a dimensionless SVG drawn into
   a canvas rasterises at zero in some browsers, and the card is a canvas export.
   Both surfaces scale it explicitly, so the intrinsic size is only a base.
-- Stroke or fill in `#000000`. No gold, no purple, no gradients, no cosmic
-  imagery.
+- Greyscale. Black through mid-grey is fine — the delivered set is shaded
+  illustration rather than pure line art, and flattening it to a single ink
+  would wreck the drawings. No colour: no gold, no purple, no gradients, no
+  cosmic imagery. DESIGN_FROZEN's killed palette still applies.
 - Transparent background. The cream comes from the page underneath.
-- Legible at 28px in the Ledger header and at 300px on the card. If it needs
-  detail to read, it is too detailed.
+- Legible at 96px and up. The marks appear on the Blueprint reveal at 220-280px
+  and on the share card at 300px. They are NOT used in the Ledger header, which
+  keeps the solid square: at that size a shaded illustration is a smudge, and
+  that line is a label rather than a portrait.
 - No embedded text, no fonts — the card draws these into a canvas, and an SVG
   that depends on a font will not render the same there.
+- No C2PA or XMP metadata. The generator embeds a provenance manifest that is
+  roughly half the file, and these are shipped to every visitor on every load.
+  Strip `<metadata>` and the `xmlns:c2pa` attribute before committing.
 - No external references of any kind. The card canvas is exported as a PNG, and
   a remote reference would either fail to load or taint the canvas and break the
   export outright.

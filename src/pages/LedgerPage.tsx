@@ -6,7 +6,6 @@ import NextMorning from '../components/NextMorning';
 import { signalVillain, villainUnlocked } from '../lib/villain';
 import { getProfile, type Profile } from '../lib/blueprint';
 import DaySeven from '../components/DaySeven';
-import ArchetypeMark from '../components/ArchetypeMark';
 
 type State = 'loading' | 'signed-out' | 'ready';
 
@@ -166,7 +165,10 @@ export default function LedgerPage() {
 
   const becomingLine = profile?.becoming ? (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
-      <ArchetypeMark becoming={profile.becoming} size={16} inline />
+      {/* Deliberately the square, not the mark. At 16px a shaded illustration
+          reads as a smudge, and this line is a label rather than a portrait —
+          the character belongs on the reveal and the card. */}
+      <span aria-hidden="true" style={{ width: 10, height: 10, background: '#000000', flex: 'none' }} />
       <span>
         {profile.becoming}
         {profile.becomingResolvedAt ? '' : ' · in progress'}

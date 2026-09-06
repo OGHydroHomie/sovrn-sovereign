@@ -3,8 +3,9 @@ import { markUrl } from '../lib/marks';
 
 interface Props {
   becoming: string | null | undefined;
-  /** Rendered square, in px. */
-  size: number;
+  /* Rendered square. A number is px; a string is any CSS length, so the reveal
+     can scale the mark with the viewport rather than at a fixed size. */
+  size: number | string;
   /** Sits inline beside type rather than on its own line. */
   inline?: boolean;
 }

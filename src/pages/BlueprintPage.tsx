@@ -151,12 +151,12 @@ export default function BlueprintPage({ text, quizData, dayOne, onChooseAct }: P
           initial={reduceMotion ? false : { opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.9, ease: 'easeOut' }}
-          style={{ paddingTop: '22vh', textAlign: 'center' }}
+          style={{ paddingTop: '9vh', textAlign: 'center' }}
         >
           {/* The mark, above the name. Falls back to the square until the art
               exists, which is what it renders today. */}
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 30 }}>
-            <ArchetypeMark becoming={bp.becoming} size={96} />
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 14 }}>
+            <ArchetypeMark becoming={bp.becoming} size="clamp(220px, 58vw, 280px)" />
           </div>
 
           <h1
@@ -205,7 +205,7 @@ export default function BlueprintPage({ text, quizData, dayOne, onChooseAct }: P
         </motion.div>
 
         {/* Three cards, collapsed by default */}
-        <div style={{ marginTop: '16vh' }}>
+        <div style={{ marginTop: 56 }}>
           <RevealCard header="WHO YOU ARE" teaser={teaser(bp.whoYouAre)} index={0}>
             <Body text={bp.whoYouAre} />
           </RevealCard>
