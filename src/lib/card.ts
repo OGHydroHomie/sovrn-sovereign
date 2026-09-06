@@ -18,13 +18,24 @@ export const CARD = {
   family: "'Geist', Inter, sans-serif",
 } as const;
 
+/* The mark, the name and the line under it are ONE block, optically centred.
+
+   The first cut had a 300px mark sitting high, a 200px hole before the name, and
+   380px of nothing under it — three elements scattered down a frame rather than a
+   composition. The mark is 480 now, which is 44% of the width and reads as the
+   subject rather than as an icon above a caption.
+
+   The block runs 320 to 992 and its centre sits a little above the frame's, which
+   is where an optical centre goes when the lower half carries the type. The
+   footer stays pinned near the bottom edge as a caption, not as part of the
+   block. */
 export const LAYOUT = {
-  mark: { size: 300, top: 300 },
+  mark: { size: 480, top: 320 },
   /* The name is the thumbnail. At 1080 wide a 112px cap height still reads when
      the whole card is 200px in a feed, which is the only size most people will
      ever see it at. */
-  name: { baseline: 800, maxWidth: 900, maxSize: 112, minSize: 54, tracking: 0.015 },
-  sub: { baseline: 872, size: 38 },
+  name: { baseline: 928, maxWidth: 900, maxSize: 112, minSize: 54, tracking: 0.015 },
+  sub: { baseline: 992, size: 38 },
   footer: { baseline: 1256, size: 26, tracking: 0.08 },
 } as const;
 
