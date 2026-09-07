@@ -43,9 +43,15 @@ export default function ReturnLink() {
   };
 
   if (state === 'sent') {
+    /* Every sentence sits under the same conditional, so this is identical for an
+       address that has a Ledger and one that has never been seen. Saying "check
+       your email" of an account that does not exist tells a stranger nothing —
+       naming the account would. */
     return (
-      <p style={{ fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 14, lineHeight: 1.6, color: '#6E6A66', textAlign: 'center' }}>
-        If that address has a Ledger, a link is on its way.
+      <p style={{ fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 14, lineHeight: 1.65, color: '#6E6A66', textAlign: 'center' }}>
+        If that address has a Ledger, the link is on its way &mdash; check your email now.
+        Open it on this device, because that is where it signs you in. Links expire, so if
+        you have asked more than once, use the newest one.
       </p>
     );
   }
@@ -76,6 +82,14 @@ export default function ReturnLink() {
       >
         Return to your Ledger
       </label>
+      <p
+        style={{
+          marginTop: 8, fontFamily: 'var(--sv-font)', fontWeight: 300,
+          fontSize: 13, lineHeight: 1.6, color: '#6E6A66',
+        }}
+      >
+        There is no password. Your Ledger opens from a link sent to the address you used.
+      </p>
       <input
         id="return-email"
         type="email"
