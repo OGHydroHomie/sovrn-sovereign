@@ -8,6 +8,7 @@ import { parseBlueprint, teaser } from '../lib/blueprint';
 import RevealCard from '../components/RevealCard';
 import ArchetypeMark from '../components/ArchetypeMark';
 import SaveCard from '../components/SaveCard';
+import SurfaceNav, { NavLink } from '../components/SurfaceNav';
 import DayOne from '../components/DayOne';
 
 interface Props {
@@ -186,6 +187,13 @@ export default function BlueprintPage({
   return (
     <div style={{ minHeight: '100svh', background: '#FBFAF7', color: '#1A1A1A', padding: '0 22px 72px' }}>
       <div style={{ maxWidth: 560, margin: '0 auto' }}>
+
+        {/* Without this the reading is a room with no door — it is the one screen
+            reachable both from the reveal and from a magic link, and neither
+            offered a way anywhere else. */}
+        <SurfaceNav becoming={readOnly ? bp.becoming : null} sticky>
+          <NavLink href="/ledger">Your Ledger</NavLink>
+        </SurfaceNav>
 
         {/* The name lands. Silence around it. */}
         <motion.div

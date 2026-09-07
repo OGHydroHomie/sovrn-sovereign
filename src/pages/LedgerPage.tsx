@@ -6,6 +6,7 @@ import NextMorning from '../components/NextMorning';
 import { signalVillain, villainUnlocked } from '../lib/villain';
 import { getProfile, type Profile } from '../lib/blueprint';
 import ArchetypeMark from '../components/ArchetypeMark';
+import SurfaceNav, { NavLink } from '../components/SurfaceNav';
 import DaySeven from '../components/DaySeven';
 
 type State = 'loading' | 'signed-out' | 'ready';
@@ -84,7 +85,7 @@ export default function LedgerPage() {
 
   if (state === 'loading') {
     return (
-      <PaperPage title="Your Ledger">
+      <PaperPage title="Your Ledger" nav={<NavLink href="/blueprint">Your Blueprint</NavLink>}>
         <p style={{ fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 15, color: '#6E6A66' }}>
           Looking you up.
         </p>
@@ -94,7 +95,7 @@ export default function LedgerPage() {
 
   if (state === 'signed-out') {
     return (
-      <PaperPage title="Your Ledger">
+      <PaperPage title="Your Ledger" nav={<NavLink href="/blueprint">Your Blueprint</NavLink>}>
         <p style={{ fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 15, lineHeight: 1.7, color: '#1A1A1A' }}>
           This link has expired, or this browser doesn&rsquo;t know you yet.
         </p>
@@ -117,12 +118,9 @@ export default function LedgerPage() {
         }}
       >
         <div style={{ maxWidth: 620, margin: '0 auto' }}>
-          <a
-            href="/"
-            style={{ fontSize: 13, letterSpacing: '0.22em', fontWeight: 700, color: '#1A1A1A', textDecoration: 'none' }}
-          >
-            SOVRN
-          </a>
+          <SurfaceNav becoming={profile.becoming} sticky>
+            <NavLink href="/blueprint">Your Blueprint</NavLink>
+          </SurfaceNav>
         </div>
         <DaySeven
           entry={current}
@@ -139,7 +137,7 @@ export default function LedgerPage() {
      one thing this app is not allowed to do. */
   if (villain) {
     return (
-      <PaperPage title="Counted.">
+      <PaperPage title="Counted." nav={<NavLink href="/blueprint">Your Blueprint</NavLink>}>
         <p style={{ fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 16, lineHeight: 1.7, color: '#1A1A1A' }}>
           Villain mode doesn&rsquo;t exist yet. This screen is a counter &mdash; it is here to
           find out how many people would say yes to seven days of harder acts with no way out.
@@ -177,21 +175,17 @@ export default function LedgerPage() {
           {profile.becoming}
           {profile.becomingResolvedAt ? '' : ' · in progress'}
         </span>
-        <a
-          href="/blueprint"
-          style={{
-            fontFamily: 'var(--sv-font)', fontSize: 13, color: '#1A1A1A',
-            textDecoration: 'underline', textUnderlineOffset: 3,
-          }}
-        >
-          Read your Blueprint
-        </a>
       </span>
     </span>
   ) : undefined;
 
   return (
-    <PaperPage title="Your Ledger" standfirst={becomingLine}>
+    <PaperPage
+      title="Your Ledger"
+      standfirst={becomingLine}
+      becoming={profile?.becoming}
+      nav={<NavLink href="/blueprint">Your Blueprint</NavLink>}
+    >
       {/* ── Today, at the top ── */}
       {current ? (
         <>

@@ -1,10 +1,15 @@
 import type { ReactNode } from 'react';
+import SurfaceNav from './SurfaceNav';
 
 interface Props {
   title: string;
   /* Rendered under the title in smaller type — a last-updated line, or the
      becoming and its mark. A node rather than a string so it can carry both. */
   standfirst?: ReactNode;
+  /** The link to the other view, shown in the header opposite the mark. */
+  nav?: ReactNode;
+  /** Shown in the header, so the page says whose it is after scrolling. */
+  becoming?: string | null;
   children: ReactNode;
 }
 
@@ -12,7 +17,7 @@ interface Props {
    DESIGN_FROZEN.md: paper ground, black type, Geist Sans only, no display font,
    no cosmic imagery. These pages render outside the App shell, so they carry
    their own ground rather than sitting on the night backdrop. */
-export default function PaperPage({ title, standfirst, children }: Props) {
+export default function PaperPage({ title, standfirst, nav, becoming, children }: Props) {
   return (
     <div
       style={{
@@ -24,17 +29,8 @@ export default function PaperPage({ title, standfirst, children }: Props) {
       }}
     >
       <div style={{ maxWidth: 620, margin: '0 auto' }}>
-        <a
-          href="/"
-          style={{
-            fontSize: 13, letterSpacing: '0.22em', fontWeight: 700,
-            color: '#1A1A1A', textDecoration: 'none',
-          }}
-        >
-          SOVRN
-        </a>
-
-        <div style={{ height: 1, background: '#E8E6E1', margin: '14px 0 32px' }} />
+        <SurfaceNav becoming={becoming} sticky>{nav}</SurfaceNav>
+        <div style={{ height: 32 }} />
 
         <h1 style={{ fontFamily: 'var(--sv-font)', fontSize: 28, fontWeight: 500, lineHeight: 1.25, color: '#000000' }}>
           {title}

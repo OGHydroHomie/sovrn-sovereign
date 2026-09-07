@@ -6,6 +6,7 @@ import BlueprintPage from './BlueprintPage';
 import PaperPage from '../components/PaperPage';
 import ArchetypeMark from '../components/ArchetypeMark';
 import SaveCard from '../components/SaveCard';
+import { NavLink } from '../components/SurfaceNav';
 
 type State = 'loading' | 'signed-out' | 'ready';
 
@@ -54,7 +55,7 @@ export default function SavedBlueprintPage() {
 
   if (state === 'loading') {
     return (
-      <PaperPage title="Your Blueprint">
+      <PaperPage title="Your Blueprint" nav={<NavLink href="/ledger">Your Ledger</NavLink>}>
         <p style={{ fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 15, color: '#6E6A66' }}>
           Looking it up.
         </p>
@@ -64,7 +65,7 @@ export default function SavedBlueprintPage() {
 
   if (state === 'signed-out') {
     return (
-      <PaperPage title="Your Blueprint">
+      <PaperPage title="Your Blueprint" nav={<NavLink href="/ledger">Your Ledger</NavLink>}>
         <p style={{ fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 15, lineHeight: 1.7, color: '#1A1A1A' }}>
           This browser isn&rsquo;t signed in, and it doesn&rsquo;t have a copy of your reading.
         </p>
@@ -84,7 +85,7 @@ export default function SavedBlueprintPage() {
   // What survives is still worth showing, and the card still works from it.
   if (profile?.becoming) {
     return (
-      <PaperPage title="Your Blueprint">
+      <PaperPage title="Your Blueprint" becoming={profile.becoming} nav={<NavLink href="/ledger">Your Ledger</NavLink>}>
         <div style={{ textAlign: 'center', padding: '4vh 0 2vh' }}>
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 14 }}>
             <ArchetypeMark becoming={profile.becoming} size="clamp(180px, 48vw, 240px)" />
@@ -146,7 +147,7 @@ export default function SavedBlueprintPage() {
   }
 
   return (
-    <PaperPage title="Your Blueprint">
+    <PaperPage title="Your Blueprint" nav={<NavLink href="/ledger">Your Ledger</NavLink>}>
       <p style={{ fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 15, lineHeight: 1.7, color: '#6E6A66' }}>
         There is no reading on this account yet.
       </p>
