@@ -5,6 +5,7 @@ import PaperPage from '../components/PaperPage';
 import NextMorning from '../components/NextMorning';
 import { signalVillain, villainUnlocked } from '../lib/villain';
 import { getProfile, type Profile } from '../lib/blueprint';
+import ArchetypeMark from '../components/ArchetypeMark';
 import DaySeven from '../components/DaySeven';
 
 type State = 'loading' | 'signed-out' | 'ready';
@@ -163,15 +164,28 @@ export default function LedgerPage() {
     );
   }
 
+  /* The mark at 34px rather than 16. At 16 a shaded illustration was a smudge,
+     which is why this slot held the square; at 34 it reads, and it is the only
+     place the character appears on the surface a returning person lives on.
+     The link is the way back to the reading — without it a magic link opens the
+     Ledger and nothing else is reachable from it. */
   const becomingLine = profile?.becoming ? (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
-      {/* Deliberately the square, not the mark. At 16px a shaded illustration
-          reads as a smudge, and this line is a label rather than a portrait —
-          the character belongs on the reveal and the card. */}
-      <span aria-hidden="true" style={{ width: 10, height: 10, background: '#000000', flex: 'none' }} />
-      <span>
-        {profile.becoming}
-        {profile.becomingResolvedAt ? '' : ' · in progress'}
+    <span style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      <ArchetypeMark becoming={profile.becoming} size={34} />
+      <span style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+        <span>
+          {profile.becoming}
+          {profile.becomingResolvedAt ? '' : ' · in progress'}
+        </span>
+        <a
+          href="/blueprint"
+          style={{
+            fontFamily: 'var(--sv-font)', fontSize: 13, color: '#1A1A1A',
+            textDecoration: 'underline', textUnderlineOffset: 3,
+          }}
+        >
+          Read your Blueprint
+        </a>
       </span>
     </span>
   ) : undefined;

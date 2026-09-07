@@ -12,10 +12,16 @@ import DayOne from '../components/DayOne';
 
 interface Props {
   text: string;
-  quizData: QuizData;
+  /* Absent on the saved view — the quiz answers live in the browser that took
+     the quiz, and /blueprint is reachable from any device. */
+  quizData?: QuizData | null;
   /** Set once an act has been chosen and written to the ledger. */
-  dayOne: LedgerEntry | null;
-  onChooseAct: (chosen: 'hard' | 'next', missionText: string) => Promise<void>;
+  dayOne?: LedgerEntry | null;
+  onChooseAct?: (chosen: 'hard' | 'next', missionText: string) => Promise<void>;
+  /* The saved view at /blueprint. The choice was made long ago, so the acts
+     render as a record rather than as two buttons. */
+  readOnly?: boolean;
+  chosen?: 'hard' | 'next' | null;
 }
 
 /* Prose block on paper. */
@@ -46,7 +52,9 @@ function Body({ text }: { text: string }) {
   );
 }
 
-export default function BlueprintPage({ text, quizData, dayOne, onChooseAct }: Props) {
+export default function BlueprintPage({
+  text, quizData = null, dayOne = null, onChooseAct, readOnly = false, chosen = null,
+}: Props) {
   const [blueprintNo] = useState(() => String(Math.floor(1000 + Math.random() * 9000)));
   const [saving, setSaving] = useState<'hard' | 'next' | null>(null);
   const reduceMotion = useReducedMotion();
@@ -55,7 +63,7 @@ export default function BlueprintPage({ text, quizData, dayOne, onChooseAct }: P
   useEffect(() => { trackEvent('pageView', 'blueprint'); }, []);
 
   const choose = async (which: 'hard' | 'next') => {
-    if (saving || dayOne) return;
+    if (saving || dayOne || readOnly || !onChooseAct) return;
     setSaving(which);
     await onChooseAct(which, which === 'hard' ? bp.hardOne : bp.nextOne);
     setSaving(null);
@@ -140,7 +148,40 @@ export default function BlueprintPage({ text, quizData, dayOne, onChooseAct }: P
     </button>
   );
 
-  const oneActTeaser = dayOne ? teaser(dayOne.mission_text) : 'Two ways in. You pick one.';
+  const oneActTeaser = dayOne
+    ? teaser(dayOne.mission_text)
+    : readOnly
+      ? teaser(chosen === 'next' ? bp.nextOne : bp.hardOne)
+      : 'Two ways in. You pick one.';
+
+  /* On the saved view both acts stay visible and the one they took is marked.
+     The road not taken is part of the reading, and hiding it would quietly edit
+     what they were offered. */
+  const actRecord = (which: 'hard' | 'next', label: string, body: string) => {
+    if (!body) return null;
+    const took = chosen === which;
+    return (
+      <div
+        style={{
+          marginTop: 12, padding: '16px 16px 18px',
+          border: '1px solid #E4E0D6', borderRadius: 2,
+          borderLeft: took ? '3px solid #000000' : '1px solid #E4E0D6',
+        }}
+      >
+        <span style={{ display: 'block', fontSize: 10, fontWeight: 700, letterSpacing: '0.16em', color: '#6E6A66' }}>
+          {label}
+        </span>
+        <span style={{ display: 'block', marginTop: 8, fontSize: 16, lineHeight: 1.5, fontWeight: 400, color: '#1A1A1A' }}>
+          {body}
+        </span>
+        {took && (
+          <span style={{ display: 'block', marginTop: 12, fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', color: '#000000' }}>
+            YOU TOOK THIS ONE
+          </span>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div style={{ minHeight: '100svh', background: '#FBFAF7', color: '#1A1A1A', padding: '0 22px 72px' }}>
@@ -215,12 +256,12 @@ export default function BlueprintPage({ text, quizData, dayOne, onChooseAct }: P
           </RevealCard>
 
           <RevealCard header="ONE ACT" teaser={oneActTeaser} index={2}>
-            {dayOne ? (
+            {dayOne && !readOnly ? (
               <DayOne entry={dayOne} embedded />
             ) : (
               <>
-                {actButton('hard', 'THE HARD ONE', bp.hardOne)}
-                {actButton('next', 'THE NEXT ONE', bp.nextOne)}
+                {readOnly ? actRecord('hard', 'THE HARD ONE', bp.hardOne) : actButton('hard', 'THE HARD ONE', bp.hardOne)}
+                {readOnly ? actRecord('next', 'THE NEXT ONE', bp.nextOne) : actButton('next', 'THE NEXT ONE', bp.nextOne)}
                 {bp.oneActTail && (
                   <div style={{ marginTop: 20 }}>
                     <Body text={bp.oneActTail} />
@@ -253,7 +294,7 @@ export default function BlueprintPage({ text, quizData, dayOne, onChooseAct }: P
           )}
 
           <p style={{ marginTop: 28, fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 11, letterSpacing: '0.1em', color: '#9A9A9A' }}>
-            {quizData.name} - No. {blueprintNo}
+            {quizData?.name ? `${quizData.name} - ` : ''}No. {blueprintNo}
           </p>
         </div>
       </div>

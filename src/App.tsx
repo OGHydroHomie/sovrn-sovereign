@@ -69,7 +69,7 @@ export default function App() {
     const parsed = parseBlueprint(blueprintText);
     const existing = await getEntryForDay(1);
     if (existing) setDayOne(existing);
-    void saveBlueprintRecord(parsed, null, desiredReality);
+    void saveBlueprintRecord(parsed, null, desiredReality, blueprintText);
   }, []);
 
   const handleChooseAct = useCallback(
@@ -77,7 +77,7 @@ export default function App() {
       if (!missionText.trim()) return;
       const entry = await createDayOneEntry(missionText.trim());
       if (entry) setDayOne(entry);
-      void saveBlueprintRecord(parseBlueprint(blueprintRef.current), chosen, quizRef.current?.desiredReality);
+      void saveBlueprintRecord(parseBlueprint(blueprintRef.current), chosen, quizRef.current?.desiredReality, blueprintRef.current);
     },
     []
   );

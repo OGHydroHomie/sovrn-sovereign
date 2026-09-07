@@ -130,6 +130,11 @@ export interface Profile {
   becomingResolvedAt: string | null;
   /** IANA zone captured at intake. The Ledger renders times in it, not the device's. */
   timezone: string | null;
+  /** The full reading. Null for anything generated before it was stored. */
+  blueprintText: string | null;
+  loop: string | null;
+  acts: { hard?: string; next?: string };
+  chosen: 'hard' | 'next' | null;
 }
 
 /**
@@ -146,7 +151,7 @@ export async function getProfile(): Promise<Profile | null> {
 
   const { data, error } = await supabase
     .from('users')
-    .select('archetype, recognition_line, becoming_resolved_at, timezone')
+    .select('archetype, recognition_line, becoming_resolved_at, timezone, blueprint_text, blueprint_json')
     .eq('id', uid)
     .maybeSingle();
 
@@ -159,14 +164,23 @@ export async function getProfile(): Promise<Profile | null> {
     recognition_line: string | null;
     becoming_resolved_at: string | null;
     timezone: string | null;
+    blueprint_text: string | null;
+    blueprint_json: {
+      loop?: string; acts?: { hard?: string; next?: string }; chosen?: 'hard' | 'next' | null;
+    } | null;
   } | null;
   if (!row) return null;
 
+  const bp = row.blueprint_json ?? {};
   return {
     becoming: row.archetype,
     recognitionLine: row.recognition_line,
     becomingResolvedAt: row.becoming_resolved_at,
     timezone: row.timezone,
+    blueprintText: row.blueprint_text,
+    loop: bp.loop ?? null,
+    acts: bp.acts ?? {},
+    chosen: bp.chosen ?? null,
   };
 }
 
@@ -181,6 +195,10 @@ export async function getProfile(): Promise<Profile | null> {
 export async function saveBlueprintRecord(
   parsed: ParsedBlueprint,
   chosen: 'hard' | 'next' | null,
+  /* The reading as generated. Without it the record is a skeleton — a name, a
+     loop and two sentences — and /blueprint has nothing to render for someone
+     who arrives from a magic link on a device that never held the text. */
+  blueprintText?: string,
   /* Their own words for what they want. Day 7 quotes this back verbatim and
      cannot ask its question without it — and the reading text it came with only
      ever exists in the browser that generated it. */
@@ -198,6 +216,7 @@ export async function saveBlueprintRecord(
       // and neither should require re-parsing prose to find.
       recognition_line: parsed.recognitionLine || null,
       declaration_line: parsed.declarationLine || null,
+      ...(blueprintText?.trim() ? { blueprint_text: blueprintText.trim() } : {}),
       ...(desiredReality?.trim() ? { desired_reality: desiredReality.trim() } : {}),
       blueprint_json: {
         becoming: parsed.becoming,
