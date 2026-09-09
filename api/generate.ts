@@ -2,12 +2,17 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import Anthropic from '@anthropic-ai/sdk';
 import { safetyCheck } from './_safety.js';
 import { prescribesLoop } from './_loopcheck.js';
+import { findInventedClaims, type InventedClaim } from './_grounding.js';
 /* The thirteen live in one module because day 7 re-runs the becoming selection
    against the same list. Two copies of a closed list is a list that drifts. */
 import { BECOMINGS, LOOPS } from './_becomings.js';
 
 export const config = {
-  maxDuration: 120,
+  /* A reading that overreaches is regenerated whole rather than patched: an
+     invented fact can sit anywhere in six hundred words, and rewriting one
+     sentence out of prose leaves the paragraph around it incoherent. Two full
+     generations plus two grounding passes do not fit in 120s. */
+  maxDuration: 300,
 };
 
 interface RequestBody {
@@ -23,7 +28,7 @@ interface RequestBody {
   chartData: string;
 }
 
-function buildSystemPrompt(chartData: string): string {
+export function buildSystemPrompt(chartData: string): string {
   const housesVerified = chartData.includes('Houses verified: YES');
   const chartFailed = chartData.includes('CHART CALCULATION FAILED');
 
@@ -124,10 +129,18 @@ WHO YOU ARE
 THE PATTERN
 ONE ACT
 
-WHO YOU ARE — about 200 words. What they are built to do, and the specific way it has
-been going unused. Name the becoming archetype once here and make it feel earned. End
-with one line of recognition on its own line in quotation marks — the sentence that makes
-them stop.
+WHO YOU ARE — about 200 words. What they said they want, taken completely seriously,
+and the specific cost of not having it. Name the becoming archetype once here.
+
+Write about the WANT, not about their talent. They told you what they are reaching for;
+they told you nothing about whether they are any good at it, and you cannot see their
+work. "You were built to do this" and "you have the instincts for it" are not readings,
+they are flattery — and this product's first promise is that it is not a compliment. The
+becoming is a direction they are moving in, never a verdict that they have already
+arrived and are waiting on paperwork.
+
+End with one line of recognition on its own line in quotation marks — the sentence that
+makes them stop. Recognition of what they said, not praise of what they are.
 
 THE PATTERN — about 200 words. The loop, named precisely, with its mechanism. Their own
 fear, desire, and repeating pattern are the raw material; the chart tells you why the loop
@@ -149,6 +162,38 @@ is too big; choose a smaller one.
 Wrong: "Send the current master file to Jordan today. Do not add context. Do not
 explain. Send it as it is."
 Right: "Send Jordan the master file today with no explanation attached."
+
+## FOUR THINGS YOU MAY NOT DO
+
+You may interpret what they said. You may not assert what they are. Everything below is
+checked after you write it, and anything found sends the whole reading back.
+
+1. DO NOT INVENT FACTS. No duration, comparison, credential, employer, quantity, named
+person or concrete scenario that they did not give you. Not "for a year", not "the most
+qualified person in the building", not "your manager", not "three drafts". If they said
+they redesign their portfolio before showing anyone, they have not told you they have a
+job, a team, or a timescale.
+
+2. DO NOT PROMOTE ASPIRATION TO PROOF. They said they WANT this. Never tell them they
+already ARE it. Not "you have the instincts for it", not "you can see a story before it's
+drawn", not "you were built for this", not "a description of who you already are, waiting
+on paperwork". You have not seen their work and cannot vouch for their ability. Naming
+the direction is right; certifying the talent is flattery.
+
+3. DO NOT REASSURE ABOUT WHAT YOU CANNOT SEE. Not "the work is good enough", not "it was
+never about talent", not "not because the work is bad". You have never seen the work.
+Being afraid of judgement and needing another draft are both possible at once, and
+promising otherwise is a guess sold as comfort.
+
+4. DO NOT ASSUME RESOURCES OR PEOPLE. No act may require a finished artifact, a resource
+or a specific person the intake never established. Not "attach the finished illustration"
+unless they said one exists. An act may name a KIND of person — someone who will tell you
+the truth — but never a specific one they never mentioned.
+
+Metaphor, psychological reading, naming the mechanism, and sharper restatements of their
+own words are all untouched by these. Bluntness is fine. Presumption about their inner
+life is fine. Assertion about their circumstances, their ability, their work, or what
+they own is not.
 
 Neither act may instruct the behaviour you have just named in THE PATTERN as this
 person's avoidance. You are describing the move they make instead of the one that
@@ -185,7 +230,7 @@ one of the acts. Every sentence you cut makes the rest hit harder.
 Plain prose. No markdown, no bullets, no JSON, no bold. Blank line between paragraphs.`;
 }
 
-function buildUserMessage(data: RequestBody): string {
+export function buildUserMessage(data: RequestBody): string {
   const chartData = data.chartData || '';
   return `=== SOURCE DATA ===
 ${chartData}
@@ -369,21 +414,34 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // feed: nobody should watch their own reading push the page down under them
   // while they are reading it. At 1500 max_tokens the call returns well inside
   // the function's budget, so there is nothing to stream around.
+  /* Hand the findings back verbatim. A regeneration told only "you overreached"
+     writes the same sentence in different words; told which sentence and why,
+     it does not. */
+  const groundingNote = (found: InventedClaim[]) => `
+
+Your previous attempt was rejected. Each of these asserts something the person never told you:
+
+${found.map((f) => `- [${f.kind}] "${f.sentence.trim()}" — ${f.why}`).join('\n')}
+
+Write the reading again. Keep the interpretation; remove every one of these. Do not replace them with different assertions of the same kind.`;
+
+  const generate = async (note = ''): Promise<Response> => fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1500,
+      system: buildSystemPrompt(chartData),
+      messages: [{ role: 'user', content: buildUserMessage(data) + note }],
+    }),
+  });
+
   try {
-    const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 1500,
-        system: buildSystemPrompt(chartData),
-        messages: [{ role: 'user', content: buildUserMessage(data) }],
-      }),
-    });
+    const anthropicRes = await generate();
 
     if (!anthropicRes.ok) {
       const errBody = await anthropicRes.text();
@@ -416,7 +474,39 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Nothing is returned until both acts have cleared the same gate a mission
     // clears. Task 6 is not optional just because the act arrived inside a
     // blueprint instead of from /api/mission.
-    const vetted = await vetActs(new Anthropic(), text, data);
+    const client = new Anthropic();
+
+    /* Grounded before vetted: the acts are inside the reading, so checking the
+       whole thing first means a regeneration replaces the acts too and they are
+       vetted once, on whatever actually ships. */
+    const intake = {
+      name: data.name,
+      deepestFear: data.deepestFear,
+      desiredReality: data.desiredReality,
+      repeatingPattern: data.repeatingPattern,
+    };
+
+    let reading = text;
+    const found = await findInventedClaims(client, intake, reading, 'blueprint');
+    if (found.length) {
+      const retry = await generate(groundingNote(found));
+      if (retry.ok) {
+        const payload = (await retry.json()) as { content?: { type: string; text?: string }[] };
+        const second = (payload.content ?? [])
+          .filter((b) => b.type === 'text').map((b) => b.text ?? '').join('').trim();
+        if (second) {
+          const still = await findInventedClaims(client, intake, second, 'blueprint:retry');
+          // Ship whichever overreaches less. A second attempt is usually cleaner,
+          // but it is not automatically better and this is not a coin toss.
+          reading = still.length <= found.length ? second : reading;
+          if (still.length) {
+            console.warn(`[reading.grounding] shipped with ${still.length} finding(s) after retry`);
+          }
+        }
+      }
+    }
+
+    const vetted = await vetActs(client, reading, data);
 
     return res.status(200).json({ text: vetted });
   } catch (err) {
