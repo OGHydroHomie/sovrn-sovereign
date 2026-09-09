@@ -313,3 +313,23 @@ storage key were all already correct; the loss is browser storage eviction, whic
 no client setting defeats and installation does. **Open:** iOS fires no install
 event, so that path is instructions rather than a button, and nobody has yet
 installed it to confirm the session survives in practice.
+
+## 2026-09-09 · Contrast sweep, and a deploy check that checks
+
+**Shipped** `1834044`. `#9A9A9A` on the paper ground is 2.70:1 and fails AA at
+every size, so the twenty-one live-text occurrences across twelve files move to
+`#6E6A66` at 5.14:1 — QuizPage alone had eight, on the screen where someone types
+their deepest fear. Four are left: disabled button labels, which WCAG 1.4.3
+exempts and which would announce a control as available if darkened. The `faint`
+token is retired as a distinct text colour and aliases `mute`, because the
+lightest neutral clearing 4.5:1 on `#FBFAF7` is `#737373` at 4.54 — one percent
+above the line and indistinguishable from mute. The palette wanted three inks;
+the ground supports two. The deploy check now hashes every stable-path file in
+`dist/`, fetches the same paths and compares content, instead of comparing the
+hashed JS filename — a proxy that went green twice in one day on deployments that
+had not happened, once for the marks and once for a meta tag, both times because
+the bundle was byte-identical. **What broke:** nothing; the new check was run
+against the pre-deploy state first and correctly reported `/index.html` stale,
+which is the exact case the old one could not see. **Open:**
+`public/marks/README.md` is an internal art spec and is served publicly, because
+anything in `public/` ships.
