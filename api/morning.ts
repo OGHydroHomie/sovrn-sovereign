@@ -114,8 +114,16 @@ function esc(text: string): string {
 }
 
 /* Plain text on paper. No images, no columns, no tracking pixel — this is one
-   line, one mission, one link, and it should look the same in every client. */
-export function emailHtml(declaration: string, read: string, mission: string, link: string): string {
+   line, one mission, one link, and it should look the same in every client.
+
+   The button is a plain /ledger URL, not the magic link. Almost everyone opening
+   this is on the phone that took the quiz and is already signed in; sending them
+   through Supabase's verify endpoint to be re-authenticated costs a round trip,
+   mints a session they did not need, and turns an expired or already-used link
+   into an error page for someone whose browser was signed in the whole time. The
+   magic link is underneath, for the case it was always for: a device that has
+   never seen this account. */
+export function emailHtml(declaration: string, read: string, mission: string, link: string, newDeviceLink?: string): string {
   return `<!doctype html><html><body style="margin:0;padding:0;background:#FBFAF7;">
   <div style="max-width:520px;margin:0 auto;padding:48px 24px;font-family:Geist,Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1A1A1A;">
     <div style="font-size:13px;letter-spacing:0.22em;font-weight:700;color:#1A1A1A;">SOVRN</div>
@@ -124,6 +132,7 @@ export function emailHtml(declaration: string, read: string, mission: string, li
     ${read ? `<p style="margin:0 0 20px;font-size:15px;line-height:1.65;font-weight:300;color:#6E6A66;">${esc(read)}</p>` : ''}
     <p style="margin:0;font-size:19px;line-height:1.5;font-weight:400;color:#1A1A1A;">${esc(mission).replace(/\n/g, '<br>')}</p>
     <a href="${link}" style="display:inline-block;margin-top:32px;padding:16px 28px;background:#000000;color:#FBFAF7;text-decoration:none;font-size:13px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;border-radius:2px;">Open your Ledger</a>
+    ${newDeviceLink ? `<p style="margin:16px 0 0;font-size:12px;line-height:1.6;color:#9A9A9A;">Opening this on a device you have not used before? <a href="${newDeviceLink}" style="color:#6E6A66;">Sign in with a link instead</a>.</p>` : ''}
     <div style="height:1px;background:#E4E0D6;margin:40px 0 16px;"></div>
     <p style="margin:0;font-size:12px;color:#9A9A9A;">
       <a href="${SITE}/privacy" style="color:#6E6A66;">Privacy</a> ·
@@ -132,8 +141,8 @@ export function emailHtml(declaration: string, read: string, mission: string, li
   </div></body></html>`;
 }
 
-export function emailText(declaration: string, read: string, mission: string, link: string): string {
-  return `${declaration ? declaration + '\n\n' : ''}${read ? read + '\n\n' : ''}${mission}\n\nOpen your Ledger: ${link}\n\n—\n${SITE}/delete to remove everything.`;
+export function emailText(declaration: string, read: string, mission: string, link: string, newDeviceLink?: string): string {
+  return `${declaration ? declaration + '\n\n' : ''}${read ? read + '\n\n' : ''}${mission}\n\nOpen your Ledger: ${link}${newDeviceLink ? `\n\nOn a new device, sign in with a link instead: ${newDeviceLink}` : ''}\n\n—\n${SITE}/delete to remove everything.`;
 }
 
 async function sendViaResend(to: string, subject: string, html: string, text: string) {
@@ -228,8 +237,8 @@ async function sendRecalibration(
   const out = await sendViaResend(
     address,
     'Seven days.',
-    emailHtml(declaration, '', question, linkData.properties.action_link),
-    emailText(declaration, '', question, linkData.properties.action_link)
+    emailHtml(declaration, '', question, `${SITE}/ledger`, linkData.properties.action_link),
+    emailText(declaration, '', question, `${SITE}/ledger`, linkData.properties.action_link)
   );
   if (!out.sent) report.skipped.push(`${uid}: ${out.reason}`);
   return out.sent;
@@ -415,8 +424,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const out = await sendViaResend(
       address,
       `Day ${nextDay}`,
-      emailHtml(declaration, day.read ?? '', day.hard, link),
-      emailText(declaration, day.read ?? '', day.hard, link)
+      emailHtml(declaration, day.read ?? '', day.hard, `${SITE}/ledger`, link),
+      emailText(declaration, day.read ?? '', day.hard, `${SITE}/ledger`, link)
     );
     if (out.sent) report.sent += 1;
     else report.skipped.push(`${uid}: ${out.reason}`);

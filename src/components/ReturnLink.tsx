@@ -94,7 +94,7 @@ export default function ReturnLink() {
           textDecoration: 'underline', textUnderlineOffset: 3,
         }}
       >
-        Open your Ledger
+        Your Ledger
       </a>
     );
   }
