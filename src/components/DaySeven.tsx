@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { useFadeTo } from './Fade';
 import SquareReveal from './SquareReveal';
 import SaveCard from './SaveCard';
-import { T } from '../lib/motion';
+import { T, prefersReducedMotion } from '../lib/motion';
 import { submitRecalibration, type Recalibration } from '../lib/recalibrate';
 import type { LedgerEntry } from '../lib/ledger';
 
@@ -40,7 +40,7 @@ function useClock(timezone: string | null) {
 }
 
 export default function DaySeven({ entry, entries, becoming, timezone }: Props) {
-  const reduceMotion = useReducedMotion();
+  const reduceMotion = prefersReducedMotion();
   const fmt = useClock(timezone);
 
   const [named, setNamed] = useState<string | null>(null);
@@ -52,6 +52,7 @@ export default function DaySeven({ entry, entries, becoming, timezone }: Props) 
   const [resolvedName, setResolvedName] = useState<string | null>(null);
 
   const fieldRef = useRef<HTMLTextAreaElement | null>(null);
+  const bodyRef = useRef<HTMLDivElement>(null);
 
   /* The becoming has read "in progress" for six days. It resolves here. */
   useEffect(() => {
@@ -84,6 +85,9 @@ export default function DaySeven({ entry, entries, becoming, timezone }: Props) 
     io.observe(el);
     return () => io.disconnect();
   }, [bodyIn, result]);
+
+  // The record comes up behind the name once it has landed.
+  useFadeTo(bodyRef, bodyIn, 1.1);
 
   const week = Array.from({ length: WEEK_LENGTH }, (_, i) => {
     const day = i + 1;
@@ -120,11 +124,9 @@ export default function DaySeven({ entry, entries, becoming, timezone }: Props) 
         />
       </div>
 
-      <motion.div
-        initial={reduceMotion ? false : { opacity: 0 }}
-        animate={{ opacity: bodyIn ? 1 : 0 }}
-        transition={{ duration: reduceMotion ? 0 : 1.1, ease: 'easeOut' }}
-        style={{ pointerEvents: bodyIn ? 'auto' : 'none' }}
+      <div
+        ref={bodyRef}
+        style={{ opacity: 0, pointerEvents: bodyIn ? 'auto' : 'none' }}
       >
         {/* ── The week read ── */}
         {entry.read_line && (
@@ -267,7 +269,7 @@ export default function DaySeven({ entry, entries, becoming, timezone }: Props) 
             </p>
           </div>
         )}
-      </motion.div>
+      </div>
     </div>
   );
 }

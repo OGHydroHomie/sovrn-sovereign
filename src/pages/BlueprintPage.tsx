@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
 import gsap from 'gsap';
 import { EASE, T, prefersReducedMotion } from '../lib/motion';
 import { jsPDF } from 'jspdf';
@@ -60,7 +59,6 @@ export default function BlueprintPage({
 }: Props) {
   const [blueprintNo] = useState(() => String(Math.floor(1000 + Math.random() * 9000)));
   const [saving, setSaving] = useState<'hard' | 'next' | null>(null);
-  const reduceMotion = useReducedMotion();
   const bp = useMemo(() => parseBlueprint(text), [text]);
 
   useEffect(() => { trackEvent('pageView', 'blueprint'); }, []);
@@ -71,22 +69,35 @@ export default function BlueprintPage({
      It fades and settles rather than drawing itself on — the thirteen marks are
      filled paths with no strokes, so there is no outline for a stroke-dash draw
      to travel along. Claiming otherwise would just be a fade with extra steps. */
+  const headerRef = useRef<HTMLDivElement>(null);
   const markRef = useRef<HTMLDivElement>(null);
+  const nameRef = useRef<HTMLHeadingElement>(null);
+  const progressRef = useRef<HTMLParagraphElement>(null);
+  const loopRef = useRef<HTMLParagraphElement>(null);
+
   useEffect(() => {
-    if (!bp.becoming || !markRef.current) return;
     const reduced = prefersReducedMotion();
     const ctx = gsap.context(() => {
-      gsap.fromTo(markRef.current,
+      const tl = gsap.timeline();
+      tl.fromTo(nameRef.current, { opacity: 0 },
+        { opacity: 1, duration: reduced ? 0.01 : T.reveal.name, ease: EASE.in }, 0);
+      tl.fromTo(markRef.current,
         { opacity: 0, scale: reduced ? 1 : T.reveal.markFrom },
-        {
-          opacity: 1, scale: 1,
-          duration: reduced ? T.reveal.mark : T.reveal.mark,
-          delay: reduced ? 0 : T.reveal.markAt,
-          ease: EASE.in,
-        });
-    }, markRef);
+        { opacity: 1, scale: 1, duration: reduced ? 0.01 : T.reveal.mark, ease: EASE.in },
+        reduced ? 0 : T.reveal.markAt);
+      if (progressRef.current) {
+        tl.fromTo(progressRef.current, { opacity: 0 },
+          { opacity: 1, duration: reduced ? 0.01 : T.reveal.progress, ease: EASE.in },
+          reduced ? 0 : T.reveal.progressAt);
+      }
+      if (loopRef.current) {
+        tl.fromTo(loopRef.current, { opacity: 0 },
+          { opacity: 1, duration: reduced ? 0.01 : T.reveal.loop, ease: EASE.in },
+          reduced ? 0 : T.reveal.loopAt);
+      }
+    }, headerRef);
     return () => ctx.revert();
-  }, [bp.becoming]);
+  }, [bp.becoming, bp.loop]);
 
   const choose = async (which: 'hard' | 'next') => {
     if (saving || dayOne || readOnly || !onChooseAct) return;
@@ -221,12 +232,7 @@ export default function BlueprintPage({
         </SurfaceNav>
 
         {/* The name lands. Silence around it. */}
-        <motion.div
-          initial={reduceMotion ? false : { opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.9, ease: 'easeOut' }}
-          style={{ paddingTop: '9vh', textAlign: 'center' }}
-        >
+        <div ref={headerRef} style={{ paddingTop: '9vh', textAlign: 'center' }}>
           {/* The mark, above the name. Falls back to the square until the art
               exists, which is what it renders today. */}
           <div ref={markRef} style={{ display: 'flex', justifyContent: 'center', marginBottom: 14, opacity: 0 }}>
@@ -234,7 +240,9 @@ export default function BlueprintPage({
           </div>
 
           <h1
+            ref={nameRef}
             style={{
+              opacity: 0,
               fontFamily: 'var(--sv-font)',
               fontWeight: 300,
               fontSize: 'clamp(38px, 11.5vw, 60px)',
@@ -250,33 +258,31 @@ export default function BlueprintPage({
           {/* DESIGN_FROZEN: a visual change to a shipped surface, and the reason
               is that day 7 resolves the becoming. A name cannot resolve if it
               was never provisional — this is the qualifier it drops. */}
-          <motion.p
-            initial={reduceMotion ? false : { opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.7, ease: 'easeOut', delay: reduceMotion ? 0 : 0.55 }}
+          <p
+            ref={progressRef}
             style={{
+              opacity: 0,
               marginTop: 14, fontFamily: 'var(--sv-font)', fontWeight: 700,
               fontSize: 11, letterSpacing: '0.22em', color: '#9A9A9A',
               textTransform: 'uppercase',
             }}
           >
             In progress
-          </motion.p>
+          </p>
 
           {bp.loop && (
-            <motion.p
-              initial={reduceMotion ? false : { opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.7, ease: 'easeOut', delay: reduceMotion ? 0 : 0.75 }}
+            <p
+              ref={loopRef}
               style={{
+                opacity: 0,
                 marginTop: 22, fontFamily: 'var(--sv-font)', fontWeight: 300,
                 fontSize: 15, letterSpacing: '0.01em', color: '#6E6A66',
               }}
             >
               Right now you&rsquo;re the {bp.loop}.
-            </motion.p>
+            </p>
           )}
-        </motion.div>
+        </div>
 
         {/* Three cards, collapsed by default */}
         <div style={{ marginTop: 56 }}>

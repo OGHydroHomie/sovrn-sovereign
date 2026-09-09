@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import Fade from './components/Fade';
 import HeroPage from './pages/HeroPage';
 import QuizPage from './pages/QuizPage';
 import LoadingPage from './pages/LoadingPage';
@@ -166,15 +166,8 @@ export default function App() {
 
 
       <div style={{ position: 'relative', zIndex: 1 }}>
-      <AnimatePresence mode="wait">
         {page === 'hero' && (
-          <motion.div
-            key="hero"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.5 }}
-          >
+          <Fade key="hero" duration={0.5}>
             <HeroPage
               onStart={() => {
                 trackEvent('pageView', 'quiz');
@@ -182,57 +175,39 @@ export default function App() {
                 setPage('quiz');
               }}
             />
-          </motion.div>
+          </Fade>
         )}
 
         {page === 'quiz' && (
-          <motion.div
-            key="quiz"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.5 }}
-          >
+          <Fade key="quiz" duration={0.5}>
             <QuizPage
               onComplete={handleQuizComplete}
               onBack={() => setPage('hero')}
             />
-          </motion.div>
+          </Fade>
         )}
 
         {page === 'loading' && (
-          <motion.div
-            key="loading"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-          >
+          <Fade key="loading" duration={0.3}>
             <LoadingPage
               error={error}
               archetype={archetype}
               onRevealed={handleRevealed}
               onRetry={() => quizData && handleGenerate(quizData)}
             />
-          </motion.div>
+          </Fade>
         )}
 
         {page === 'blueprint' && quizData && (
-          <motion.div
-            key="blueprint"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.3 }}
-          >
+          <Fade key="blueprint" duration={0.3}>
             <BlueprintPage
               text={blueprint}
               quizData={quizData}
               dayOne={dayOne}
               onChooseAct={handleChooseAct}
             />
-          </motion.div>
+          </Fade>
         )}
-      </AnimatePresence>
       </div>
 
       {page === 'hero' && blueprint && quizData && (

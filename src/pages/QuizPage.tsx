@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import gsap from 'gsap';
+import Fade from '../components/Fade';
+import { EASE, prefersReducedMotion } from '../lib/motion';
 import type { QuizData } from '../types';
 import { saveQuizData, saveLead } from '../utils/storage';
 import { captureEmail } from '../lib/capture';
@@ -36,9 +38,10 @@ function formatPlace(item: PlaceResult): string {
 export default function QuizPage({ onComplete, onBack }: Props) {
   const [step, setStep] = useState(0);
   const [consented, setConsented] = useState(false);
-  const [direction, setDirection] = useState(1);
+  const [, setDirection] = useState(1);
   const [phase, setPhase] = useState<'quiz' | 'reveal'>('quiz');
   const revealTimer = useRef<number | null>(null);
+  const progressRef = useRef<HTMLDivElement>(null);
 
   // Q4 location autocomplete
   const [placeResults, setPlaceResults] = useState<PlaceResult[]>([]);
@@ -167,11 +170,6 @@ export default function QuizPage({ onComplete, onBack }: Props) {
     if (e.key === 'Enter' && canProceed()) advance();
   };
 
-  const variants = {
-    enter: (dir: number) => ({ x: dir > 0 ? 60 : -60, opacity: 0 }),
-    center: { x: 0, opacity: 1 },
-    exit: (dir: number) => ({ x: dir > 0 ? -60 : 60, opacity: 0 }),
-  };
 
   // Reveal data (used only during the chart-insight reveal phase)
   const progressValue = phase === 'reveal' ? REVEAL_PROGRESS : PROGRESS[step];
@@ -189,16 +187,26 @@ export default function QuizPage({ onComplete, onBack }: Props) {
   ];
   const q = QUESTIONS[step];
 
+  /* The bar tracks a value across quiz and reveal, so it is tweened to width
+     rather than re-entered. */
+  useEffect(() => {
+    if (!progressRef.current) return;
+    const tween = gsap.to(progressRef.current, {
+      width: `${progressValue}%`,
+      duration: prefersReducedMotion() ? 0.01 : 0.5,
+      ease: EASE.in,
+    });
+    return () => { tween.kill(); };
+  }, [progressValue]);
+
   return (
     <div style={{ minHeight: '100svh', display: 'flex', flexDirection: 'column', padding: '0 20px' }}>
       {/* Progress bar — persistent across quiz + reveal so it animates 48 → 55 → 64 */}
       <div style={{ paddingTop: 24, maxWidth: 480, width: '100%', margin: '0 auto' }}>
         <div style={{ height: 3, borderRadius: 999, background: '#E4E0D6', overflow: 'hidden' }}>
-          <motion.div
-            style={{ height: '100%', borderRadius: 999, background: '#000000' }}
-            initial={false}
-            animate={{ width: `${progressValue}%` }}
-            transition={{ duration: 0.5, ease: 'easeOut' }}
+          <div
+            ref={progressRef}
+            style={{ height: '100%', width: 0, borderRadius: 999, background: '#000000' }}
           />
         </div>
       </div>
@@ -206,7 +214,7 @@ export default function QuizPage({ onComplete, onBack }: Props) {
       {phase === 'reveal' ? (
         /* ── Chart-insight reveal — auto-advances after 4s ── */
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', paddingBottom: 40 }}>
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
+          <Fade duration={0.8} y={10}>
             <p className="sv-label" style={{ fontSize: 11, color: '#9A9A9A', letterSpacing: '0.22em', fontWeight: 700 }}>
               That was the easy part
             </p>
@@ -222,7 +230,7 @@ export default function QuizPage({ onComplete, onBack }: Props) {
             <p style={{ marginTop: 16, fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 14, lineHeight: 1.6, color: '#6E6A66', maxWidth: 300 }}>
               Answer them in your own words. They are used exactly as you write them.
             </p>
-          </motion.div>
+          </Fade>
         </div>
       ) : (
       /* ── Question body — one per screen, vertically centered ── */
@@ -237,16 +245,7 @@ export default function QuizPage({ onComplete, onBack }: Props) {
             {q.n}
           </div>
 
-          <AnimatePresence mode="wait" custom={direction}>
-            <motion.div
-              key={step}
-              custom={direction}
-              variants={variants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={{ duration: 0.3, ease: 'easeOut' }}
-            >
+          <Fade key={step} duration={0.3} y={10}>
               <h2
                 className="sv-display"
                 style={{ fontWeight: 700, fontSize: 'clamp(22px, 6.4vw, 26px)', lineHeight: 1.25, color: '#1A1A1A' }}
@@ -427,8 +426,7 @@ export default function QuizPage({ onComplete, onBack }: Props) {
                   </>
                 )}
               </div>
-            </motion.div>
-          </AnimatePresence>
+          </Fade>
 
           {/* Actions */}
           <div style={{ marginTop: 32, display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>

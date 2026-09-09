@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { useRef } from 'react';
+import { useFadeTo } from '../components/Fade';
 import SquareReveal from '../components/SquareReveal';
-import { T } from '../lib/motion';
+import { T, prefersReducedMotion } from '../lib/motion';
 
 interface Props {
   /* Set when generation failed. The person stays here rather than being sent
@@ -32,7 +33,8 @@ const SIZE = 'clamp(132px, 42vw, 180px)';
    spinner — a spinner says "the machine is busy," and this moment is supposed to
    say "something is about to be said about you." */
 export default function LoadingPage({ error = null, onRetry, archetype = null, onRevealed }: Props) {
-  const reduceMotion = useReducedMotion();
+  const captionRef = useRef<HTMLParagraphElement>(null);
+  const reduceMotion = prefersReducedMotion();
   const done = Boolean(archetype);
 
   /* Hold on the name before handing over to the reading. */
@@ -42,6 +44,9 @@ export default function LoadingPage({ error = null, onRetry, archetype = null, o
     return () => clearTimeout(t);
   }, [done, onRevealed, reduceMotion]);
 
+  /* The caption fades up while the square fills, and out again the moment the
+     name takes its place. */
+  useFadeTo(captionRef, !done, done ? 0.4 : 1.2);
 
   return (
     <div
@@ -104,11 +109,10 @@ export default function LoadingPage({ error = null, onRetry, archetype = null, o
               day 7. One component so the two cannot drift apart. */}
           <SquareReveal name={archetype} fillDuration={T.square.fill} breathe size={SIZE} />
 
-          <motion.p
-            initial={reduceMotion ? false : { opacity: 0 }}
-            animate={{ opacity: done ? 0 : 1 }}
-            transition={{ duration: reduceMotion ? 0 : done ? 0.4 : 1.2, ease: 'easeOut' }}
+          <p
+            ref={captionRef}
             style={{
+              opacity: 0,
               marginTop: 34,
               fontFamily: 'var(--sv-font)',
               fontWeight: 300,
@@ -120,7 +124,7 @@ export default function LoadingPage({ error = null, onRetry, archetype = null, o
             }}
           >
             This takes about twenty seconds.
-          </motion.p>
+          </p>
         </>
       )}
     </div>
