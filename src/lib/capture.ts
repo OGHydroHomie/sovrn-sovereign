@@ -12,7 +12,16 @@ import { ensureUser } from './session';
  * Non-blocking by design. Capture must never stand between someone and their
  * blueprint, so this resolves either way and only logs on real failure.
  */
-export async function captureEmail(email: string, source: string): Promise<void> {
+export async function captureEmail(
+  email: string,
+  source: string,
+  /* Attach the address to this browser's anonymous account, which sends a real
+     confirmation email. Right at intake, where the person is about to have a
+     Ledger. Wrong for a founding-seat request from someone who has not taken the
+     quiz: it would link their address to an empty account and mail them a
+     confirmation for something they did not ask to confirm. */
+  options: { link?: boolean } = {}
+): Promise<void> {
   const address = email.trim().toLowerCase();
   if (!address) return;
 
@@ -36,7 +45,7 @@ export async function captureEmail(email: string, source: string): Promise<void>
   //
   // Non-fatal on its own: the blueprint still works for a session that never
   // links. It only costs them the return path.
-  await linkEmailToAccount(address);
+  if (options.link !== false) await linkEmailToAccount(address);
 }
 
 /**

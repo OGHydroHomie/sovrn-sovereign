@@ -132,18 +132,6 @@ export default function HeroPage({ onStart }: Props) {
             Free · 5 minutes · No password
           </p>
 
-          <p
-            style={{
-              marginTop: 10, fontFamily: 'var(--sv-font)', fontWeight: 300,
-              fontSize: 13, lineHeight: 1.65, color: '#6E6A66', maxWidth: 420,
-              marginLeft: 'auto', marginRight: 'auto',
-            }}
-          >
-            The last question asks for an email address — that is how the morning
-            act reaches you. Your answers and your reading are stored so you can
-            come back to them, and <a href="/delete" style={{ color: '#1A1A1A' }}>you
-            can delete all of it</a> at any time.
-          </p>
 
           {/* The way back in for someone on a new device. */}
           <div style={{ marginTop: 26 }}>
