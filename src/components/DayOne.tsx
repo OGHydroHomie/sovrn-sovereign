@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { fileEntry, isFiled, listEntries, undoFiling, type LedgerEntry } from '../lib/ledger';
-import FilingUndo from './FilingUndo';
+import { isFiled, listEntries, getEntryById, type LedgerEntry } from '../lib/ledger';
+import FileDay from './FileDay';
 
 interface Props {
   entry: LedgerEntry;
@@ -44,14 +44,16 @@ const CARD: React.CSSProperties = {
 
 export default function DayOne({ entry: initialEntry, embedded = false }: Props) {
   const [entry, setEntry] = useState<LedgerEntry>(initialEntry);
-  const [text, setText] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [failed, setFailed] = useState(false);
-  const [justFiled, setJustFiled] = useState<{ done: boolean } | null>(null);
   const [rows, setRows] = useState<LedgerRow[]>([]);
 
   /* Filed either way. The form is done with them once they have answered. */
   const filed = isFiled(entry);
+
+  const reload = useCallback(async () => {
+    const fresh = await getEntryById(entry.id);
+    if (fresh) setEntry(fresh);
+    setRows(buildRows(await listEntries(), entry.day_number));
+  }, [entry.id, entry.day_number]);
 
   const refreshLedger = useCallback(async () => {
     // The day this card is showing is already on screen above the list.
@@ -64,32 +66,7 @@ export default function DayOne({ entry: initialEntry, embedded = false }: Props)
     if (filed) void refreshLedger();
   }, [filed, refreshLedger]);
 
-  const ready = text.trim().length > 0;
 
-  const submit = async (done: boolean) => {
-    // The entry does not write and neither button resolves until the field has
-    // content. There is no skip, in either direction.
-    if (!ready || saving) return;
-    setSaving(true);
-    setFailed(false);
-
-    const updated = await fileEntry(entry.id, text, done);
-    setSaving(false);
-
-    if (!updated) {
-      setFailed(true);
-      return;
-    }
-    setJustFiled({ done });
-    setEntry(updated);
-  };
-
-  const undo = async () => {
-    const back = await undoFiling(entry.id);
-    setJustFiled(null);
-    if (back) setEntry(back);
-    if (back?.what_happened) setFailed(true);
-  };
 
   return (
     <div style={{ marginTop: embedded ? 0 : 32 }}>
@@ -125,75 +102,8 @@ export default function DayOne({ entry: initialEntry, embedded = false }: Props)
               Committed {formatTime(entry.committed_at)}
             </p>
 
-            <label
-              htmlFor="what-happened"
-              style={{
-                display: 'block', marginTop: 18, fontFamily: 'var(--sv-font)',
-                fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', color: '#000000',
-                textTransform: 'uppercase',
-              }}
-            >
-              What actually happened?
-            </label>
-            <input
-              id="what-happened"
-              type="text"
-              value={text}
-              required
-              onChange={(e) => setText(e.target.value)}
-              style={{
-                marginTop: 10, width: '100%', minHeight: 48, boxSizing: 'border-box',
-                background: 'transparent', color: '#1A1A1A',
-                border: '1px solid #E4E0D6', borderRadius: 2,
-                fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 16, padding: '12px 14px',
-              }}
-            />
-            <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
-              <button
-                onClick={() => void submit(true)}
-                disabled={!ready || saving}
-                style={{
-                  flex: 1, minHeight: 48,
-                  background: ready ? '#000000' : '#E4E0D6',
-                  color: ready ? '#FBFAF7' : '#9A9A9A',
-                  border: 'none', borderRadius: 2,
-                  fontFamily: 'var(--sv-font)', fontWeight: 700, fontSize: 12,
-                  textTransform: 'uppercase', letterSpacing: '0.1em', padding: '16px 12px',
-                  cursor: ready && !saving ? 'pointer' : 'not-allowed',
-                }}
-              >
-                {saving ? 'Saving…' : "It's done"}
-              </button>
-              <button
-                onClick={() => void submit(false)}
-                disabled={!ready || saving}
-                style={{
-                  flex: 1, minHeight: 48,
-                  background: 'none',
-                  color: ready ? '#1A1A1A' : '#9A9A9A',
-                  border: `1px solid ${ready ? '#1A1A1A' : '#E4E0D6'}`, borderRadius: 2,
-                  fontFamily: 'var(--sv-font)', fontWeight: 700, fontSize: 12,
-                  textTransform: 'uppercase', letterSpacing: '0.1em', padding: '16px 12px',
-                  cursor: ready && !saving ? 'pointer' : 'not-allowed',
-                }}
-              >
-                I didn&rsquo;t do it
-              </button>
-            </div>
-            {failed && (
-              <p style={{ marginTop: 10, fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 14, color: '#1A1A1A' }}>
-                That didn&rsquo;t save. Your words are still in the box &mdash; try again.
-              </p>
-            )}
+            <FileDay entry={entry} onChanged={reload} />
           </div>
-        )}
-
-        {justFiled && (
-          <FilingUndo
-            done={justFiled.done}
-            onUndo={() => void undo()}
-            onExpire={() => setJustFiled(null)}
-          />
         )}
 
         {filed && (

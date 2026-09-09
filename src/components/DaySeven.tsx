@@ -2,9 +2,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useFadeTo } from './Fade';
 import SquareReveal from './SquareReveal';
 import SaveCard from './SaveCard';
+import FileDay from './FileDay';
 import { T, prefersReducedMotion } from '../lib/motion';
 import { submitRecalibration, type Recalibration } from '../lib/recalibrate';
-import type { LedgerEntry } from '../lib/ledger';
+import { isFiled, type LedgerEntry } from '../lib/ledger';
 
 interface Props {
   /** The day 7 entry: mission_text is the question, read_line is the week read. */
@@ -13,6 +14,8 @@ interface Props {
   entries: LedgerEntry[];
   becoming: string;
   timezone: string | null;
+  /** Re-read after a day is filed from this screen. */
+  onChanged?: () => void | Promise<void>;
 }
 
 /* Slower than anything else in the product, on purpose. This is the only moment
@@ -39,7 +42,7 @@ function useClock(timezone: string | null) {
   );
 }
 
-export default function DaySeven({ entry, entries, becoming, timezone }: Props) {
+export default function DaySeven({ entry, entries, becoming, timezone, onChanged }: Props) {
   const reduceMotion = prefersReducedMotion();
   const fmt = useClock(timezone);
 
@@ -88,6 +91,12 @@ export default function DaySeven({ entry, entries, becoming, timezone }: Props) 
 
   // The record comes up behind the name once it has landed.
   useFadeTo(bodyRef, bodyIn, 1.1);
+
+  /* The most recent act still waiting on an answer. Day 7 is a question, not an
+     act, so it is never a candidate for this. */
+  const unfiled = entries
+    .filter((e) => e.day_number < WEEK_LENGTH + 1 && !isFiled(e))
+    .sort((a, b) => b.day_number - a.day_number)[0] ?? null;
 
   const week = Array.from({ length: WEEK_LENGTH }, (_, i) => {
     const day = i + 1;
@@ -180,6 +189,25 @@ export default function DaySeven({ entry, entries, becoming, timezone }: Props) 
           </div>
         ))}
         <div style={{ borderTop: '1px solid #E4E0D6' }} />
+
+        {/* The week is printed above with its open days on it, and this screen
+            used to be the only place in the product where you could see an open
+            day and not be able to answer it — day seven replaced the Ledger
+            wholesale and took the filing controls with it. The most recent
+            unfiled day gets the same pair as everywhere else; filing it reveals
+            the one before, so a week of silence can be caught up one day at a
+            time. */}
+        {unfiled && (
+          <div style={{ marginTop: 40, borderTop: '1px solid #E4E0D6', paddingTop: 22 }}>
+            <p className="sv-label" style={{ fontSize: 11, color: '#1A1A1A', letterSpacing: '0.14em' }}>
+              DAY {unfiled.day_number} IS STILL OPEN
+            </p>
+            <p style={{ marginTop: 10, fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 15, lineHeight: 1.6, color: '#6E6A66' }}>
+              {unfiled.mission_text}
+            </p>
+            <FileDay entry={unfiled} onChanged={onChanged} />
+          </div>
+        )}
 
         {/* ── The recalibration ── */}
         {!result ? (
