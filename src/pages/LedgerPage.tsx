@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { listEntries, completeEntry, type LedgerEntry } from '../lib/ledger';
+import { listEntries, fileEntry, isFiled, undoFiling, type LedgerEntry } from '../lib/ledger';
+import FilingUndo from '../components/FilingUndo';
 import PaperPage from '../components/PaperPage';
 import NextMorning from '../components/NextMorning';
 import { signalVillain, villainUnlocked } from '../lib/villain';
@@ -22,10 +23,14 @@ function formatDay(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
-/* Today's entry: the open one with the highest day number. */
+/* Today's entry: the highest day that has not been filed yet.
+
+   Filed means answered, not finished. A day recorded as "I didn't do it" is
+   closed as far as this prompt is concerned — it has an account on it, and
+   asking again would be asking them to file it twice. */
 function pickCurrent(entries: LedgerEntry[]): LedgerEntry | null {
-  const open = entries.filter((e) => !e.completed_at);
-  return open.length ? open[open.length - 1] : null;
+  const unfiled = entries.filter((e) => !isFiled(e));
+  return unfiled.length ? unfiled[unfiled.length - 1] : null;
 }
 
 export default function LedgerPage() {
@@ -34,6 +39,8 @@ export default function LedgerPage() {
   const [text, setText] = useState('');
   const [saving, setSaving] = useState(false);
   const [failed, setFailed] = useState(false);
+  /* Set for the thirty seconds a filing can still be taken back. */
+  const [justFiled, setJustFiled] = useState<{ id: string; done: boolean } | null>(null);
   /* null until they tap. Then 'ok' or 'failed' — the placeholder must not claim
      they were counted if the write did not land. */
   const [villain, setVillain] = useState<'ok' | 'failed' | null>(null);
@@ -69,17 +76,32 @@ export default function LedgerPage() {
   const past = entries.filter((e) => e.id !== current?.id).sort((a, b) => b.day_number - a.day_number);
   const ready = text.trim().length > 0;
 
-  const submit = async () => {
+  const submit = async (done: boolean) => {
     if (!current || !ready || saving) return;
     setSaving(true);
     setFailed(false);
-    const updated = await completeEntry(current.id, text);
+    const updated = await fileEntry(current.id, text, done);
     setSaving(false);
     if (!updated) {
       setFailed(true);
       return;
     }
+    setJustFiled({ id: current.id, done });
     setText('');
+    await load();
+  };
+
+  const undo = async () => {
+    if (!justFiled) return;
+    const back = await undoFiling(justFiled.id);
+    setJustFiled(null);
+    if (back?.what_happened) {
+      // The window closed between the tap and the write. Say so rather than
+      // pretending, and leave the record as it stands.
+      setFailed(true);
+      return;
+    }
+    setText(back?.what_happened ?? '');
     await load();
   };
 
@@ -246,7 +268,6 @@ export default function LedgerPage() {
             value={text}
             required
             onChange={(e) => setText(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') void submit(); }}
             style={{
               marginTop: 10, width: '100%', minHeight: 48, boxSizing: 'border-box',
               background: 'transparent', color: '#1A1A1A',
@@ -254,21 +275,44 @@ export default function LedgerPage() {
               fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 16, padding: '12px 14px',
             }}
           />
-          <button
-            onClick={() => void submit()}
-            disabled={!ready || saving}
-            style={{
-              marginTop: 12, width: '100%', minHeight: 48,
-              background: ready ? '#000000' : '#E4E0D6',
-              color: ready ? '#FBFAF7' : '#9A9A9A',
-              border: 'none', borderRadius: 2,
-              fontFamily: 'var(--sv-font)', fontWeight: 700, fontSize: 13,
-              textTransform: 'uppercase', letterSpacing: '0.12em', padding: '16px 24px',
-              cursor: ready && !saving ? 'pointer' : 'not-allowed',
-            }}
-          >
-            {saving ? 'Saving…' : "It's done"}
-          </button>
+
+          {/* Two ways to file, and the field is required for both. The old screen
+              offered one button, so the only way to record a day was to call it
+              done — and people who had not done it pressed it anyway, because it
+              was that or nothing. Both are the same size and the same weight:
+              one of them is not the failure option. */}
+          <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
+            <button
+              onClick={() => void submit(true)}
+              disabled={!ready || saving}
+              style={{
+                flex: 1, minHeight: 48,
+                background: ready ? '#000000' : '#E4E0D6',
+                color: ready ? '#FBFAF7' : '#9A9A9A',
+                border: 'none', borderRadius: 2,
+                fontFamily: 'var(--sv-font)', fontWeight: 700, fontSize: 12,
+                textTransform: 'uppercase', letterSpacing: '0.1em', padding: '16px 12px',
+                cursor: ready && !saving ? 'pointer' : 'not-allowed',
+              }}
+            >
+              {saving ? 'Saving…' : "It's done"}
+            </button>
+            <button
+              onClick={() => void submit(false)}
+              disabled={!ready || saving}
+              style={{
+                flex: 1, minHeight: 48,
+                background: 'none',
+                color: ready ? '#1A1A1A' : '#9A9A9A',
+                border: `1px solid ${ready ? '#1A1A1A' : '#E4E0D6'}`, borderRadius: 2,
+                fontFamily: 'var(--sv-font)', fontWeight: 700, fontSize: 12,
+                textTransform: 'uppercase', letterSpacing: '0.1em', padding: '16px 12px',
+                cursor: ready && !saving ? 'pointer' : 'not-allowed',
+              }}
+            >
+              I didn&rsquo;t do it
+            </button>
+          </div>
           {failed && (
             <p style={{ marginTop: 10, fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 14, color: '#1A1A1A' }}>
               That didn&rsquo;t save. Your words are still in the box &mdash; try again.
@@ -282,6 +326,14 @@ export default function LedgerPage() {
             Nothing open. The next one is being written. It lands at 6am.
           </p>
         </div>
+      )}
+
+      {justFiled && (
+        <FilingUndo
+          done={justFiled.done}
+          onUndo={() => void undo()}
+          onExpire={() => setJustFiled(null)}
+        />
       )}
 
       {/* ── Everything already on the record, underneath ── */}

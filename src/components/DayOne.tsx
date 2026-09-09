@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { completeEntry, listEntries, type LedgerEntry } from '../lib/ledger';
+import { fileEntry, isFiled, listEntries, undoFiling, type LedgerEntry } from '../lib/ledger';
+import FilingUndo from './FilingUndo';
 
 interface Props {
   entry: LedgerEntry;
@@ -46,9 +47,11 @@ export default function DayOne({ entry: initialEntry, embedded = false }: Props)
   const [text, setText] = useState('');
   const [saving, setSaving] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [justFiled, setJustFiled] = useState<{ done: boolean } | null>(null);
   const [rows, setRows] = useState<LedgerRow[]>([]);
 
-  const isComplete = entry.completed_at !== null;
+  /* Filed either way. The form is done with them once they have answered. */
+  const filed = isFiled(entry);
 
   const refreshLedger = useCallback(async () => {
     setRows(buildRows(await listEntries()));
@@ -57,26 +60,34 @@ export default function DayOne({ entry: initialEntry, embedded = false }: Props)
   // A completed entry means there is a ledger worth showing, including on a cold
   // load after a hard refresh.
   useEffect(() => {
-    if (isComplete) void refreshLedger();
-  }, [isComplete, refreshLedger]);
+    if (filed) void refreshLedger();
+  }, [filed, refreshLedger]);
 
   const ready = text.trim().length > 0;
 
-  const submit = async () => {
-    // The entry does not write and the button does not resolve until the field
-    // has content. There is no skip.
+  const submit = async (done: boolean) => {
+    // The entry does not write and neither button resolves until the field has
+    // content. There is no skip, in either direction.
     if (!ready || saving) return;
     setSaving(true);
     setFailed(false);
 
-    const updated = await completeEntry(entry.id, text);
+    const updated = await fileEntry(entry.id, text, done);
     setSaving(false);
 
     if (!updated) {
       setFailed(true);
       return;
     }
+    setJustFiled({ done });
     setEntry(updated);
+  };
+
+  const undo = async () => {
+    const back = await undoFiling(entry.id);
+    setJustFiled(null);
+    if (back) setEntry(back);
+    if (back?.what_happened) setFailed(true);
   };
 
   return (
@@ -88,7 +99,7 @@ export default function DayOne({ entry: initialEntry, embedded = false }: Props)
               DAY {entry.day_number}
             </h2>
             <span className="sv-label" style={{ fontSize: 11, color: '#9A9A9A', letterSpacing: '0.12em' }}>
-              {isComplete ? 'Complete' : 'Your mission'}
+              {entry.completed_at ? 'Complete' : filed ? 'On the record' : 'Your mission'}
             </span>
           </div>
         )}
@@ -101,13 +112,13 @@ export default function DayOne({ entry: initialEntry, embedded = false }: Props)
             This is also the only place the app asks for the thing the whole next
             day is generated from — and that a day where nothing happened is
             still worth writing down is the part nobody assumes. */}
-        {!isComplete && (
+        {!filed && (
           <p style={{ marginTop: 14, fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 15, lineHeight: 1.65, color: '#6E6A66' }}>
             Committed. Come back and say what happened &mdash; especially if nothing did.
           </p>
         )}
 
-        {!isComplete && (
+        {!filed && (
           <div style={{ marginTop: 18 }}>
             <p className="sv-label" style={{ fontSize: 11, color: '#6E6A66', letterSpacing: '0.12em' }}>
               Committed {formatTime(entry.committed_at)}
@@ -129,7 +140,6 @@ export default function DayOne({ entry: initialEntry, embedded = false }: Props)
               value={text}
               required
               onChange={(e) => setText(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') void submit(); }}
               style={{
                 marginTop: 10, width: '100%', minHeight: 48, boxSizing: 'border-box',
                 background: 'transparent', color: '#1A1A1A',
@@ -137,21 +147,38 @@ export default function DayOne({ entry: initialEntry, embedded = false }: Props)
                 fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 16, padding: '12px 14px',
               }}
             />
-            <button
-              onClick={() => void submit()}
-              disabled={!ready || saving}
-              style={{
-                marginTop: 12, width: '100%', minHeight: 48,
-                background: ready ? '#000000' : '#E4E0D6',
-                color: ready ? '#FBFAF7' : '#9A9A9A',
-                border: 'none', borderRadius: 2,
-                fontFamily: 'var(--sv-font)', fontWeight: 700, fontSize: 13,
-                textTransform: 'uppercase', letterSpacing: '0.12em', padding: '16px 24px',
-                cursor: ready && !saving ? 'pointer' : 'not-allowed',
-              }}
-            >
-              {saving ? 'Saving…' : "It's done"}
-            </button>
+            <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
+              <button
+                onClick={() => void submit(true)}
+                disabled={!ready || saving}
+                style={{
+                  flex: 1, minHeight: 48,
+                  background: ready ? '#000000' : '#E4E0D6',
+                  color: ready ? '#FBFAF7' : '#9A9A9A',
+                  border: 'none', borderRadius: 2,
+                  fontFamily: 'var(--sv-font)', fontWeight: 700, fontSize: 12,
+                  textTransform: 'uppercase', letterSpacing: '0.1em', padding: '16px 12px',
+                  cursor: ready && !saving ? 'pointer' : 'not-allowed',
+                }}
+              >
+                {saving ? 'Saving…' : "It's done"}
+              </button>
+              <button
+                onClick={() => void submit(false)}
+                disabled={!ready || saving}
+                style={{
+                  flex: 1, minHeight: 48,
+                  background: 'none',
+                  color: ready ? '#1A1A1A' : '#9A9A9A',
+                  border: `1px solid ${ready ? '#1A1A1A' : '#E4E0D6'}`, borderRadius: 2,
+                  fontFamily: 'var(--sv-font)', fontWeight: 700, fontSize: 12,
+                  textTransform: 'uppercase', letterSpacing: '0.1em', padding: '16px 12px',
+                  cursor: ready && !saving ? 'pointer' : 'not-allowed',
+                }}
+              >
+                I didn&rsquo;t do it
+              </button>
+            </div>
             {failed && (
               <p style={{ marginTop: 10, fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 14, color: '#1A1A1A' }}>
                 That didn&rsquo;t save. Your words are still in the box &mdash; try again.
@@ -160,10 +187,19 @@ export default function DayOne({ entry: initialEntry, embedded = false }: Props)
           </div>
         )}
 
-        {isComplete && (
+        {justFiled && (
+          <FilingUndo
+            done={justFiled.done}
+            onUndo={() => void undo()}
+            onExpire={() => setJustFiled(null)}
+          />
+        )}
+
+        {filed && (
           <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid #E8E6E1' }}>
             <p className="sv-label" style={{ fontSize: 11, color: '#6E6A66', letterSpacing: '0.12em' }}>
-              Committed {formatTime(entry.committed_at)} · Completed {formatTime(entry.completed_at!)}
+              Committed {formatTime(entry.committed_at)}
+              {entry.completed_at ? ` · Completed ${formatTime(entry.completed_at)}` : ' · Open'}
             </p>
             <p className="sv-serif" style={{ fontSize: 16, lineHeight: 1.6, color: '#4A4A4A', marginTop: 8 }}>
               {entry.what_happened}
@@ -172,7 +208,7 @@ export default function DayOne({ entry: initialEntry, embedded = false }: Props)
         )}
       </div>
 
-      {isComplete && rows.length > 0 && (
+      {filed && rows.length > 0 && (
         <div style={{ marginTop: 24 }}>
           <p className="sv-label" style={{ fontSize: 11, color: '#1A1A1A', letterSpacing: '0.18em', fontWeight: 700 }}>
             THE LEDGER
@@ -199,7 +235,7 @@ export default function DayOne({ entry: initialEntry, embedded = false }: Props)
                     : ' · Open')}
                 </p>
 
-                {row?.completed_at && (
+                {row?.what_happened && (
                   <p style={{ marginTop: 8, fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 15, lineHeight: 1.6, color: '#1A1A1A' }}>
                     {row.what_happened}
                   </p>
