@@ -1,10 +1,11 @@
-import { useId, useState, type ReactNode } from 'react';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import gsap from 'gsap';
+import { EASE, T, prefersReducedMotion } from '../lib/motion';
 
 interface Props {
   header: string;
   teaser: string;
-  /** Stagger index — cards enter ~150ms apart. */
+  /** Stagger index — cards enter T.cards.stagger apart. */
   index: number;
   children: ReactNode;
 }
@@ -23,16 +24,73 @@ function Chevron({ open }: { open: boolean }) {
 
 export default function RevealCard({ header, teaser, index, children }: Props) {
   const [open, setOpen] = useState(false);
-  const reduceMotion = useReducedMotion();
   const panelId = useId();
+  const root = useRef<HTMLDivElement>(null);
+  const panel = useRef<HTMLDivElement>(null);
+  const body = useRef<HTMLDivElement>(null);
+  const first = useRef(true);
+
+  /* Entry: the three arrive in order, behind the header. */
+  useEffect(() => {
+    const reduced = prefersReducedMotion();
+    const ctx = gsap.context(() => {
+      gsap.fromTo(root.current,
+        { opacity: 0, y: reduced ? 0 : T.cards.riseFrom },
+        {
+          opacity: 1, y: 0,
+          duration: reduced ? 0.01 : T.cards.enter,
+          delay: reduced ? 0 : T.cards.firstAt + T.cards.stagger * index,
+          ease: EASE.in,
+        });
+    }, root);
+    return () => ctx.revert();
+  }, [index]);
+
+  /* Open and close on a measured height.
+
+     The panel is always mounted and clipped to zero when closed, so the height
+     is measurable at the moment it is needed rather than after a mount. It
+     animates to the content's own height and is then released to auto, which is
+     what keeps a card correct when the text inside it reflows. */
+  useLayoutEffect(() => {
+    const el = panel.current;
+    if (!el) return;
+
+    if (prefersReducedMotion()) {
+      gsap.set(el, { height: open ? 'auto' : 0, opacity: open ? 1 : 0 });
+      first.current = false;
+      return;
+    }
+
+    if (first.current) {
+      gsap.set(el, { height: 0, opacity: 0 });
+      first.current = false;
+      return;
+    }
+
+    const ctx = gsap.context(() => {
+      gsap.killTweensOf([el, body.current]);
+      if (open) {
+        const tl = gsap.timeline();
+        tl.fromTo(el,
+          { height: el.offsetHeight },
+          {
+            height: 'auto', duration: T.cards.expand, ease: EASE.panel,
+            onComplete: () => gsap.set(el, { height: 'auto' }),
+          }, 0);
+        tl.fromTo(body.current, { opacity: 0 },
+          { opacity: 1, duration: T.cards.bodyFade, ease: EASE.in }, T.cards.bodyAt);
+      } else {
+        const tl = gsap.timeline();
+        tl.to(body.current, { opacity: 0, duration: T.cards.bodyFade * 0.6, ease: EASE.panel }, 0);
+        tl.to(el, { height: 0, duration: T.cards.collapse, ease: EASE.panel }, 0);
+      }
+    }, root);
+    return () => ctx.revert();
+  }, [open]);
 
   return (
-    <motion.div
-      initial={reduceMotion ? false : { opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={reduceMotion ? { duration: 0 } : { duration: 0.45, ease: 'easeOut', delay: 0.15 * index }}
-      style={{ borderTop: '1px solid #E4E0D6' }}
-    >
+    <div ref={root} style={{ borderTop: '1px solid #E4E0D6', opacity: 0 }}>
       <button
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
@@ -66,21 +124,9 @@ export default function RevealCard({ header, teaser, index, children }: Props) {
         <Chevron open={open} />
       </button>
 
-      <AnimatePresence initial={false}>
-        {open && (
-          <motion.div
-            id={panelId}
-            key="panel"
-            initial={reduceMotion ? { height: 'auto', opacity: 1 } : { height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={reduceMotion ? { height: 'auto', opacity: 1 } : { height: 0, opacity: 0 }}
-            transition={reduceMotion ? { duration: 0 } : { duration: 0.34, ease: [0.22, 0.61, 0.36, 1] }}
-            style={{ overflow: 'hidden' }}
-          >
-            <div style={{ paddingBottom: 26 }}>{children}</div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.div>
+      <div id={panelId} ref={panel} style={{ overflow: 'hidden', height: 0 }}>
+        <div ref={body} style={{ paddingBottom: 26 }}>{children}</div>
+      </div>
+    </div>
   );
 }

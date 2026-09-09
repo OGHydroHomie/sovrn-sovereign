@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import SquareReveal from './SquareReveal';
 import SaveCard from './SaveCard';
+import { T } from '../lib/motion';
 import { submitRecalibration, type Recalibration } from '../lib/recalibrate';
 import type { LedgerEntry } from '../lib/ledger';
 
@@ -17,10 +18,8 @@ interface Props {
 /* Slower than anything else in the product, on purpose. This is the only moment
    that is purely a reward, and a reward that arrives at the same speed as a
    page transition is not one. */
-const HOLD_BEFORE_MS = 1400;
-const DISSOLVE_MS = 1800;
-const NAME_FADE_MS = 1400;
-const BODY_AFTER_MS = HOLD_BEFORE_MS + DISSOLVE_MS + 900;
+const HOLD_BEFORE_MS = T.daySeven.holdBefore * 1000;
+const BODY_AFTER_MS = T.daySeven.body * 1000;
 
 const WEEK_LENGTH = 6;
 
@@ -114,10 +113,9 @@ export default function DaySeven({ entry, entries, becoming, timezone }: Props) 
       <div style={{ display: 'flex', justifyContent: 'center', padding: '10vh 0 12vh' }}>
         <SquareReveal
           name={named}
-          fill={1}
-          dissolveMs={DISSOLVE_MS}
-          nameDelayMs={reduceMotion ? 0 : 700}
-          nameFadeMs={NAME_FADE_MS}
+          dissolve={T.daySeven.dissolve}
+          nameDelay={reduceMotion ? 0 : 0.7}
+          nameFade={T.daySeven.nameFade}
           size="clamp(120px, 38vw, 164px)"
         />
       </div>
@@ -243,10 +241,9 @@ export default function DaySeven({ entry, entries, becoming, timezone }: Props) 
                 <div style={{ display: 'flex', justifyContent: 'center', padding: '6vh 0 4vh' }}>
                   <SquareReveal
                     name={resolvedName}
-                    fill={1}
-                    dissolveMs={DISSOLVE_MS}
-                    nameDelayMs={reduceMotion ? 0 : 700}
-                    nameFadeMs={NAME_FADE_MS}
+                    dissolve={T.daySeven.dissolve}
+                    nameDelay={reduceMotion ? 0 : 0.7}
+                    nameFade={T.daySeven.nameFade}
                     size="clamp(120px, 38vw, 164px)"
                   />
                 </div>

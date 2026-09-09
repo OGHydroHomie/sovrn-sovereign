@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import SquareReveal from '../components/SquareReveal';
+import { T } from '../lib/motion';
 
 interface Props {
   /* Set when generation failed. The person stays here rather than being sent
@@ -14,15 +15,7 @@ interface Props {
   onRevealed?: () => void;
 }
 
-/* Roughly how long a generation takes. The fill is a duration, not a progress
-   bar — it makes no claim about how far along the model is, it gives the pause a
-   length. Past twenty seconds it simply holds full rather than resetting,
-   because the wait is genuinely open-ended. */
-const FILL_MS = 20000;
 
-/* Reduced motion gets one frozen frame of the same object rather than a
-   different object. Half full reads as "in progress" without moving. */
-const STATIC_FILL = 0.5;
 
 /* The mark. Large enough to be the only thing on the page. */
 const SIZE = 'clamp(132px, 42vw, 180px)';
@@ -40,35 +33,15 @@ const SIZE = 'clamp(132px, 42vw, 180px)';
    say "something is about to be said about you." */
 export default function LoadingPage({ error = null, onRetry, archetype = null, onRevealed }: Props) {
   const reduceMotion = useReducedMotion();
-  const [fill, setFill] = useState(0);
   const done = Boolean(archetype);
-
-  /* Elapsed time since this screen appeared, which is the moment generation
-     started. Driving the fill off a clock rather than off a fixed animation
-     means it stays honest across a re-render, and stops the moment the reading
-     lands instead of continuing to imply work that is already finished. */
-  useEffect(() => {
-    if (reduceMotion || done) return;
-    const started = performance.now();
-    let frame = requestAnimationFrame(function tick() {
-      const elapsed = performance.now() - started;
-      setFill(Math.min(1, elapsed / FILL_MS));
-      if (elapsed < FILL_MS) frame = requestAnimationFrame(tick);
-    });
-    return () => cancelAnimationFrame(frame);
-  }, [reduceMotion, done]);
 
   /* Hold on the name before handing over to the reading. */
   useEffect(() => {
     if (!done || !onRevealed) return;
-    const t = setTimeout(onRevealed, reduceMotion ? 400 : 1500);
+    const t = setTimeout(onRevealed, (reduceMotion ? 0.4 : T.square.hold) * 1000);
     return () => clearTimeout(t);
   }, [done, onRevealed, reduceMotion]);
 
-  /* Derived at render, not seeded into state: useReducedMotion can resolve after
-     the first paint, and a state initializer only runs once — which would leave
-     a reduced-motion viewer looking at a permanently empty square. */
-  const level = done ? 1 : reduceMotion ? STATIC_FILL : fill;
 
   return (
     <div
@@ -129,7 +102,7 @@ export default function LoadingPage({ error = null, onRetry, archetype = null, o
         <>
           {/* The same mark, and the same motion, the becoming resolves with on
               day 7. One component so the two cannot drift apart. */}
-          <SquareReveal name={archetype} fill={level} breathe size={SIZE} />
+          <SquareReveal name={archetype} fillDuration={T.square.fill} breathe size={SIZE} />
 
           <motion.p
             initial={reduceMotion ? false : { opacity: 0 }}

@@ -1,5 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
+import gsap from 'gsap';
+import { EASE, T, prefersReducedMotion } from '../lib/motion';
 import { jsPDF } from 'jspdf';
 import type { QuizData } from '../types';
 import { trackEvent } from '../utils/storage';
@@ -62,6 +64,29 @@ export default function BlueprintPage({
   const bp = useMemo(() => parseBlueprint(text), [text]);
 
   useEffect(() => { trackEvent('pageView', 'blueprint'); }, []);
+
+  /* The mark comes in behind the name. The name is the sentence; the mark is the
+     picture of it, and a picture that arrives first is decoration.
+
+     It fades and settles rather than drawing itself on — the thirteen marks are
+     filled paths with no strokes, so there is no outline for a stroke-dash draw
+     to travel along. Claiming otherwise would just be a fade with extra steps. */
+  const markRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!bp.becoming || !markRef.current) return;
+    const reduced = prefersReducedMotion();
+    const ctx = gsap.context(() => {
+      gsap.fromTo(markRef.current,
+        { opacity: 0, scale: reduced ? 1 : T.reveal.markFrom },
+        {
+          opacity: 1, scale: 1,
+          duration: reduced ? T.reveal.mark : T.reveal.mark,
+          delay: reduced ? 0 : T.reveal.markAt,
+          ease: EASE.in,
+        });
+    }, markRef);
+    return () => ctx.revert();
+  }, [bp.becoming]);
 
   const choose = async (which: 'hard' | 'next') => {
     if (saving || dayOne || readOnly || !onChooseAct) return;
@@ -204,7 +229,7 @@ export default function BlueprintPage({
         >
           {/* The mark, above the name. Falls back to the square until the art
               exists, which is what it renders today. */}
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 14 }}>
+          <div ref={markRef} style={{ display: 'flex', justifyContent: 'center', marginBottom: 14, opacity: 0 }}>
             <ArchetypeMark becoming={bp.becoming} size="clamp(220px, 58vw, 280px)" />
           </div>
 
