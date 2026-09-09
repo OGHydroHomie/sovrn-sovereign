@@ -236,3 +236,55 @@ should have been checked before the write. **Open:** the marks have never been
 seen rendering in a real browser — there is none in this environment — so the
 reveal, the Ledger header and the PNG export are verified structurally and by a
 composite preview, not by looking at the running app.
+
+## 2026-09-08 · GSAP, and one animation runtime
+
+**Shipped** `b2d0ac0`, `b15eb49`. GSAP replaces Rive as the animation layer and
+then replaces framer-motion as well, because two animation libraries were
+shipping for one product. Every duration moves into `src/lib/motion.ts`. The
+loading square's fill stops being a `requestAnimationFrame` loop writing React
+state sixty times a second and becomes one interruptible twenty-second tween; the
+mark fades in behind the name on the reveal; the three cards stagger and their
+panels get a measured height transition. Bundle: 327KB before any of it, 352KB
+carrying both libraries, **312KB** on GSAP alone — 15KB under the starting point.
+**What broke:** the quiz question swap loses its directional slide. `Fade`
+animates entrances only, because keeping exits means holding an unmounted element
+alive to animate it, which is most of `AnimatePresence` and all of its weight.
+**Open:** nothing.
+
+## 2026-09-08 · The Ledger could lie
+
+**Shipped** `aa13ab3`. The only completion control was "It's done", so a person
+who had not done the act still filed it as complete — QA wrote "I have not sent
+an illustration" and it recorded as a completion. The cause was in Postgres, not
+the button: `completion_requires_text` said text exists only alongside a
+completion, so "I didn't do it, and here is what happened" was unrepresentable.
+`what_happened` now means the day was filed and `completed_at` still means they
+did it; two controls of equal weight, text required for both, and a not-done day
+renders as an open day with their words on it. Filing can be undone for thirty
+seconds, enforced by the update policy with `filed_at` stamped by a trigger so
+the client cannot hold its own window open. **What broke:** my first version of
+the constraint let a completion through with no words at all —
+`length(btrim(NULL)) > 0` is NULL, `false OR NULL` is NULL, and a CHECK passes on
+NULL, so the branch written to demand text abstained in exactly the case it
+existed for. Found by probing the constraint rather than reading it. **Open:**
+undo is per-session state, so a filing cannot be taken back after a reload even
+inside the thirty seconds.
+
+## 2026-09-08 · Browser QA, ten findings
+
+**Shipped** `0cde0a7`, `833e682`, `87cb028`. An act could prescribe the loop — a
+reading named deadline-setting as the avoidance and then told the person to write
+tomorrow's date and close the file — so both generators now carry the rule and a
+second model checks each act against THE PATTERN, regenerating with the reason
+attached. Reading the privacy page mid-intake destroyed all eight answers: legal
+links open in a new tab and answers are persisted on every change. The rest:
+return control offers a direct link when a session exists and can resend or
+correct the address; the identity number is derived from the reading instead of
+`Math.random()`; the reflection no longer renders twice; hero text moves from
+#9A9A9A (2.70:1, fails AA at every size) to #6E6A66 (5.14:1); the hero states
+what you get, that an email is required and that answers are stored, none of
+which appeared before question eight; and the blurred sample is legible and
+labelled instead of a 6px smudge that read as a failed render. **What broke:**
+nothing new. **Open:** #9A9A9A still fails in twelve other files — a palette
+sweep, not a hero fix, and undecided.
