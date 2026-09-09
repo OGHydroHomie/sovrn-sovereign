@@ -1,7 +1,13 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 
-type State = 'closed' | 'open' | 'sending' | 'sent' | 'failed';
+const LINK_BUTTON: React.CSSProperties = {
+  background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+  fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 13, color: '#6E6A66',
+  textDecoration: 'underline', textUnderlineOffset: 3,
+};
+
+type State = 'checking' | 'signed-in' | 'closed' | 'open' | 'sending' | 'sent' | 'failed';
 
 /**
  * The way back in.
@@ -19,7 +25,16 @@ type State = 'closed' | 'open' | 'sending' | 'sent' | 'failed';
  * test whether someone has used SOVRN.
  */
 export default function ReturnLink() {
-  const [state, setState] = useState<State>('closed');
+  const [state, setState] = useState<State>('checking');
+
+  /* If this browser is already signed in there is nothing to send. Asking for an
+     email to reach a Ledger the session can already open is a dead end dressed as
+     a form — and it appeared next to a "View Your Blueprint" button that worked. */
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setState(data.session ? 'signed-in' : 'closed');
+    });
+  }, []);
   const [email, setEmail] = useState('');
 
   const valid = /\S+@\S+\.\S+/.test(email.trim());
@@ -48,11 +63,39 @@ export default function ReturnLink() {
        your email" of an account that does not exist tells a stranger nothing —
        naming the account would. */
     return (
+      <>
       <p style={{ fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 14, lineHeight: 1.65, color: '#6E6A66', textAlign: 'center' }}>
         If that address has a Ledger, the link is on its way &mdash; check your email now.
         Open it on this device, because that is where it signs you in. Links expire, so if
         you have asked more than once, use the newest one.
       </p>
+
+      {/* A typo used to be the end of it. Both routes lead back to the same
+          form with the address still in it, so correcting one character does
+          not mean typing the whole thing again. */}
+      <p style={{ marginTop: 12, fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 13, color: '#9A9A9A', textAlign: 'center' }}>
+        <button onClick={() => setState('open')} style={LINK_BUTTON}>Use a different address</button>
+        <span style={{ padding: '0 8px' }}>·</span>
+        <button onClick={() => void send()} style={LINK_BUTTON}>Send it again</button>
+      </p>
+      </>
+    );
+  }
+
+  if (state === 'checking') return null;
+
+  if (state === 'signed-in') {
+    return (
+      <a
+        href="/ledger"
+        style={{
+          display: 'inline-block', padding: '8px 2px',
+          fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 14, color: '#6E6A66',
+          textDecoration: 'underline', textUnderlineOffset: 3,
+        }}
+      >
+        Open your Ledger
+      </a>
     );
   }
 

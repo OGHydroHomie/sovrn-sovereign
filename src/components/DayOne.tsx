@@ -20,13 +20,13 @@ interface LedgerRow {
  * ledger that hides them is a ledger that flatters, so gaps render as visible
  * empty rows rather than being filtered out.
  */
-function buildRows(entries: LedgerEntry[]): LedgerRow[] {
+function buildRows(entries: LedgerEntry[], excludeDay: number): LedgerRow[] {
   const byDay = new Map(entries.map((e) => [e.day_number, e]));
   const lastDay = entries.reduce((max, e) => Math.max(max, e.day_number), 1);
   return Array.from({ length: lastDay }, (_, i) => ({
     dayNumber: i + 1,
     entry: byDay.get(i + 1) ?? null,
-  }));
+  })).filter((row) => row.dayNumber !== excludeDay);
 }
 
 function formatTime(iso: string): string {
@@ -54,8 +54,9 @@ export default function DayOne({ entry: initialEntry, embedded = false }: Props)
   const filed = isFiled(entry);
 
   const refreshLedger = useCallback(async () => {
-    setRows(buildRows(await listEntries()));
-  }, []);
+    // The day this card is showing is already on screen above the list.
+    setRows(buildRows(await listEntries(), entry.day_number));
+  }, [entry.day_number]);
 
   // A completed entry means there is a ledger worth showing, including on a cold
   // load after a hard refresh.

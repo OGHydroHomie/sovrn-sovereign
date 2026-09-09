@@ -57,7 +57,15 @@ function Body({ text }: { text: string }) {
 export default function BlueprintPage({
   text, quizData = null, dayOne = null, onChooseAct, readOnly = false, chosen = null,
 }: Props) {
-  const [blueprintNo] = useState(() => String(Math.floor(1000 + Math.random() * 9000)));
+  /* Derived from the reading, not rolled fresh. It was Math.random() in a state
+     initialiser, so the same person's blueprint was No. 6936, then 3289, then
+     7153 — an identity number that changes every visit is not an identity
+     number. Same reading, same four digits, on every device. */
+  const blueprintNo = useMemo(() => {
+    let h = 0;
+    for (let i = 0; i < text.length; i++) h = (h * 31 + text.charCodeAt(i)) | 0;
+    return String(1000 + (Math.abs(h) % 9000));
+  }, [text]);
   const [saving, setSaving] = useState<'hard' | 'next' | null>(null);
   const bp = useMemo(() => parseBlueprint(text), [text]);
 

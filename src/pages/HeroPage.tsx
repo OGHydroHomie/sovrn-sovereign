@@ -55,7 +55,7 @@ export default function HeroPage({ onStart }: Props) {
   }, []);
 
   return (
-    <div style={{ color: '#9A9A9A' }}>
+    <div style={{ color: '#6E6A66' }}>
       {/* ============================================================= *
        *  ABOVE THE FOLD — one promise, one decision. Spacious.
        * ============================================================= */}
@@ -95,10 +95,23 @@ export default function HeroPage({ onStart }: Props) {
           {/* 24px → body */}
           <p
             className="sv-display"
-            style={{ marginTop: 24, fontWeight: 400, fontSize: 16, lineHeight: 1.6, color: '#9A9A9A' }}
+            style={{ marginTop: 24, fontWeight: 400, fontSize: 16, lineHeight: 1.6, color: '#6E6A66' }}
           >
             Something still feels off — like you're living adjacent to your actual
             life. Enter your birth data. Find out why.
+          </p>
+
+          {/* What arrives. None of this was stated anywhere above the fold, so the
+              page asked for a birth date without saying what it was buying. */}
+          <p
+            style={{
+              marginTop: 18, fontFamily: 'var(--sv-font)', fontWeight: 300,
+              fontSize: 15, lineHeight: 1.7, color: '#1A1A1A',
+            }}
+          >
+            You get a written reading of who you are and the pattern you keep
+            running, one act to do today, and a new one every morning at 6am
+            written from what you actually did.
           </p>
 
           {/* 40px → button */}
@@ -113,10 +126,23 @@ export default function HeroPage({ onStart }: Props) {
               fontFamily: 'var(--sv-font)',
               fontWeight: 400,
               fontSize: 13,
-              color: '#9A9A9A',
+              color: '#6E6A66',
             }}
           >
-            Free · 5 minutes · No account required
+            Free · 5 minutes · No password
+          </p>
+
+          <p
+            style={{
+              marginTop: 10, fontFamily: 'var(--sv-font)', fontWeight: 300,
+              fontSize: 13, lineHeight: 1.65, color: '#6E6A66', maxWidth: 420,
+              marginLeft: 'auto', marginRight: 'auto',
+            }}
+          >
+            The last question asks for an email address — that is how the morning
+            act reaches you. Your answers and your reading are stored so you can
+            come back to them, and <a href="/delete" style={{ color: '#1A1A1A' }}>you
+            can delete all of it</a> at any time.
           </p>
 
           {/* The way back in for someone on a new device. */}
@@ -163,7 +189,7 @@ export default function HeroPage({ onStart }: Props) {
               </h3>
               <p
                 className="sv-serif"
-                style={{ marginTop: 12, fontSize: 15, lineHeight: 1.6, color: '#9A9A9A' }}
+                style={{ marginTop: 12, fontSize: 15, lineHeight: 1.6, color: '#6E6A66' }}
               >
                 {card.body}
               </p>
@@ -171,23 +197,24 @@ export default function HeroPage({ onStart }: Props) {
           ))}
         </div>
 
-        {/* Blurred blueprint preview — show what's waiting without revealing it */}
+        {/* A real excerpt, legible. It was blurred to 6px at 0.7 opacity, which
+            showed nothing and looked like a failed render — an unreadable teaser
+            teases nothing. It is labelled as a sample so it cannot be mistaken
+            for the visitor's own. */}
         <div style={{ marginTop: 48 }}>
-          <div
-            aria-hidden="true"
-            style={{
-              filter: 'blur(6px)',
-              opacity: 0.7,
-              pointerEvents: 'none',
-              userSelect: 'none',
-            }}
+          <p
+            className="sv-label"
+            style={{ fontSize: 11, letterSpacing: '0.18em', color: '#6E6A66', textAlign: 'center', marginBottom: 14 }}
           >
+            A SAMPLE READING
+          </p>
+          <div>
             <div
               className="sv-card"
               style={{ borderLeft: '2px solid #1A1A1A', textAlign: 'left', maxWidth: 360, margin: '0 auto' }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                <span className="sv-label" style={{ fontSize: 10, color: '#9A9A9A', letterSpacing: '0.18em' }}>
+                <span className="sv-label" style={{ fontSize: 10, color: '#6E6A66', letterSpacing: '0.18em' }}>
                   Who you are
                 </span>
               </div>
@@ -231,7 +258,7 @@ export default function HeroPage({ onStart }: Props) {
               fontFamily: 'var(--sv-font)',
               fontWeight: 400,
               fontSize: 14,
-              color: '#9A9A9A',
+              color: '#6E6A66',
               textAlign: 'center',
             }}
           >
@@ -254,7 +281,7 @@ export default function HeroPage({ onStart }: Props) {
             fontWeight: 400,
             fontSize: 11,
             letterSpacing: '0.1em',
-            color: '#9A9A9A',
+            color: '#6E6A66',
             textAlign: 'center',
           }}
         >
