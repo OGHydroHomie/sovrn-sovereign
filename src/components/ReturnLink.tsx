@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { getBlueprint } from '../utils/storage';
+import { getProfile } from '../lib/blueprint';
 
 const LINK_BUTTON: React.CSSProperties = {
   background: 'none', border: 'none', padding: 0, cursor: 'pointer',
@@ -27,13 +29,24 @@ type State = 'checking' | 'signed-in' | 'closed' | 'open' | 'sending' | 'sent' |
 export default function ReturnLink() {
   const [state, setState] = useState<State>('checking');
 
-  /* If this browser is already signed in there is nothing to send. Asking for an
-     email to reach a Ledger the session can already open is a dead end dressed as
-     a form — and it appeared next to a "View Your Blueprint" button that worked. */
+  /* Offer the direct link only when there is something behind it.
+
+     A session is not a Ledger. ensureUser mints an anonymous one for every
+     visitor on arrival, so "signed in" is true of someone who landed nine
+     seconds ago — and the first version of this checked exactly that, which
+     offered "Your Ledger" to a stranger and sent them to an empty page. The
+     question is whether a reading exists: in this browser, or on the row. */
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setState(data.session ? 'signed-in' : 'closed');
-    });
+    let live = true;
+    void (async () => {
+      const { data } = await supabase.auth.getSession();
+      if (!live) return;
+      if (!data.session) { setState('closed'); return; }
+      if (getBlueprint()?.text) { setState('signed-in'); return; }
+      const me = await getProfile();
+      if (live) setState(me?.becoming ? 'signed-in' : 'closed');
+    })();
+    return () => { live = false; };
   }, []);
   const [email, setEmail] = useState('');
 
