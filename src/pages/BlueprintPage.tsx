@@ -271,7 +271,7 @@ export default function BlueprintPage({
             style={{
               opacity: 0,
               marginTop: 14, fontFamily: 'var(--sv-font)', fontWeight: 700,
-              fontSize: 11, letterSpacing: '0.22em', color: '#9A9A9A',
+              fontSize: 11, letterSpacing: '0.22em', color: '#6E6A66',
               textTransform: 'uppercase',
             }}
           >
@@ -340,7 +340,7 @@ export default function BlueprintPage({
             </div>
           )}
 
-          <p style={{ marginTop: 28, fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 11, letterSpacing: '0.1em', color: '#9A9A9A' }}>
+          <p style={{ marginTop: 28, fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 11, letterSpacing: '0.1em', color: '#6E6A66' }}>
             {quizData?.name ? `${quizData.name} - ` : ''}No. {blueprintNo}
           </p>
         </div>

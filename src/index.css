@@ -12,7 +12,13 @@
   --color-ink: #1A1A1A;     /* body text                 */
   --color-black: #000000;   /* headings, rules, controls */
   --color-mute: #6E6A66;    /* secondary text            */
-  --color-faint: #9A9A9A;   /* captions                  */
+  /* Was #9A9A9A, which is 2.70:1 on the paper ground and fails AA at every
+     size. There is no replacement that is both lighter than --color-mute and
+     legible: the lightest neutral that clears 4.5:1 on #FBFAF7 is #737373 at
+     4.54, one percent above the line and visually indistinguishable from mute.
+     So faint is retired as a distinct text colour and aliases mute. The palette
+     wanted three inks; this ground supports two. */
+  --color-faint: #6E6A66;   /* alias of mute — see above */
   --color-line: #E4E0D6;    /* hairlines                 */
 }
 
@@ -21,7 +27,7 @@
   --sv-ink: #1A1A1A;
   --sv-black: #000000;
   --sv-mute: #6E6A66;
-  --sv-faint: #9A9A9A;
+  --sv-faint: #6E6A66;      /* alias of --sv-mute; see --color-faint */
   --sv-line: #E4E0D6;
 
   /* DESIGN_FROZEN.md: Geist Sans only, Inter the sole fallback, no display font.

@@ -257,7 +257,7 @@ export default function DaySeven({ entry, entries, becoming, timezone, onChanged
                 That didn&rsquo;t send. Your words are still in the box &mdash; try again.
               </p>
             )}
-            <p style={{ marginTop: 14, fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 13, lineHeight: 1.6, color: '#9A9A9A' }}>
+            <p style={{ marginTop: 14, fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 13, lineHeight: 1.6, color: '#6E6A66' }}>
               You can leave this. The next act arrives either way.
             </p>
           </div>
@@ -265,7 +265,7 @@ export default function DaySeven({ entry, entries, becoming, timezone, onChanged
           <div style={{ marginTop: 44, borderTop: '1px solid #E4E0D6', paddingTop: 32 }}>
             {result.changed ? (
               <>
-                <p className="sv-label" style={{ fontSize: 11, letterSpacing: '0.18em', color: '#9A9A9A' }}>
+                <p className="sv-label" style={{ fontSize: 11, letterSpacing: '0.18em', color: '#6E6A66' }}>
                   YOU CAME IN AS {result.previous}
                 </p>
                 <div style={{ display: 'flex', justifyContent: 'center', padding: '6vh 0 4vh' }}>

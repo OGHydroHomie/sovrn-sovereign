@@ -223,7 +223,7 @@ export default function QuizPage({ onComplete, onBack }: Props) {
         /* ── Chart-insight reveal — auto-advances after 4s ── */
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', paddingBottom: 40 }}>
           <Fade duration={0.8} y={10}>
-            <p className="sv-label" style={{ fontSize: 11, color: '#9A9A9A', letterSpacing: '0.22em', fontWeight: 700 }}>
+            <p className="sv-label" style={{ fontSize: 11, color: '#6E6A66', letterSpacing: '0.22em', fontWeight: 700 }}>
               That was the easy part
             </p>
             <div
@@ -293,7 +293,7 @@ export default function QuizPage({ onComplete, onBack }: Props) {
                       onKeyDown={onEnterKey}
                       className="sv-field"
                     />
-                    <p className="sv-serif" style={{ marginTop: 10, fontSize: 13, color: '#9A9A9A', lineHeight: 1.5 }}>
+                    <p className="sv-serif" style={{ marginTop: 10, fontSize: 13, color: '#6E6A66', lineHeight: 1.5 }}>
                       {q.helper}
                     </p>
                     <button
@@ -365,7 +365,7 @@ export default function QuizPage({ onComplete, onBack }: Props) {
                         </ul>
                       )}
                     </div>
-                    <p className="sv-serif" style={{ marginTop: 10, fontSize: 13, color: '#9A9A9A', lineHeight: 1.5 }}>
+                    <p className="sv-serif" style={{ marginTop: 10, fontSize: 13, color: '#6E6A66', lineHeight: 1.5 }}>
                       {q.helper}
                     </p>
                   </>
@@ -373,7 +373,7 @@ export default function QuizPage({ onComplete, onBack }: Props) {
 
                 {(step === 4 || step === 5 || step === 6) && (
                   <>
-                    <p className="sv-serif" style={{ marginBottom: 12, fontSize: 13, color: '#9A9A9A', lineHeight: 1.5 }}>
+                    <p className="sv-serif" style={{ marginBottom: 12, fontSize: 13, color: '#6E6A66', lineHeight: 1.5 }}>
                       {q.helper}
                     </p>
                     <textarea
@@ -402,7 +402,7 @@ export default function QuizPage({ onComplete, onBack }: Props) {
                       placeholder="your@email.com"
                       className="sv-field"
                     />
-                    <p className="sv-serif" style={{ marginTop: 10, fontSize: 13, color: '#9A9A9A', lineHeight: 1.5 }}>
+                    <p className="sv-serif" style={{ marginTop: 10, fontSize: 13, color: '#6E6A66', lineHeight: 1.5 }}>
                       {q.helper}
                     </p>
 
@@ -420,13 +420,13 @@ export default function QuizPage({ onComplete, onBack }: Props) {
                         onChange={(e) => setConsented(e.target.checked)}
                         style={{ width: 20, height: 20, marginTop: 1, flexShrink: 0, accentColor: '#1A1A1A', cursor: 'pointer' }}
                       />
-                      <span style={{ fontFamily: 'var(--sv-font)', fontSize: 13, lineHeight: 1.6, color: '#9A9A9A' }}>
+                      <span style={{ fontFamily: 'var(--sv-font)', fontSize: 13, lineHeight: 1.6, color: '#6E6A66' }}>
                         I understand my birth data and answers are used to generate my
                         Blueprint and are stored to keep my Ledger.
                       </span>
                     </label>
 
-                    <p style={{ marginTop: 10, marginLeft: 32, fontFamily: 'var(--sv-font)', fontSize: 13, color: '#9A9A9A' }}>
+                    <p style={{ marginTop: 10, marginLeft: 32, fontFamily: 'var(--sv-font)', fontSize: 13, color: '#6E6A66' }}>
                       <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: '#1A1A1A' }}>Privacy</a>
                       <span style={{ padding: '0 8px' }}>·</span>
                       <a href="/terms" target="_blank" rel="noopener noreferrer" style={{ color: '#1A1A1A' }}>Terms</a>
@@ -455,7 +455,7 @@ export default function QuizPage({ onComplete, onBack }: Props) {
                 cursor: 'pointer',
                 fontFamily: 'var(--sv-font)',
                 fontSize: 14,
-                color: '#9A9A9A',
+                color: '#6E6A66',
               }}
             >
               ← Back

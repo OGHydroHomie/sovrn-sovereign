@@ -14,7 +14,7 @@ export const CARD = {
   paper: '#FBFAF7',
   ink: '#000000',
   muted: '#6E6A66',
-  faint: '#9A9A9A',
+  faint: '#6E6A66',
   family: "'Geist', Inter, sans-serif",
 } as const;
 

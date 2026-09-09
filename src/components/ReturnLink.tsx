@@ -73,7 +73,7 @@ export default function ReturnLink() {
       {/* A typo used to be the end of it. Both routes lead back to the same
           form with the address still in it, so correcting one character does
           not mean typing the whole thing again. */}
-      <p style={{ marginTop: 12, fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 13, color: '#9A9A9A', textAlign: 'center' }}>
+      <p style={{ marginTop: 12, fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 13, color: '#6E6A66', textAlign: 'center' }}>
         <button onClick={() => setState('open')} style={LINK_BUTTON}>Use a different address</button>
         <span style={{ padding: '0 8px' }}>·</span>
         <button onClick={() => void send()} style={LINK_BUTTON}>Send it again</button>

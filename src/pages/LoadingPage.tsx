@@ -97,7 +97,7 @@ export default function LoadingPage({ error = null, onRetry, archetype = null, o
           <p
             style={{
               marginTop: 20, fontFamily: 'var(--sv-font)', fontWeight: 300,
-              fontSize: 12, lineHeight: 1.6, color: '#9A9A9A', maxWidth: 320,
+              fontSize: 12, lineHeight: 1.6, color: '#6E6A66', maxWidth: 320,
             }}
           >
             {error}

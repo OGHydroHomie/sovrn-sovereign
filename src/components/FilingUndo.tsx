@@ -46,7 +46,7 @@ export default function FilingUndo({ done, onUndo, onExpire }: Props) {
       >
         Undo
       </button>
-      <span style={{ fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 13, color: '#9A9A9A' }}>
+      <span style={{ fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 13, color: '#6E6A66' }}>
         {left}s
       </span>
     </div>

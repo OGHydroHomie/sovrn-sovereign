@@ -137,7 +137,7 @@ export default function SavedBlueprintPage() {
           <SaveCard becoming={profile.becoming} loop={profile.loop} />
         </div>
 
-        <p style={{ marginTop: 26, fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 13, lineHeight: 1.7, color: '#9A9A9A' }}>
+        <p style={{ marginTop: 26, fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 13, lineHeight: 1.7, color: '#6E6A66' }}>
           The written reading was made before it was kept on the server, so it only
           exists in the browser that generated it. Open this page there once and it
           will be here from then on.

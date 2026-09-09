@@ -45,7 +45,7 @@ export default function SurfaceNav({ becoming, children, sticky = false }: Props
           style={{
             flex: 1, minWidth: 0, textAlign: 'center',
             fontFamily: 'var(--sv-font)', fontSize: 11, fontWeight: 700,
-            letterSpacing: '0.14em', color: '#9A9A9A',
+            letterSpacing: '0.14em', color: '#6E6A66',
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}
         >

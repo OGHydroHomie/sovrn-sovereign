@@ -76,7 +76,7 @@ export default function DayOne({ entry: initialEntry, embedded = false }: Props)
             <h2 className="sv-label" style={{ fontSize: 12, color: '#1A1A1A', fontWeight: 700, letterSpacing: '0.1em' }}>
               DAY {entry.day_number}
             </h2>
-            <span className="sv-label" style={{ fontSize: 11, color: '#9A9A9A', letterSpacing: '0.12em' }}>
+            <span className="sv-label" style={{ fontSize: 11, color: '#6E6A66', letterSpacing: '0.12em' }}>
               {entry.completed_at ? 'Complete' : filed ? 'On the record' : 'Your mission'}
             </span>
           </div>
