@@ -56,20 +56,27 @@ export default function RevealCard({ header, teaser, index, children }: Props) {
     const el = panel.current;
     if (!el) return;
 
+    /* The panel's opacity is never touched. It was set to 0 here on mount and
+       nothing ever set it back — only the body inside it was faded in, and a
+       body at opacity 1 inside a panel at opacity 0 is still invisible. Every
+       card opened to nothing, in every browser. Height clips; the body fades;
+       the panel does neither. */
     if (prefersReducedMotion()) {
-      gsap.set(el, { height: open ? 'auto' : 0, opacity: open ? 1 : 0 });
+      gsap.set(el, { height: open ? 'auto' : 0 });
+      gsap.set(body.current, { opacity: open ? 1 : 0 });
       first.current = false;
       return;
     }
 
     if (first.current) {
-      gsap.set(el, { height: 0, opacity: 0 });
+      gsap.set(el, { height: 0 });
+      gsap.set(body.current, { opacity: 0 });
       first.current = false;
       return;
     }
 
-    const ctx = gsap.context(() => {
-      gsap.killTweensOf([el, body.current]);
+    gsap.killTweensOf([el, body.current]);
+    {
       if (open) {
         const tl = gsap.timeline();
         tl.fromTo(el,
@@ -85,8 +92,12 @@ export default function RevealCard({ header, teaser, index, children }: Props) {
         tl.to(body.current, { opacity: 0, duration: T.cards.bodyFade * 0.6, ease: EASE.panel }, 0);
         tl.to(el, { height: 0, duration: T.cards.collapse, ease: EASE.panel }, 0);
       }
-    }, root);
-    return () => ctx.revert();
+    }
+
+    // Tweens are killed rather than reverted. gsap.context().revert() undoes the
+    // properties the tween set, which on a re-run meant undoing the height it had
+    // just animated to.
+    return () => { gsap.killTweensOf([el, body.current]); };
   }, [open]);
 
   return (

@@ -195,14 +195,20 @@ export async function getProfile(): Promise<Profile | null> {
 export async function saveBlueprintRecord(
   parsed: ParsedBlueprint,
   chosen: 'hard' | 'next' | null,
+  /* Their own words for what they want. Day 7 quotes this back verbatim and
+     cannot ask its question without it. */
+  desiredReality?: string,
   /* The reading as generated. Without it the record is a skeleton — a name, a
      loop and two sentences — and /blueprint has nothing to render for someone
-     who arrives from a magic link on a device that never held the text. */
-  blueprintText?: string,
-  /* Their own words for what they want. Day 7 quotes this back verbatim and
-     cannot ask its question without it — and the reading text it came with only
-     ever exists in the browser that generated it. */
-  desiredReality?: string
+     who arrives from a magic link on a device that never held the text.
+
+     These two are both optional strings, which is how they ended up swapped:
+     blueprintText was added as the third parameter, ahead of the desiredReality
+     that was already there, while every call site passed them in the other
+     order. TypeScript had nothing to object to. Order here now matches the call
+     sites, and the argument names at those sites are the only thing keeping them
+     honest. */
+  blueprintText?: string
 ): Promise<void> {
   const uid = await ensureUser();
   if (!uid) return;
