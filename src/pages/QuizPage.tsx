@@ -3,7 +3,7 @@ import gsap from 'gsap';
 import Fade from '../components/Fade';
 import { EASE, prefersReducedMotion } from '../lib/motion';
 import type { QuizData } from '../types';
-import { saveQuizData, saveLead } from '../utils/storage';
+import { saveQuizData, saveLead, getQuizData, saveQuizProgress, getQuizProgress, clearQuizProgress } from '../utils/storage';
 import { captureEmail } from '../lib/capture';
 import { recordConsent } from '../lib/session';
 
@@ -36,7 +36,9 @@ function formatPlace(item: PlaceResult): string {
 }
 
 export default function QuizPage({ onComplete, onBack }: Props) {
-  const [step, setStep] = useState(0);
+  /* Restored, not reset. Answers and position are written on every change, so
+     opening the privacy page mid-quiz costs a tap rather than eight answers. */
+  const [step, setStep] = useState(() => Math.min(getQuizProgress(), TOTAL - 1));
   const [consented, setConsented] = useState(false);
   const [, setDirection] = useState(1);
   const [phase, setPhase] = useState<'quiz' | 'reveal'>('quiz');
@@ -48,7 +50,8 @@ export default function QuizPage({ onComplete, onBack }: Props) {
   const [placeOpen, setPlaceOpen] = useState(false);
   const placeTimer = useRef<number | null>(null);
 
-  const [data, setData] = useState<QuizData>({
+  const [data, setData] = useState<QuizData>(() => ({
+
     name: '',
     birthDate: '',
     birthTime: '',
@@ -58,7 +61,8 @@ export default function QuizPage({ onComplete, onBack }: Props) {
     desiredReality: '',
     repeatingPattern: '',
     email: '',
-  });
+    ...(getQuizData() ?? {}),
+  }));
 
   const update = (field: keyof QuizData, value: string | boolean) =>
     setData((prev) => ({ ...prev, [field]: value }));
@@ -143,6 +147,7 @@ export default function QuizPage({ onComplete, onBack }: Props) {
       // Q8 submit — persist, capture the lead in Supabase, kick off generation.
       // Capture is non-blocking: it runs alongside chart calc + stream.
       saveQuizData(data);
+      clearQuizProgress();
       saveLead(data.name, data.email);
       void recordConsent();
       void captureEmail(data.email, 'quiz');
@@ -186,6 +191,9 @@ export default function QuizPage({ onComplete, onBack }: Props) {
     { n: '08', label: 'Where should we send your blueprint?', helper: "We'll deliver a copy to your inbox too." },
   ];
   const q = QUESTIONS[step];
+
+  useEffect(() => { saveQuizData(data); }, [data]);
+  useEffect(() => { saveQuizProgress(step); }, [step]);
 
   /* The bar tracks a value across quiz and reveal, so it is tweened to width
      rather than re-entered. */
@@ -419,9 +427,9 @@ export default function QuizPage({ onComplete, onBack }: Props) {
                     </label>
 
                     <p style={{ marginTop: 10, marginLeft: 32, fontFamily: 'var(--sv-font)', fontSize: 13, color: '#9A9A9A' }}>
-                      <a href="/privacy" style={{ color: '#1A1A1A' }}>Privacy</a>
+                      <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: '#1A1A1A' }}>Privacy</a>
                       <span style={{ padding: '0 8px' }}>·</span>
-                      <a href="/terms" style={{ color: '#1A1A1A' }}>Terms</a>
+                      <a href="/terms" target="_blank" rel="noopener noreferrer" style={{ color: '#1A1A1A' }}>Terms</a>
                     </p>
                   </>
                 )}

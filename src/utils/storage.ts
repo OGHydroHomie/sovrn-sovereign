@@ -2,6 +2,7 @@ import type { QuizData, BlueprintResult, Analytics } from '../types';
 
 const KEYS = {
   QUIZ_DATA: 'sovrn_quiz_data',
+  QUIZ_STEP: 'sovrn_quiz_step',
   BLUEPRINT: 'sovrn_blueprint',
   ANALYTICS: 'sovrn_analytics',
   LEADS: 'sovrn_leads',
@@ -14,6 +15,23 @@ export function saveQuizData(data: QuizData): void {
 export function getQuizData(): QuizData | null {
   const data = localStorage.getItem(KEYS.QUIZ_DATA);
   return data ? JSON.parse(data) : null;
+}
+
+/* Which question they were on. Kept next to the answers so leaving the quiz —
+   to read the privacy page, or by closing the tab — costs a tap rather than
+   eight answers. Under the sovrn_ prefix, so /delete clears it with the rest. */
+export function saveQuizProgress(step: number): void {
+  localStorage.setItem(KEYS.QUIZ_STEP, String(step));
+}
+
+export function getQuizProgress(): number {
+  const raw = localStorage.getItem(KEYS.QUIZ_STEP);
+  const n = raw === null ? NaN : Number(raw);
+  return Number.isInteger(n) && n >= 0 ? n : 0;
+}
+
+export function clearQuizProgress(): void {
+  localStorage.removeItem(KEYS.QUIZ_STEP);
 }
 
 export function saveBlueprint(result: BlueprintResult): void {
