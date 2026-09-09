@@ -1,0 +1,16 @@
+{
+  "name": "SOVRN",
+  "short_name": "SOVRN",
+  "description": "One act a day, written from what you actually did.",
+  "start_url": "/ledger",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FBFAF7",
+  "theme_color": "#FBFAF7",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

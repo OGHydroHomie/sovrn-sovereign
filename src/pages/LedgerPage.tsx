@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { listEntries, isFiled, type LedgerEntry } from '../lib/ledger';
 import FileDay from '../components/FileDay';
+import InstallPrompt from '../components/InstallPrompt';
 import PaperPage from '../components/PaperPage';
 import NextMorning from '../components/NextMorning';
 import { signalVillain, villainUnlocked } from '../lib/villain';
@@ -261,6 +262,9 @@ export default function LedgerPage() {
           kept in front of them, and a card explaining what already happened is
           just something to read past. */}
       {entries.length > 0 && !entries.some((e) => e.day_number > 1) && <NextMorning />}
+
+      {/* Once there is a record worth coming back to. */}
+      {entries.length > 0 && <InstallPrompt />}
 
       {/* Earned, not advertised. Three days both committed and completed, or it
           does not exist — offering it to someone on day one would make it a
