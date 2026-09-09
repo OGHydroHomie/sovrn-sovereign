@@ -38,7 +38,7 @@ export default function SavedBlueprintPage() {
 
     // Backfill: this device has the reading and the record does not.
     if (local && me && !me.blueprintText) {
-      void saveBlueprintRecord(parseBlueprint(local), me.chosen, undefined, local);
+      void saveBlueprintRecord({ parsed: parseBlueprint(local), chosen: me.chosen, blueprintText: local });
     }
   }, []);
 

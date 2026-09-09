@@ -192,38 +192,60 @@ export async function getProfile(): Promise<Profile | null> {
  * to change, so the unselected act lives here in blueprint_json alongside the
  * rest of the reading. Best effort: a failed write must not block the reveal.
  */
-export async function saveBlueprintRecord(
-  parsed: ParsedBlueprint,
-  chosen: 'hard' | 'next' | null,
-  /* Their own words for what they want. Day 7 quotes this back verbatim and
-     cannot ask its question without it. */
-  desiredReality?: string,
-  /* The reading as generated. Without it the record is a skeleton — a name, a
-     loop and two sentences — and /blueprint has nothing to render for someone
-     who arrives from a magic link on a device that never held the text.
+export interface BlueprintRecord {
+  parsed: ParsedBlueprint;
+  chosen: 'hard' | 'next' | null;
+  /** Their own words for what they want. Day 7 quotes this back verbatim. */
+  desiredReality?: string;
+  /** The reading as generated, in full. */
+  blueprintText?: string;
+}
 
-     These two are both optional strings, which is how they ended up swapped:
-     blueprintText was added as the third parameter, ahead of the desiredReality
-     that was already there, while every call site passed them in the other
-     order. TypeScript had nothing to object to. Order here now matches the call
-     sites, and the argument names at those sites are the only thing keeping them
-     honest. */
-  blueprintText?: string
-): Promise<void> {
+/** A reading has all three section headers. An intake answer never does. */
+export function looksLikeReading(text: string): boolean {
+  return ['WHO YOU ARE', 'THE PATTERN', 'ONE ACT'].every((h) => text.includes(h));
+}
+
+/**
+ * Keep the parsed reading on the person's row.
+ *
+ * Named fields rather than positional arguments, because desiredReality and
+ * blueprintText are both `string | undefined` and sat next to each other: the
+ * reading went into desired_reality and the intake answer into blueprint_text
+ * for two live accounts, and there was nothing for the compiler to catch. An
+ * object cannot be passed in the wrong order.
+ *
+ * The shapes are checked as well as named. A belt on top of braces is worth it
+ * here because the failure is silent, survives a deploy, and is only visible by
+ * reading the database.
+ */
+export async function saveBlueprintRecord(record: BlueprintRecord): Promise<void> {
+  const { parsed, chosen, desiredReality, blueprintText } = record;
   const uid = await ensureUser();
   if (!uid) return;
+
+  const reading = blueprintText?.trim();
+  const desire = desiredReality?.trim();
+
+  // Refuse rather than write a value into the wrong column. Both directions,
+  // because either one alone would have missed the bug that produced this.
+  if (reading && !looksLikeReading(reading)) {
+    console.error('saveBlueprintRecord: blueprintText is not a reading — refusing to store it');
+    return;
+  }
+  if (desire && looksLikeReading(desire)) {
+    console.error('saveBlueprintRecord: desiredReality looks like a reading — arguments are swapped');
+    return;
+  }
 
   const { error } = await supabase
     .from('users')
     .update({
       archetype: parsed.becoming || null,
-      // Kept as columns rather than only inside blueprint_json: both are read
-      // back on other surfaces — one on the Ledger, one by the morning send —
-      // and neither should require re-parsing prose to find.
       recognition_line: parsed.recognitionLine || null,
       declaration_line: parsed.declarationLine || null,
-      ...(blueprintText?.trim() ? { blueprint_text: blueprintText.trim() } : {}),
-      ...(desiredReality?.trim() ? { desired_reality: desiredReality.trim() } : {}),
+      ...(desire ? { desired_reality: desire } : {}),
+      ...(reading ? { blueprint_text: reading } : {}),
       blueprint_json: {
         becoming: parsed.becoming,
         loop: parsed.loop,
