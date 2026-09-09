@@ -49,7 +49,10 @@ against a paraphrase of the code tells you the paraphrase is fine.
 ## Standing conventions
 
 - **Design** is governed by `DESIGN_FROZEN.md`. A visual change to a shipped
-  surface needs a written reason before the commit; put it in the code.
+  surface needs a written reason before the commit; put it in the code. The
+  archetype art spec is `docs/marks.md`.
+- **Nothing internal goes in `public/`.** Everything under it is served at a
+  stable URL. Specs, notes and fixtures go in `docs/`.
 - **Progress** goes in `PROGRESS.md`, one paragraph per task: what shipped, what
   broke, what is open. "What broke" includes your own mistakes and any
   completeness you claimed without checking.

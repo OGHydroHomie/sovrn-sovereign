@@ -1,7 +1,11 @@
 # Archetype marks
 
-One SVG per becoming, named for its slug. Drop the files in here and every
-surface picks them up — the Blueprint reveal, the Ledger header and the
+The art spec. The SVGs themselves live in `public/marks/`; this file does not,
+because everything under `public/` is served, and an internal spec on the open
+web serves no one.
+
+One SVG per becoming, named for its slug. Drop the files into `public/marks/`
+and every surface picks them up — the Blueprint reveal, the Ledger header and the
 shareable card all resolve `/marks/{slug}.svg` at runtime. No code change.
 
 Until a file exists, that becoming falls back to the solid black square.
