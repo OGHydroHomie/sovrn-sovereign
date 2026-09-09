@@ -288,3 +288,28 @@ which appeared before question eight; and the blurred sample is legible and
 labelled instead of a 6px smudge that read as a failed render. **What broke:**
 nothing new. **Open:** #9A9A9A still fails in twelve other files — a palette
 sweep, not a hero fix, and undecided.
+
+## 2026-09-09 · Filing on every surface, and the session
+
+**Shipped** `4ad6b24`, `190f18c`, `6b02be2`, `6ec2efd`. The "I didn't do it"
+control looked missing on `/ledger`; it was there, but `/ledger` was not
+rendering the Ledger. Day 7 was unfiled, so `pickCurrent` selected it, the Day 7
+screen rendered instead, and that screen had no filing controls at all — five
+open days were printed on the week record and none of them could be answered. The
+underlying fault was that the filing block had been written twice and Day 7 had
+neither copy, so `FileDay` is now the only definition and the Ledger, the reveal
+and Day 7 all render it. Day 7 files the most recent unfiled act, and filing it
+reveals the one before. The 6am email now leads with a plain `/ledger` URL rather
+than Supabase's verify endpoint, because almost everyone opening it is already
+signed in and the round trip turned an expired link into an error page for people
+whose session was fine; the magic link stays underneath for a device that has
+never seen the account. The hero links straight to the Ledger when a session
+exists. And the app is installable: `start_url` is `/ledger`, the icons are PNGs
+written byte by byte rather than by adding a rasteriser, and the prompt appears
+once there is a record worth returning to. **What broke:** nothing new, though the
+PWA tags added a second `theme-color` meta that had to come back out. The session
+config was never the problem — `persistSession`, `autoRefreshToken` and a stable
+storage key were all already correct; the loss is browser storage eviction, which
+no client setting defeats and installation does. **Open:** iOS fires no install
+event, so that path is instructions rather than a button, and nobody has yet
+installed it to confirm the session survives in practice.
