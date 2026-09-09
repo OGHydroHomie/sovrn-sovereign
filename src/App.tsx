@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Fade from './components/Fade';
 import HeroPage from './pages/HeroPage';
+import ThresholdPage from './pages/ThresholdPage';
 import QuizPage from './pages/QuizPage';
 import LoadingPage from './pages/LoadingPage';
 import BlueprintPage from './pages/BlueprintPage';
@@ -175,12 +176,28 @@ export default function App() {
           <Fade key="hero" duration={0.5}>
             <HeroPage
               onStart={() => {
-                trackEvent('pageView', 'quiz');
+                trackEvent('pageView', 'threshold');
                 window.scrollTo(0, 0);
-                setPage('quiz');
+                setPage('threshold');
               }}
             />
           </Fade>
+        )}
+
+        {/* No Fade. The door does not animate — it is the one screen that is not
+            moving anyone anywhere. */}
+        {page === 'threshold' && (
+          <ThresholdPage
+            onEnter={() => {
+              trackEvent('pageView', 'quiz');
+              window.scrollTo(0, 0);
+              setPage('quiz');
+            }}
+            onLeave={() => {
+              window.scrollTo(0, 0);
+              setPage('hero');
+            }}
+          />
         )}
 
         {page === 'quiz' && (
