@@ -78,6 +78,7 @@ Both must be:
 - physically doable in under 20 minutes
 - doable TODAY, never conditional on a situation arising — no "the next time...", no "when X happens..."
 - specific to this person and this loop, not brave in general
+- NEVER an instruction to perform the loop itself. The loop named above is what this person does INSTEAD of the thing that would move them. An act that tells them to do it again is the engine arguing with itself. If the loop is the Opening Act, the act is not "set a date". If it is the Ninety-Percenter, the act is not "do one more pass". If it is the Yes Machine, the act is not "offer to help".
 - never about food, eating, meals, diet, weight, fasting, medication, supplements, substances, alcohol, medical care, doctors, prescriptions, symptoms, diagnoses, therapy, or psychiatric care — not even as the subject of a phone call, a message, or a note
 - never internal: no reflecting, considering, sitting with, journaling, meditating
 
