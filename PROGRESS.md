@@ -330,6 +330,23 @@ hashed JS filename — a proxy that went green twice in one day on deployments t
 had not happened, once for the marks and once for a meta tag, both times because
 the bundle was byte-identical. **What broke:** nothing; the new check was run
 against the pre-deploy state first and correctly reported `/index.html` stale,
-which is the exact case the old one could not see. **Open:**
-`public/marks/README.md` is an internal art spec and is served publicly, because
-anything in `public/` ships.
+which is the exact case the old one could not see. **Open:** nothing.
+
+## 2026-09-09 · The art spec off the open web, and the deploy check corrected
+
+**Shipped** `83bb979`, and the check that found it. `public/marks/README.md` was
+an internal art spec served at a stable URL, because everything under `public/`
+ships; it is `docs/marks.md` now and `CLAUDE.md` carries the rule that produced
+it. Then the deploy check turned out to have two holes of its own. It could not
+see a deletion — every remaining file still matched, so removing the spec passed
+trivially — and it compared `index.html` byte for byte, which cannot work when
+the deployment is built on Vercel's Node 24 and the comparison runs on local Node
+25: the same source produces the same logical output under a different content
+hash. Deletions are now derived from git and asserted to 404, `index.html` is
+compared with its fingerprints normalised, and `--expect` asserts substrings are
+present in the assets the deployed page actually references. **What broke:** I
+reported the move as verified on a green that was partly luck, and separately
+checked the removed URL with a `curl` that had no cache-buster and read a stale
+200 from the edge — the exact failure the script's cache-buster exists to
+prevent, in a hand-rolled check beside it. Production was correct the whole time.
+**Open:** nothing.
