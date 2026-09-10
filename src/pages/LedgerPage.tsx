@@ -10,7 +10,7 @@ import { getProfile, type Profile } from '../lib/blueprint';
 import ArchetypeMark from '../components/ArchetypeMark';
 import CycleClosing from '../components/CycleClosing';
 import TargetAdmission from '../components/TargetAdmission';
-import { getOpenCycle, listCycles, daysLeft, type Cycle } from '../lib/cycle';
+import { getOpenCycle, listCycles, daysLeft, retireCycle, type Cycle } from '../lib/cycle';
 import SurfaceNav, { NavLink } from '../components/SurfaceNav';
 import DaySeven from '../components/DaySeven';
 
@@ -47,6 +47,7 @@ export default function LedgerPage() {
   const [cycle, setCycle] = useState<Cycle | null>(null);
   const [cycles, setCycles] = useState<Cycle[]>([]);
   const [naming, setNaming] = useState(false);
+  const [retiring, setRetiring] = useState(false);
 
   const load = useCallback(async () => {
     const [rows, me, open, all] = await Promise.all([
@@ -57,6 +58,7 @@ export default function LedgerPage() {
     setCycle(open);
     setCycles(all);
     setNaming(false);
+    setRetiring(false);
     setState('ready');
   }, []);
 
@@ -222,8 +224,58 @@ export default function LedgerPage() {
           <p style={{ marginTop: 8, fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 14, lineHeight: 1.6, color: '#6E6A66' }}>
             {cycle.rubric}
           </p>
+
+          {/* Low, small, and plain. Retiring is not failure and it is not
+              completion — sometimes the opportunity goes or the thing genuinely
+              changes, and the only dishonest options are pretending it finished
+              or pretending it is still live. The confirmation says exactly what
+              it does and nothing about why they might be doing it. */}
+          {!retiring ? (
+            <button
+              onClick={() => setRetiring(true)}
+              style={{
+                marginTop: 18, background: 'none', border: 'none', padding: '4px 2px',
+                cursor: 'pointer', fontFamily: 'var(--sv-font)', fontWeight: 300,
+                fontSize: 13, color: '#6E6A66',
+                textDecoration: 'underline', textUnderlineOffset: 3,
+              }}
+            >
+              Retire this target
+            </button>
+          ) : (
+            <div style={{ marginTop: 18, borderTop: '1px solid #E4E0D6', paddingTop: 16 }}>
+              <p style={{ fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 15, lineHeight: 1.7, color: '#1A1A1A' }}>
+                This closes the cycle as an attempt. The target, the boundary and every
+                day of it stay on the record. Nothing is marked finished.
+              </p>
+              <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginTop: 14, flexWrap: 'wrap' }}>
+                <button
+                  onClick={() => void (async () => { await retireCycle(); await load(); })()}
+                  style={{
+                    minHeight: 44, background: 'none', color: '#1A1A1A',
+                    border: '1px solid #1A1A1A', borderRadius: 2,
+                    fontFamily: 'var(--sv-font)', fontWeight: 700, fontSize: 12,
+                    textTransform: 'uppercase', letterSpacing: '0.1em',
+                    padding: '14px 20px', cursor: 'pointer',
+                  }}
+                >
+                  Retire it
+                </button>
+                <button
+                  onClick={() => setRetiring(false)}
+                  style={{
+                    background: 'none', border: 'none', padding: '8px 2px', cursor: 'pointer',
+                    fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 14, color: '#6E6A66',
+                    textDecoration: 'underline', textUnderlineOffset: 3,
+                  }}
+                >
+                  Keep it open
+                </button>
+              </div>
+            </div>
+          )}
         </div>
-        )}
+      )}
 
       {/* ── Today, at the top ── */}
       {current ? (
