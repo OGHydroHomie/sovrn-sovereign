@@ -31,13 +31,23 @@ const COLUMNS = 'id, user_id, created_at, day_number, mission_text, committed_at
  * makes this idempotent: a second blueprint on the same device returns the entry
  * already on record instead of a duplicate or an error.
  */
-export async function createDayOneEntry(missionText: string): Promise<LedgerEntry | null> {
+export async function createDayOneEntry(
+  missionText: string,
+  /* The cycle this act serves. The morning job stamps its own; this is the one
+     act written outside it, and without this the first day of every cycle was
+     the only entry not attached to anything. */
+  cycleId?: string | null
+): Promise<LedgerEntry | null> {
   const uid = await ensureUser();
   if (!uid) return null;
 
   const { data, error } = await supabase
     .from('ledger_entries')
-    .insert({ user_id: uid, day_number: 1, mission_text: missionText, committed_at: new Date().toISOString() })
+    .insert({
+      user_id: uid, day_number: 1, mission_text: missionText,
+      committed_at: new Date().toISOString(),
+      ...(cycleId ? { cycle_id: cycleId } : {}),
+    })
     .select(COLUMNS)
     .single();
 

@@ -80,7 +80,7 @@ export default function App() {
   const handleChooseAct = useCallback(
     async (chosen: 'hard' | 'next', missionText: string) => {
       if (!missionText.trim()) return;
-      const entry = await createDayOneEntry(missionText.trim());
+      const entry = await createDayOneEntry(missionText.trim(), cycle?.id);
       if (entry) setDayOne(entry);
       void saveBlueprintRecord({
         parsed: parseBlueprint(blueprintRef.current),
@@ -89,7 +89,7 @@ export default function App() {
         blueprintText: blueprintRef.current,
       });
     },
-    []
+    [cycle]
   );
 
   useEffect(() => {

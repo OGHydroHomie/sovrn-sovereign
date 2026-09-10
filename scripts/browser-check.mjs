@@ -164,6 +164,21 @@ try {
   }
   await shot('04-expanded');
 
+  // ── The card ──────────────────────────────────────────────────────────────
+  const [download] = await Promise.all([
+    page.waitForEvent('download', { timeout: 30000 }),
+    page.getByRole('button', { name: /save your card/i }).first().click(),
+  ]);
+  const path = await download.path();
+  const bytes = new Uint8Array(await readFile(path));
+  const isPng = bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47;
+  const width = new DataView(bytes.buffer).getUint32(16);
+  const height = new DataView(bytes.buffer).getUint32(20);
+
+  check('card downloads as a PNG', isPng);
+  check('card is exactly 1080x1350', width === 1080 && height === 1350, `${width}x${height}`);
+  check('card is not blank', bytes.length > BLANK_CARD_BYTES * 1.4, `${Math.round(bytes.length / 1024)}KB vs ${Math.round(BLANK_CARD_BYTES / 1024)}KB blank`);
+  if (SHOTS) await writeFile(`${SHOTS}/05-card.png`, bytes);
   // ── The target. Named, narrowed, bounded, before any act exists. ─────────
   const naming = page.getByText(/what have you been putting off/i).first();
   await naming.waitFor({ state: 'visible', timeout: 20000 });
@@ -220,7 +235,19 @@ try {
   await field.waitFor({ state: 'visible', timeout: 15000 });
   await field.fill('Sent the paid-pilot offer to three people this morning with the fee in it. One replied already and said no.');
   await page.getByRole('button', { name: /it's done/i }).first().click();
-  await page.waitForTimeout(30000);   // filing, then the crossing read
+  await page.waitForTimeout(25000);   // filing, then the crossing read
+
+  /* The rubric is generated, so a filing written in advance may not satisfy it
+     and the honest answer is UNCLEAR with one question. That is a real path, not
+     a failure — answer it and let the verdict land. */
+  const asked = page.locator('input[type="text"]:visible').first();
+  if (await asked.count()) {
+    const q = await page.locator('body').innerText();
+    check('an unclear filing is asked about, once', /\?/.test(q));
+    await asked.fill('Yes — all three went out this morning, each naming the work and the fee.');
+    await page.getByRole('button', { name: /^answer$/i }).click();
+    await page.waitForTimeout(25000);
+  }
 
   await page.reload({ waitUntil: 'networkidle' });
   await page.waitForTimeout(3000);
@@ -232,21 +259,6 @@ try {
   check('no score, grade or percentage on the record', !/\b\d+%|score|grade|streak\b/i.test(closing));
   await shot('06-cycle-closed');
 
-  // ── The card ──────────────────────────────────────────────────────────────
-  const [download] = await Promise.all([
-    page.waitForEvent('download', { timeout: 30000 }),
-    page.getByRole('button', { name: /save your card/i }).first().click(),
-  ]);
-  const path = await download.path();
-  const bytes = new Uint8Array(await readFile(path));
-  const isPng = bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47;
-  const width = new DataView(bytes.buffer).getUint32(16);
-  const height = new DataView(bytes.buffer).getUint32(20);
-
-  check('card downloads as a PNG', isPng);
-  check('card is exactly 1080x1350', width === 1080 && height === 1350, `${width}x${height}`);
-  check('card is not blank', bytes.length > BLANK_CARD_BYTES * 1.4, `${Math.round(bytes.length / 1024)}KB vs ${Math.round(BLANK_CARD_BYTES / 1024)}KB blank`);
-  if (SHOTS) await writeFile(`${SHOTS}/05-card.png`, bytes);
   // ── Clean up after itself, through the product's own path ────────────────
   if (!KEEP) {
     await page.goto(`${URL_}/delete`, { waitUntil: 'networkidle' });
