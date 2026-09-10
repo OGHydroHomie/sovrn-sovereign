@@ -298,6 +298,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const only = typeof req.query.only === 'string' ? req.query.only.trim() : '';
   const now = new Date();
 
+  /* Thirty days is thirty days. Closed as incomplete, before any act is written,
+     so nobody is handed a new act for a cycle that ran out overnight. No
+     automatic renewal and no silent extension: opening another is an explicit
+     act, and the consequence of expiry is that the thing is still undone. */
+  const { data: expired, error: expErr } = await admin
+    .from('cycles')
+    .update({ closed_at: new Date().toISOString(), close_reason: 'expired' })
+    .is('closed_at', null)
+    .lt('closes_at', new Date().toISOString())
+    .select('id');
+  if (expErr) console.warn('[morning] expiring cycles failed:', expErr.message);
+  else if (expired?.length) console.log(`[morning] expired ${expired.length} cycle(s)`);
+
   const { data: zoneRows, error: zoneErr } = await admin.from('users').select('id, timezone');
   if (zoneErr) return res.status(500).json({ error: zoneErr.message });
 
@@ -375,6 +388,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       continue;
     }
 
+    const { data: cycleRow } = await admin
+      .from('cycles').select('id, target_admitted, rubric, cost, closes_at')
+      .eq('user_id', uid).is('closed_at', null).maybeSingle();
+    const cycle = cycleRow as
+      { id: string; target_admitted: string; rubric: string; cost: string; closes_at: string } | null;
+
     const genRes = await fetch(`${SITE}/api/day2`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -388,6 +407,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         timezone: row?.timezone ?? null,
         // From day 8 the generator reads the whole record, not only yesterday.
         history: nextDay >= 8 ? record : undefined,
+        cycle: cycle ? {
+          target: cycle.target_admitted,
+          rubric: cycle.rubric,
+          cost: cycle.cost,
+          daysLeft: Math.max(0, Math.ceil((new Date(cycle.closes_at).getTime() - Date.now()) / 86400_000)),
+        } : undefined,
         notChosen: bp.chosen === 'hard' ? bp.acts?.next : bp.acts?.hard,
       }),
     });
@@ -404,6 +429,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // this email and was thrown away afterwards; it now travels with the day
       // so the Ledger can lead with it.
       read_line: (day.read ?? '').trim() || null,
+      cycle_id: cycle?.id ?? null,
     });
     if (insErr) { report.skipped.push(`${uid}: insert ${insErr.message}`); continue; }
 

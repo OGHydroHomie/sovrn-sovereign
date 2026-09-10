@@ -8,10 +8,12 @@
  * sample blurred to a smudge, body text at 2.70:1. Those checks answer "does it
  * compile and did it deploy". This one answers "does it work".
  *
- * It drives the whole loop — hero, eight questions, generation, reveal — and
- * then asserts the three things that were broken and could not have been caught
- * any other way: the panels actually open, they contain the reading, and the
- * card exports a real image.
+ * It drives the whole loop — hero, threshold, eight questions, generation,
+ * reveal, naming a target, committing, filing — and asserts what could not have
+ * been caught any other way: the panels open and contain the reading, the card
+ * exports a real image, a target is admitted and narrowed with a boundary shown
+ * before anything is attempted, the boundary survives a reload, and a filing
+ * that meets it closes the cycle onto the record.
  *
  *   node scripts/browser-check.mjs --url https://www.sovrn.online \
  *                                   --email you+bc@gmail.com
@@ -80,6 +82,12 @@ try {
   await shot('01-hero');
 
   await page.getByRole('button', { name: /begin your blueprint/i }).first().click();
+  await page.waitForTimeout(600);
+  {
+    const h = (await page.locator('h1').first().innerText()).trim();
+    check('threshold stands between hero and question one', h === 'This life is yours. Take the reins.');
+    await page.getByRole('button', { name: /i create my fate/i }).click();
+  }
 
   // ── The eight questions ───────────────────────────────────────────────────
   const stamp = Date.now();
@@ -155,6 +163,62 @@ try {
     check(`${header}: panel contains the reading`, text.length > 120, `${text.length} chars`);
   }
   await shot('04-expanded');
+
+  // ── The target. Named, narrowed, bounded, before any act exists. ─────────
+  const naming = page.getByText(/what have you been putting off/i).first();
+  await naming.waitFor({ state: 'visible', timeout: 20000 });
+  check('the reveal asks for a target before offering an act', true);
+
+  await page.locator('textarea').first().fill('Leave my job and start a business');
+  await page.getByRole('button', { name: /^next$/i }).click();
+  await page.waitForTimeout(500);
+
+  await page.getByText(/what does it cost you/i).first().waitFor({ state: 'visible', timeout: 10000 });
+  check('the cost question is required before admission', true);
+  await page.locator('textarea').first().fill(
+    'I am forty-one and I keep saying next year. My kids will remember me as someone who talked about it.'
+  );
+  await page.getByRole('button', { name: /set the target/i }).click();
+
+  const admitted = page.getByRole('button', { name: /that's it/i });
+  await admitted.waitFor({ state: 'visible', timeout: 120000 });
+  const narrowing = await page.locator('body').innerText();
+  check('the narrowing is shown before it is accepted', /try this instead|the target/i.test(narrowing));
+  const rubricLine = (narrowing.match(/Crossed when[^\n]+/i) ?? [''])[0].trim();
+  check('a boundary is shown, and it is crossable alone', rubricLine.length > 20, rubricLine.slice(0, 74));
+  check('the boundary is not another person\'s decision',
+    !/\b(they|he|she)\s+(agree|accept|approve|repl|respond|say yes)/i.test(rubricLine));
+  await admitted.click();
+  await page.waitForTimeout(2500);
+
+  // ── Commit, file, cross ──────────────────────────────────────────────────
+  const commit = page.getByRole('button', { name: /i commit/i }).first();
+  await commit.waitFor({ state: 'visible', timeout: 20000 });
+  await commit.click();
+  await page.waitForTimeout(2500);
+
+  await page.goto(`${URL_}/ledger`, { waitUntil: 'networkidle' });
+  await page.waitForTimeout(2500);
+  const ledger = await page.locator('body').innerText();
+  check('the Ledger shows the cycle above the act', /cycle 1 ·/i.test(ledger));
+  check('the boundary persists across a reload unchanged',
+    rubricLine ? ledger.includes(rubricLine.replace(/\.$/, '').slice(0, 50)) : false);
+
+  const field = page.locator('input#what-happened, input[id^="what-happened"]').first();
+  await field.waitFor({ state: 'visible', timeout: 15000 });
+  await field.fill('Sent the paid-pilot offer to three people this morning with the fee in it. One replied already and said no.');
+  await page.getByRole('button', { name: /it's done/i }).first().click();
+  await page.waitForTimeout(30000);   // filing, then the crossing read
+
+  await page.reload({ waitUntil: 'networkidle' });
+  await page.waitForTimeout(3000);
+  const closing = await page.locator('body').innerText();
+  check('a filing that meets the boundary closes the cycle', /you crossed it/i.test(closing));
+  check('the closing record carries what was named', /what you named/i.test(closing));
+  check('the crossing is not described as verified',
+    /nothing here saw it happen/i.test(closing) && !/verified|confirmed by/i.test(closing));
+  check('no score, grade or percentage on the record', !/\b\d+%|score|grade|streak\b/i.test(closing));
+  await shot('06-cycle-closed');
 
   // ── The card ──────────────────────────────────────────────────────────────
   const [download] = await Promise.all([

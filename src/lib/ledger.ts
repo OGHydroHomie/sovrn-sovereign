@@ -17,9 +17,11 @@ export interface LedgerEntry {
   read_line: string | null;
   /* When the day was filed, either way. Stamped by a trigger, never by us. */
   filed_at: string | null;
+  /* The cycle this act served. Null on entries that predate cycles. */
+  cycle_id: string | null;
 }
 
-const COLUMNS = 'id, user_id, created_at, day_number, mission_text, committed_at, completed_at, what_happened, read_line, filed_at';
+const COLUMNS = 'id, user_id, created_at, day_number, mission_text, committed_at, completed_at, what_happened, read_line, filed_at, cycle_id';
 
 /**
  * Write the Day 1 mission at the moment they commit to it.

@@ -10,6 +10,7 @@ import RevealCard from '../components/RevealCard';
 import ArchetypeMark from '../components/ArchetypeMark';
 import SaveCard from '../components/SaveCard';
 import SurfaceNav, { NavLink } from '../components/SurfaceNav';
+import TargetAdmission from '../components/TargetAdmission';
 import DayOne from '../components/DayOne';
 
 interface Props {
@@ -24,6 +25,10 @@ interface Props {
      render as a record rather than as two buttons. */
   readOnly?: boolean;
   chosen?: 'hard' | 'next' | null;
+  /* Null until a target has been admitted. The acts are not offered before it:
+     an act with nothing to serve is the thing this build exists to end. */
+  hasCycle?: boolean;
+  onCycleOpened?: () => void | Promise<void>;
 }
 
 /* Prose block on paper. */
@@ -56,6 +61,7 @@ function Body({ text }: { text: string }) {
 
 export default function BlueprintPage({
   text, quizData = null, dayOne = null, onChooseAct, readOnly = false, chosen = null,
+  hasCycle = true, onCycleOpened,
 }: Props) {
   /* Derived from the reading, not rolled fresh. It was Math.random() in a state
      initialiser, so the same person's blueprint was No. 6936, then 3289, then
@@ -193,7 +199,9 @@ export default function BlueprintPage({
     </button>
   );
 
-  const oneActTeaser = dayOne
+  const oneActTeaser = !readOnly && !dayOne && !hasCycle
+    ? 'One thing you have been putting off.'
+    : dayOne
     ? teaser(dayOne.mission_text)
     : readOnly
       ? teaser(chosen === 'next' ? bp.nextOne : bp.hardOne)
@@ -303,7 +311,10 @@ export default function BlueprintPage({
           </RevealCard>
 
           <RevealCard header="ONE ACT" teaser={oneActTeaser} index={2}>
-            {dayOne && !readOnly ? (
+            {!readOnly && !dayOne && !hasCycle ? (
+              /* The naming comes first. Everything after it points somewhere. */
+              <TargetAdmission onOpened={() => onCycleOpened?.() ?? undefined} />
+            ) : dayOne && !readOnly ? (
               <DayOne entry={dayOne} embedded />
             ) : (
               <>

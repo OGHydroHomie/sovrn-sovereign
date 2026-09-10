@@ -32,9 +32,13 @@ export default function PaperPage({ title, standfirst, nav, becoming, children }
         <SurfaceNav becoming={becoming} sticky>{nav}</SurfaceNav>
         <div style={{ height: 32 }} />
 
-        <h1 style={{ fontFamily: 'var(--sv-font)', fontSize: 28, fontWeight: 500, lineHeight: 1.25, color: '#000000' }}>
-          {title}
-        </h1>
+        {/* The closing record carries its own heading, so the shell does not
+            print an empty one above it. */}
+        {title && (
+          <h1 style={{ fontFamily: 'var(--sv-font)', fontSize: 28, fontWeight: 500, lineHeight: 1.25, color: '#000000' }}>
+            {title}
+          </h1>
+        )}
 
         {standfirst && (
           <div style={{ marginTop: 10, fontSize: 14, color: '#6E6A66', lineHeight: 1.6 }}>

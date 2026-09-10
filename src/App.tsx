@@ -11,6 +11,7 @@ import { saveBlueprint, getBlueprint, getQuizData, trackEvent } from './utils/st
 import { ensureUser } from './lib/session';
 import { createDayOneEntry, getEntryForDay, type LedgerEntry } from './lib/ledger';
 import { parseBlueprint, saveBlueprintRecord } from './lib/blueprint';
+import { getOpenCycle, type Cycle } from './lib/cycle';
 
 /* DEV-only sample text for previewing the Blueprint screen (?screen=blueprint).
    Never referenced in production paths — only inside an import.meta.env.DEV guard. */
@@ -58,6 +59,7 @@ export default function App() {
      so the name is revealed once, in one continuous movement, rather than
      appearing on one screen and again on the next. */
   const [archetype, setArchetype] = useState<string | null>(null);
+  const [cycle, setCycle] = useState<Cycle | null>(null);
   const blueprintRef = useRef('');
   /* Mirrors quizData for callbacks that must not re-create on every answer. */
   const quizRef = useRef<QuizData | null>(null);
@@ -66,12 +68,14 @@ export default function App() {
      users row, and recover an existing Day 1 entry for a returning visitor. The
      ledger entry itself is written when the person chooses an act, not before:
      the choice is the commitment. */
+  const refreshCycle = useCallback(async () => { setCycle(await getOpenCycle()); }, []);
+
   const openBlueprint = useCallback(async (blueprintText: string, desiredReality?: string) => {
     const parsed = parseBlueprint(blueprintText);
-    const existing = await getEntryForDay(1);
+    const [existing] = await Promise.all([getEntryForDay(1), refreshCycle()]);
     if (existing) setDayOne(existing);
     void saveBlueprintRecord({ parsed, chosen: null, desiredReality, blueprintText });
-  }, []);
+  }, [refreshCycle]);
 
   const handleChooseAct = useCallback(
     async (chosen: 'hard' | 'next', missionText: string) => {
@@ -227,6 +231,8 @@ export default function App() {
               quizData={quizData}
               dayOne={dayOne}
               onChooseAct={handleChooseAct}
+              hasCycle={Boolean(cycle)}
+              onCycleOpened={refreshCycle}
             />
           </Fade>
         )}

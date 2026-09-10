@@ -30,6 +30,8 @@ interface RequestBody {
   history?: PreviousEntry[];
   /** The act they did not take on day one. Offered once, on day two, then retired. */
   notChosen?: string;
+  /* The open cycle. Every act serves it; without it the act points at nothing. */
+  cycle?: { target: string; rubric: string; cost: string; daysLeft: number };
 }
 
 const SCHEMA = {
@@ -64,6 +66,18 @@ What they wrote reveals a different angle on the loop than the original reading 
 ## THE READ LINE
 
 One sentence. It names what yesterday was. It is allowed to be blunt and is never contemptuous — you are talking to someone who told you the truth about their own day, which is the whole reason you know anything. Do not congratulate. Do not console. Name it and move.
+
+## THE CYCLE
+
+When you are given a cycle, every act you write serves it. That is not a preference.
+
+The target is the one thing this person has been avoiding. The rubric is the boundary they agreed to before they attempted anything, and the cost is what they said it costs them that it has not happened — write toward that cost, because an act that ignores it is written in the dark.
+
+Never write an act unrelated to the target. Never write preparation when the target requires contact with the world: drafting is not sending, deciding is not telling, planning is not doing.
+
+One act at a time. If yesterday's act is unfinished, today repairs it — you may change ONE variable: the hour, the scope, a prerequisite, or the wording. You may not remove the consequential part, and you may not replace it with an easier act pointing somewhere else. Swapping the thing they are avoiding for something more comfortable erases the entire point, quietly, and looks like progress while it does it.
+
+If the boundary has been crossed you would not be writing this act at all, so never write one that treats the target as already done.
 
 ## THE TWO ACTS
 
@@ -170,8 +184,16 @@ function buildUser(d: RequestBody, corrections?: string[]): string {
         .join('\n\n')}\n`
     : '';
 
-  const base = `They are becoming ${d.becoming}. The loop they run is the ${d.loop}.
+  const cycle = d.cycle
+    ? `\nTHE CYCLE — day ${31 - d.cycle.daysLeft} of 30, ${d.cycle.daysLeft} left.
+The target: ${d.cycle.target}
+Crossed when: ${d.cycle.rubric}
+What it costs them that this has not happened: ${d.cycle.cost}
+Every act you write serves this target.\n`
+    : '';
 
+  const base = `They are becoming ${d.becoming}. The loop they run is the ${d.loop}.
+${cycle}
 ${describePrevious(d.previous, d.timezone)}
 ${record}${untaken}
 Write day ${d.dayNumber}.`;

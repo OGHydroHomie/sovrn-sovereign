@@ -8,6 +8,9 @@ import NextMorning from '../components/NextMorning';
 import { signalVillain, villainUnlocked } from '../lib/villain';
 import { getProfile, type Profile } from '../lib/blueprint';
 import ArchetypeMark from '../components/ArchetypeMark';
+import CycleClosing from '../components/CycleClosing';
+import TargetAdmission from '../components/TargetAdmission';
+import { getOpenCycle, listCycles, daysLeft, type Cycle } from '../lib/cycle';
 import SurfaceNav, { NavLink } from '../components/SurfaceNav';
 import DaySeven from '../components/DaySeven';
 
@@ -41,11 +44,19 @@ export default function LedgerPage() {
      they were counted if the write did not land. */
   const [villain, setVillain] = useState<'ok' | 'failed' | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [cycle, setCycle] = useState<Cycle | null>(null);
+  const [cycles, setCycles] = useState<Cycle[]>([]);
+  const [naming, setNaming] = useState(false);
 
   const load = useCallback(async () => {
-    const [rows, me] = await Promise.all([listEntries(), getProfile()]);
+    const [rows, me, open, all] = await Promise.all([
+      listEntries(), getProfile(), getOpenCycle(), listCycles(),
+    ]);
     setEntries(rows);
     setProfile(me);
+    setCycle(open);
+    setCycles(all);
+    setNaming(false);
     setState('ready');
   }, []);
 
@@ -91,6 +102,30 @@ export default function LedgerPage() {
         <p style={{ marginTop: 12, fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 15, lineHeight: 1.7, color: '#6E6A66' }}>
           Open the newest link from your email, on the device you actually want to use.
         </p>
+      </PaperPage>
+    );
+  }
+
+  /* A cycle that has ended, and nothing open. The record of it is the page —
+     there is nothing else the Ledger could usefully be showing. */
+  const lastClosed = cycles.find((c) => c.closed_at);
+  if (!cycle && lastClosed && !naming) {
+    return (
+      <PaperPage title="" becoming={profile?.becoming} nav={<NavLink href="/blueprint">Your Blueprint</NavLink>}>
+        <CycleClosing
+          cycle={lastClosed}
+          entries={entries}
+          timezone={profile?.timezone ?? null}
+          onNext={() => setNaming(true)}
+        />
+      </PaperPage>
+    );
+  }
+
+  if (!cycle && naming) {
+    return (
+      <PaperPage title="Name the next one" becoming={profile?.becoming} nav={<NavLink href="/blueprint">Your Blueprint</NavLink>}>
+        <TargetAdmission onOpened={load} />
       </PaperPage>
     );
   }
@@ -195,6 +230,20 @@ export default function LedgerPage() {
           </p>
         )}
 
+        {cycle && (
+          <div style={{ marginBottom: 26, borderBottom: '1px solid #E4E0D6', paddingBottom: 20 }}>
+            <p className="sv-label" style={{ fontSize: 11, letterSpacing: '0.14em', color: '#6E6A66' }}>
+              CYCLE {cycle.cycle_number} · {daysLeft(cycle)} DAYS LEFT
+            </p>
+            <p style={{ marginTop: 10, fontFamily: 'var(--sv-font)', fontWeight: 400, fontSize: 17, lineHeight: 1.5, color: '#000000' }}>
+              {cycle.target_admitted}
+            </p>
+            <p style={{ marginTop: 8, fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 14, lineHeight: 1.6, color: '#6E6A66' }}>
+              {cycle.rubric}
+            </p>
+          </div>
+        )}
+
         {/* The read, before anything else and larger than the act it introduces.
             This sentence is the app saying it watched — the reason there is any
             point coming back — and it used to exist only inside the 6am email,
@@ -221,7 +270,7 @@ export default function LedgerPage() {
             {current.mission_text}
           </p>
 
-          <FileDay entry={current} onChanged={load} />
+          <FileDay entry={current} onChanged={load} onCrossed={load} />
         </div>
         </>
       ) : (

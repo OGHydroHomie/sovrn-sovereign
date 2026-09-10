@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { fileEntry, undoFiling, type LedgerEntry } from '../lib/ledger';
 import FilingUndo from './FilingUndo';
+import { checkCrossing } from '../lib/cycle';
 
 interface Props {
   entry: LedgerEntry;
+  /* Called when the filing crossed the cycle's boundary and closed it. */
+  onCrossed?: () => void | Promise<void>;
   /** Called after a filing or an undo lands, so the surface can re-read. */
   onChanged?: () => void | Promise<void>;
   /** Shown above the field. The Day 7 screen names the day; the Ledger does not. */
@@ -17,11 +20,14 @@ interface Props {
    days on the record and file none of them. Every surface that can file a day
    now renders this component, which is the only way "same size, same weight,
    same field, same undo" stays true rather than being re-typed and drifting. */
-export default function FileDay({ entry, onChanged, heading }: Props) {
+export default function FileDay({ entry, onChanged, onCrossed, heading }: Props) {
   const [text, setText] = useState('');
   const [saving, setSaving] = useState(false);
   const [failed, setFailed] = useState(false);
   const [justFiled, setJustFiled] = useState<{ done: boolean } | null>(null);
+  /* Set when the account was too thin to read against the boundary. Asked once. */
+  const [question, setQuestion] = useState<string | null>(null);
+  const [answer, setAnswer] = useState('');
 
   const ready = text.trim().length > 0;
   const fieldId = `what-happened-${entry.id}`;
@@ -36,6 +42,25 @@ export default function FileDay({ entry, onChanged, heading }: Props) {
     setJustFiled({ done });
     setText('');
     await onChanged?.();
+
+    /* Only a day filed as done can cross. The check reads the account against
+       the boundary agreed before any of this was attempted — it cannot know the
+       message exists, and nothing here calls it verified. */
+    if (done) {
+      const result = await checkCrossing(entry.id);
+      if (result?.verdict === 'UNCLEAR' && result.question) setQuestion(result.question);
+      else if (result?.closed) await onCrossed?.();
+    }
+  };
+
+  const clarify = async () => {
+    if (!answer.trim() || saving) return;
+    setSaving(true);
+    const result = await checkCrossing(entry.id, answer);
+    setSaving(false);
+    setQuestion(null);
+    setAnswer('');
+    if (result?.closed) await onCrossed?.();
   };
 
   const undo = async () => {
@@ -46,6 +71,44 @@ export default function FileDay({ entry, onChanged, heading }: Props) {
     if (back?.what_happened) setFailed(true);
     await onChanged?.();
   };
+
+  if (question) {
+    return (
+      <div style={{ marginTop: 16, borderTop: '1px solid #E4E0D6', paddingTop: 16 }}>
+        <p style={{ fontFamily: 'var(--sv-font)', fontWeight: 400, fontSize: 16, lineHeight: 1.6, color: '#1A1A1A' }}>
+          {question}
+        </p>
+        <input
+          type="text"
+          value={answer}
+          autoFocus
+          onChange={(e) => setAnswer(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') void clarify(); }}
+          style={{
+            marginTop: 12, width: '100%', minHeight: 48, boxSizing: 'border-box',
+            background: 'transparent', color: '#1A1A1A',
+            border: '1px solid #E4E0D6', borderRadius: 2,
+            fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 16, padding: '12px 14px',
+          }}
+        />
+        <button
+          onClick={() => void clarify()}
+          disabled={!answer.trim() || saving}
+          style={{
+            marginTop: 12, width: '100%', minHeight: 48,
+            background: answer.trim() ? '#000000' : '#E4E0D6',
+            color: answer.trim() ? '#FBFAF7' : '#9A9A9A',
+            border: 'none', borderRadius: 2,
+            fontFamily: 'var(--sv-font)', fontWeight: 700, fontSize: 12,
+            textTransform: 'uppercase', letterSpacing: '0.1em', padding: '16px 12px',
+            cursor: answer.trim() && !saving ? 'pointer' : 'not-allowed',
+          }}
+        >
+          {saving ? 'Reading it…' : 'Answer'}
+        </button>
+      </div>
+    );
+  }
 
   if (justFiled) {
     return (
