@@ -198,7 +198,10 @@ try {
   if ((await oneAct.getAttribute('aria-expanded')) !== 'true') await oneAct.click();
   await page.waitForTimeout(900);
 
-  const commit = page.getByRole('button', { name: /^i commit$/i }).first();
+  /* Target the act by its label, not by "I COMMIT". The accessible name of that
+     button is its whole contents — label, act text and the words on it — so an
+     anchored match on the last part never matches anything. */
+  const commit = page.getByRole('button', { name: /the hard one/i }).first();
   await commit.waitFor({ state: 'visible', timeout: 20000 });
   check('the acts are offered once a target exists', true);
   await commit.click();
