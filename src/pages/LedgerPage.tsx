@@ -211,6 +211,20 @@ export default function LedgerPage() {
       becoming={profile?.becoming}
       nav={<NavLink href="/blueprint">Your Blueprint</NavLink>}
     >
+      {cycle && (
+        <div style={{ marginBottom: 26, borderBottom: '1px solid #E4E0D6', paddingBottom: 20 }}>
+          <p className="sv-label" style={{ fontSize: 11, letterSpacing: '0.14em', color: '#6E6A66' }}>
+            CYCLE {cycle.cycle_number} · {daysLeft(cycle)} DAYS LEFT
+          </p>
+          <p style={{ marginTop: 10, fontFamily: 'var(--sv-font)', fontWeight: 400, fontSize: 17, lineHeight: 1.5, color: '#000000' }}>
+            {cycle.target_admitted}
+          </p>
+          <p style={{ marginTop: 8, fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 14, lineHeight: 1.6, color: '#6E6A66' }}>
+            {cycle.rubric}
+          </p>
+        </div>
+        )}
+
       {/* ── Today, at the top ── */}
       {current ? (
         <>
@@ -228,20 +242,6 @@ export default function LedgerPage() {
           >
             {profile.recognitionLine}
           </p>
-        )}
-
-        {cycle && (
-          <div style={{ marginBottom: 26, borderBottom: '1px solid #E4E0D6', paddingBottom: 20 }}>
-            <p className="sv-label" style={{ fontSize: 11, letterSpacing: '0.14em', color: '#6E6A66' }}>
-              CYCLE {cycle.cycle_number} · {daysLeft(cycle)} DAYS LEFT
-            </p>
-            <p style={{ marginTop: 10, fontFamily: 'var(--sv-font)', fontWeight: 400, fontSize: 17, lineHeight: 1.5, color: '#000000' }}>
-              {cycle.target_admitted}
-            </p>
-            <p style={{ marginTop: 8, fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 14, lineHeight: 1.6, color: '#6E6A66' }}>
-              {cycle.rubric}
-            </p>
-          </div>
         )}
 
         {/* The read, before anything else and larger than the act it introduces.

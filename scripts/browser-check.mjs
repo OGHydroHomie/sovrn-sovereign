@@ -192,10 +192,19 @@ try {
   await page.waitForTimeout(2500);
 
   // ── Commit, file, cross ──────────────────────────────────────────────────
-  const commit = page.getByRole('button', { name: /i commit/i }).first();
+  // The ONE ACT panel re-renders when the target is admitted, so it is opened
+  // again rather than assumed to still be open.
+  const oneAct = page.getByRole('button', { name: /one act/i }).first();
+  if ((await oneAct.getAttribute('aria-expanded')) !== 'true') await oneAct.click();
+  await page.waitForTimeout(900);
+
+  const commit = page.getByRole('button', { name: /^i commit$/i }).first();
   await commit.waitFor({ state: 'visible', timeout: 20000 });
+  check('the acts are offered once a target exists', true);
   await commit.click();
-  await page.waitForTimeout(2500);
+  await page.waitForTimeout(4000);
+  check('committing writes the first act of the cycle',
+    /what actually happened/i.test(await page.locator('body').innerText()));
 
   await page.goto(`${URL_}/ledger`, { waitUntil: 'networkidle' });
   await page.waitForTimeout(2500);
