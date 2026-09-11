@@ -20,7 +20,16 @@ export function markSlug(becoming: string): string {
 }
 
 /** Where the mark lives, or null if there is no becoming to name one for. */
+/* The marks are raster now. They arrived as 896x1216 PNGs replacing the SVGs,
+   so the extension moved with them — every mark 404'd and fell back to the
+   square until it did. */
+export const MARK_EXT = 'png';
+
+/* Width over height, as delivered. The art is portrait, not square, and every
+   slot that renders it was built for a square. */
+export const MARK_ASPECT = 896 / 1216;
+
 export function markUrl(becoming: string | null | undefined): string | null {
   const slug = markSlug(becoming ?? '');
-  return slug ? `${MARK_DIR}/${slug}.svg` : null;
+  return slug ? `${MARK_DIR}/${slug}.${MARK_EXT}` : null;
 }

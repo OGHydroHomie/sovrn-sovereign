@@ -196,7 +196,7 @@ export default function LedgerPage() {
      Ledger and nothing else is reachable from it. */
   const becomingLine = profile?.becoming ? (
     <span style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-      <ArchetypeMark becoming={profile.becoming} size={34} />
+      <ArchetypeMark becoming={profile.becoming} size={34} basis="height" />
       <span style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
         <span>
           {profile.becoming}

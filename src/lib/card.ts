@@ -1,4 +1,4 @@
-import { markUrl } from './marks';
+import { markUrl, MARK_ASPECT } from './marks';
 
 /* The shareable card.
 
@@ -127,10 +127,18 @@ export function drawCard(ctx: Ctx, content: CardContent, mark: CanvasImageSource
   ctx.fillStyle = CARD.paper;
   ctx.fillRect(0, 0, CARD.width, CARD.height);
 
+  /* The mark's HEIGHT is what the layout was tuned around — the block runs 320
+     to 800 and the name sits under it — so height is held and width follows the
+     art. Forcing 896x1216 into a square would squash it by a third. The fallback
+     stays square: it is the loading square, not a stand-in for missing art. */
   const { size, top } = LAYOUT.mark;
   ctx.fillStyle = CARD.ink;
-  if (mark) ctx.drawImage(mark, cx - size / 2, top, size, size);
-  else ctx.fillRect(cx - size / 2, top, size, size);
+  if (mark) {
+    const w = size * MARK_ASPECT;
+    ctx.drawImage(mark, cx - w / 2, top, w, size);
+  } else {
+    ctx.fillRect(cx - size / 2, top, size, size);
+  }
 
   ctx.textAlign = 'left';
   ctx.textBaseline = 'alphabetic';
