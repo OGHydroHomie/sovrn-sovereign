@@ -43,6 +43,15 @@ export const T = {
     trackingMax: 0.45,   // em
   },
 
+  /* The commit. A circuit closing, not a reward — the whole thing is over in a
+     third of a second and nothing bounces. The trace runs the border, the card
+     inverts for a frame and a half, and it settles. */
+  commit: {
+    trace: 0.28,
+    flash: 0.06,
+    settle: 0.34,
+  },
+
   /* Day 7 runs the same sequence slower. It is the only purely rewarding
      moment in the product and it is allowed to take its time. */
   daySeven: {

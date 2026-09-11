@@ -233,3 +233,15 @@
 @media (prefers-reduced-motion: reduce) {
   .sv-chevron { animation: none; }
 }
+
+/* The commit flash. The card inverts whole — field and every piece of type in
+   it — for sixty milliseconds. A class rather than inline styles because the act
+   card sets colour on its children individually, and the flash has to take all
+   of them at once. */
+.sv-commit-flash {
+  background: #000000 !important;
+  border-color: #000000 !important;
+}
+.sv-commit-flash * {
+  color: #FBFAF7 !important;
+}

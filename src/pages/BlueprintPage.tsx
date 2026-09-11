@@ -11,6 +11,7 @@ import ArchetypeMark from '../components/ArchetypeMark';
 import SaveCard from '../components/SaveCard';
 import SurfaceNav, { NavLink } from '../components/SurfaceNav';
 import TargetAdmission from '../components/TargetAdmission';
+import ActButton from '../components/ActButton';
 import DayOne from '../components/DayOne';
 
 interface Props {
@@ -183,26 +184,13 @@ export default function BlueprintPage({
   };
 
   const actButton = (which: 'hard' | 'next', label: string, body: string) => (
-    <button
-      onClick={() => void choose(which)}
+    <ActButton
+      label={label}
+      body={body}
+      committing={saving === which}
       disabled={saving !== null}
-      style={{
-        display: 'block', width: '100%', textAlign: 'left',
-        background: 'none', border: '1px solid #1A1A1A', borderRadius: 2,
-        padding: '20px 18px 22px', marginTop: 14, cursor: saving ? 'wait' : 'pointer',
-        fontFamily: 'var(--sv-font)',
-      }}
-    >
-      <span style={{ display: 'block', fontSize: 10, fontWeight: 700, letterSpacing: '0.16em', color: '#6E6A66' }}>
-        {label}
-      </span>
-      <span style={{ display: 'block', marginTop: 10, fontSize: 'clamp(18px, 4.8vw, 21px)', lineHeight: 1.45, fontWeight: 400, color: '#000000' }}>
-        {body}
-      </span>
-      <span style={{ display: 'block', marginTop: 16, fontSize: 12, fontWeight: 700, letterSpacing: '0.14em', color: '#000000' }}>
-        {saving === which ? 'COMMITTING...' : 'I COMMIT'}
-      </span>
-    </button>
+      onCommit={() => void choose(which)}
+    />
   );
 
   const oneActTeaser = !readOnly && !dayOne && !hasCycle
