@@ -33,7 +33,6 @@ export default function SurfaceNav({ becoming, children, sticky = false }: Props
     >
       <a
         href="/"
-        aria-label="SOVRN"
         style={{ textDecoration: 'none', flex: 'none', lineHeight: 1 }}
       >
         <Wordmark />

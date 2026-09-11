@@ -8,40 +8,38 @@ interface Props {
   color?: string;
 }
 
-/* SOVRN, with the mark in place of the O.
+/* SOVRN, drifting.
 
-   The square breathes on exactly the cycle and ease the loading square breathes
-   on, because it is the same object: one signature appearing at the top of every
-   page and again, large, while a reading is being written. Two different
-   movements would make the second one a decoration.
+   The whole mark rises three pixels and settles back over four seconds. That is
+   the cycle and the ease the loading square breathes on — the tempo is what
+   makes the two the same gesture, not the transform — so the header moves like
+   the rest of the product rather than at its own speed.
 
-   Nothing else moves. Under prefers-reduced-motion nothing moves at all — the
-   square is still the mark, it is simply still.
+   Nothing else. No fade, no scale, no colour, no hover.
 
-   The square is aria-hidden and the link carries the name, so this reads as
-   "SOVRN" rather than as "S VRN". */
+   Under prefers-reduced-motion it does not move at all. */
 export default function Wordmark({ size = 13, color = '#1A1A1A' }: Props) {
-  const square = useRef<HTMLSpanElement>(null);
+  const mark = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
-    if (prefersReducedMotion() || !square.current) return;
+    if (prefersReducedMotion() || !mark.current) return;
     const ctx = gsap.context(() => {
-      gsap.to(square.current, {
-        scale: T.wordmark.breatheScale,
-        duration: T.wordmark.breatheCycle / 2,
+      gsap.to(mark.current, {
+        y: -T.wordmark.rise,
+        duration: T.wordmark.cycle / 2,
         ease: EASE.breath,
         yoyo: true,
         repeat: -1,
-        transformOrigin: 'center center',
       });
-    }, square);
+    }, mark);
     return () => ctx.revert();
   }, []);
 
   return (
     <span
-      aria-hidden="true"
+      ref={mark}
       style={{
+        display: 'inline-block',
         fontSize: size,
         letterSpacing: '0.22em',
         fontWeight: 700,
@@ -49,21 +47,7 @@ export default function Wordmark({ size = 13, color = '#1A1A1A' }: Props) {
         whiteSpace: 'nowrap',
       }}
     >
-      S
-      <span
-        ref={square}
-        style={{
-          display: 'inline-block',
-          width: '0.62em',
-          height: '0.62em',
-          background: 'currentColor',
-          /* Sits inside the cap height rather than on the baseline, so it reads
-             as a letter in the word and not as a bullet between two of them. */
-          verticalAlign: '0.03em',
-          marginRight: '0.02em',
-        }}
-      />
-      VRN
+      SOVRN
     </span>
   );
 }

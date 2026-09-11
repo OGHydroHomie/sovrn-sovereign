@@ -42,7 +42,7 @@ export default function AboutPage() {
   return (
     <div style={{ minHeight: '100svh', background: '#FBFAF7', color: '#1A1A1A', padding: '28px 22px 80px' }}>
       <div style={{ maxWidth: 620, margin: '0 auto' }}>
-        <a href="/" aria-label="SOVRN" style={{ textDecoration: 'none', lineHeight: 1 }}>
+        <a href="/" style={{ textDecoration: 'none', lineHeight: 1 }}>
           <Wordmark />
         </a>
 
