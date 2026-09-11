@@ -36,13 +36,19 @@ export default function ActButton({ label, body, committing, disabled, onCommit 
     if (!el) return;
     const measure = () => {
       const r = el.getBoundingClientRect();
-      setBox({ w: Math.round(r.width), h: Math.round(r.height) });
+      const next = { w: Math.round(r.width), h: Math.round(r.height) };
+      setBox((prev) => (prev && prev.w === next.w && prev.h === next.h ? prev : next));
     };
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(el);
     return () => ro.disconnect();
   }, [body]);
+
+  /* Hidden once, by the thing that will later show it. */
+  useEffect(() => {
+    if (outline.current) gsap.set(outline.current, { opacity: 0 });
+  }, [box]);
 
   const play = () => {
     const reduced = prefersReducedMotion();
@@ -94,12 +100,16 @@ export default function ActButton({ label, body, committing, disabled, onCommit 
           aria-hidden="true"
           style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
         >
+          {/* No opacity in the style prop. React reapplies whatever is there on
+              every render, and a render lands mid-trace the moment `committing`
+              flips — which reset the rect to invisible and left the line drawing
+              where nobody could see it. GSAP owns this property now, start to
+              finish, and hides it on mount. */}
           <rect
             ref={outline}
             x={0.5} y={0.5} width={Math.max(0, box.w - 1)} height={Math.max(0, box.h - 1)}
             rx={2}
             fill="none" stroke="#000000" strokeWidth={1}
-            style={{ opacity: 0 }}
           />
         </svg>
       )}
