@@ -76,7 +76,7 @@ export default function HeroPage({ onStart }: Props) {
           {/* The wordmark, and the actual one. This was a hardcoded div with a
               comment calling it the wordmark, so animating the component left
               the homepage — the first thing anyone sees — perfectly still. */}
-          <Wordmark tracking="0.28em" />
+          <Wordmark />
 
           {/* 32px → headline — one line, all bone. The power is in the phrase. */}
           <h1

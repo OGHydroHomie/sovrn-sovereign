@@ -34,12 +34,13 @@ export const T = {
     staticFill: 0.5,       // reduced motion: one frozen frame, half full
   },
 
-  /* The header wordmark drifts. Four seconds up and back, the same cycle and
-     ease the square breathes on — it is the tempo that makes them the same
-     gesture, not the transform. */
+  /* The header wordmark breathes on its tracking. The letters open out and
+     close again; the mark itself does not move. Same sine ease as the square,
+     a slower cycle because the movement is wider. */
   wordmark: {
-    cycle: 4.0,
-    rise: 3,   // px
+    cycle: 5.0,
+    trackingMin: 0.15,   // em
+    trackingMax: 0.45,   // em
   },
 
   /* Day 7 runs the same sequence slower. It is the only purely rewarding
