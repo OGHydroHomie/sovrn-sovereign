@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import Wordmark from './Wordmark';
 
 interface Props {
   /** Shown between the mark and the link. Omitted when there is no reading yet. */
@@ -32,12 +33,10 @@ export default function SurfaceNav({ becoming, children, sticky = false }: Props
     >
       <a
         href="/"
-        style={{
-          fontSize: 13, letterSpacing: '0.22em', fontWeight: 700,
-          color: '#1A1A1A', textDecoration: 'none', flex: 'none',
-        }}
+        aria-label="SOVRN"
+        style={{ textDecoration: 'none', flex: 'none', lineHeight: 1 }}
       >
-        SOVRN
+        <Wordmark />
       </a>
 
       {becoming && (

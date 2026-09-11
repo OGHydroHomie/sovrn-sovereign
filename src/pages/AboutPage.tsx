@@ -1,4 +1,5 @@
 import ArchetypeMark from '../components/ArchetypeMark';
+import Wordmark from '../components/Wordmark';
 import FoundingSeat from '../components/FoundingSeat';
 import { BECOMINGS, LOOPS } from '../lib/archetypes';
 
@@ -41,11 +42,8 @@ export default function AboutPage() {
   return (
     <div style={{ minHeight: '100svh', background: '#FBFAF7', color: '#1A1A1A', padding: '28px 22px 80px' }}>
       <div style={{ maxWidth: 620, margin: '0 auto' }}>
-        <a
-          href="/"
-          style={{ fontSize: 13, letterSpacing: '0.22em', fontWeight: 700, color: '#1A1A1A', textDecoration: 'none' }}
-        >
-          SOVRN
+        <a href="/" aria-label="SOVRN" style={{ textDecoration: 'none', lineHeight: 1 }}>
+          <Wordmark />
         </a>
 
         {/* ── 1. The line ── */}

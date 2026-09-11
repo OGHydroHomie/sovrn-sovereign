@@ -34,6 +34,16 @@ export const T = {
     staticFill: 0.5,       // reduced motion: one frozen frame, half full
   },
 
+  /* The header wordmark. The square in S-VRN takes the loading square's breath —
+     same four-second cycle, same sine ease — so the two read as one signature
+     rather than as a mark and a decoration that happen to both move. The scale
+     is a shade wider because the wordmark is small and 1.03 on a nine-pixel
+     square is invisible. */
+  wordmark: {
+    breatheCycle: 4.0,
+    breatheScale: 1.04,
+  },
+
   /* Day 7 runs the same sequence slower. It is the only purely rewarding
      moment in the product and it is allowed to take its time. */
   daySeven: {
