@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { trackEvent } from '../utils/storage';
+import Wordmark from '../components/Wordmark';
 import ReturnLink from '../components/ReturnLink';
 
 interface Props {
@@ -72,10 +73,10 @@ export default function HeroPage({ onStart }: Props) {
         }}
       >
         <div style={{ maxWidth: 340, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          {/* Wordmark */}
-          <div className="sv-eyebrow" style={{ fontSize: 13, letterSpacing: '0.28em', color: '#1A1A1A' }}>
-            SOVRN
-          </div>
+          {/* The wordmark, and the actual one. This was a hardcoded div with a
+              comment calling it the wordmark, so animating the component left
+              the homepage — the first thing anyone sees — perfectly still. */}
+          <Wordmark tracking="0.28em" />
 
           {/* 32px → headline — one line, all bone. The power is in the phrase. */}
           <h1

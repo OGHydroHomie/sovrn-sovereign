@@ -6,6 +6,9 @@ interface Props {
   /** Rendered size of the wordmark. */
   size?: number;
   color?: string;
+  /* The hero sets the mark slightly wider than the headers do. Kept as a prop so
+     there is still one wordmark rather than two that look alike. */
+  tracking?: string;
 }
 
 /* SOVRN, drifting.
@@ -18,7 +21,7 @@ interface Props {
    Nothing else. No fade, no scale, no colour, no hover.
 
    Under prefers-reduced-motion it does not move at all. */
-export default function Wordmark({ size = 13, color = '#1A1A1A' }: Props) {
+export default function Wordmark({ size = 13, color = '#1A1A1A', tracking = '0.22em' }: Props) {
   const mark = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
@@ -41,7 +44,7 @@ export default function Wordmark({ size = 13, color = '#1A1A1A' }: Props) {
       style={{
         display: 'inline-block',
         fontSize: size,
-        letterSpacing: '0.22em',
+        letterSpacing: tracking,
         fontWeight: 700,
         color,
         whiteSpace: 'nowrap',
