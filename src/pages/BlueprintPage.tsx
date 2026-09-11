@@ -31,6 +31,12 @@ interface Props {
   onCycleOpened?: () => void | Promise<void>;
 }
 
+const QUIET_LINK: React.CSSProperties = {
+  background: 'none', border: 'none', padding: '8px 2px', cursor: 'pointer',
+  fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 14, color: '#6E6A66',
+  textDecoration: 'underline', textUnderlineOffset: 3,
+};
+
 /* Prose block on paper. */
 function Body({ text }: { text: string }) {
   return (
@@ -182,18 +188,18 @@ export default function BlueprintPage({
       disabled={saving !== null}
       style={{
         display: 'block', width: '100%', textAlign: 'left',
-        background: 'none', border: '1px solid #E4E0D6', borderRadius: 2,
-        padding: '16px 16px 18px', marginTop: 12, cursor: saving ? 'wait' : 'pointer',
+        background: 'none', border: '1px solid #1A1A1A', borderRadius: 2,
+        padding: '20px 18px 22px', marginTop: 14, cursor: saving ? 'wait' : 'pointer',
         fontFamily: 'var(--sv-font)',
       }}
     >
       <span style={{ display: 'block', fontSize: 10, fontWeight: 700, letterSpacing: '0.16em', color: '#6E6A66' }}>
         {label}
       </span>
-      <span style={{ display: 'block', marginTop: 8, fontSize: 16, lineHeight: 1.5, fontWeight: 400, color: '#1A1A1A' }}>
+      <span style={{ display: 'block', marginTop: 10, fontSize: 'clamp(18px, 4.8vw, 21px)', lineHeight: 1.45, fontWeight: 400, color: '#000000' }}>
         {body}
       </span>
-      <span style={{ display: 'block', marginTop: 12, fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', color: '#000000' }}>
+      <span style={{ display: 'block', marginTop: 16, fontSize: 12, fontWeight: 700, letterSpacing: '0.14em', color: '#000000' }}>
         {saving === which ? 'COMMITTING...' : 'I COMMIT'}
       </span>
     </button>
@@ -310,7 +316,7 @@ export default function BlueprintPage({
             <Body text={bp.thePattern} />
           </RevealCard>
 
-          <RevealCard header="ONE ACT" teaser={oneActTeaser} index={2}>
+          <RevealCard header="ONE ACT" teaser={oneActTeaser} index={2} defaultOpen>
             {!readOnly && !dayOne && !hasCycle ? (
               /* The naming comes first. Everything after it points somewhere. */
               <TargetAdmission onOpened={() => onCycleOpened?.() ?? undefined} />
@@ -332,22 +338,18 @@ export default function BlueprintPage({
           <div style={{ borderTop: '1px solid #E4E0D6' }} />
         </div>
 
-        {/* Footer */}
+        {/* Footer.
+
+            Nothing about sharing before there is something to share. Download
+            and the card only exist once an act has been committed, and they are
+            text links when they do — a full-width button for the shareable
+            artifact sitting under a collapsed act was the page saying which of
+            the two it thought mattered. */}
         <div style={{ marginTop: 44, textAlign: 'center' }}>
-          <button
-            onClick={handleDownload}
-            style={{
-              width: '100%', maxWidth: 320, minHeight: 48,
-              background: 'none', color: '#1A1A1A', border: '1px solid #1A1A1A', borderRadius: 2,
-              fontFamily: 'var(--sv-font)', fontWeight: 700, fontSize: 12,
-              textTransform: 'uppercase', letterSpacing: '0.12em', padding: '16px 24px', cursor: 'pointer',
-            }}
-          >
-            Download
-          </button>
-          {bp.becoming && (
-            <div style={{ marginTop: 12, display: 'flex', justifyContent: 'center' }}>
-              <SaveCard becoming={bp.becoming} loop={bp.loop} />
+          {(dayOne || readOnly) && (
+            <div style={{ display: 'flex', gap: 18, justifyContent: 'center', flexWrap: 'wrap' }}>
+              <button onClick={handleDownload} style={QUIET_LINK}>Download</button>
+              {bp.becoming && <SaveCard becoming={bp.becoming} loop={bp.loop} quiet />}
             </div>
           )}
 

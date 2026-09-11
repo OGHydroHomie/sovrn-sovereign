@@ -9,6 +9,9 @@ interface Props {
   loop?: string | null;
   /** Set on day 7. Its presence is what makes this the resolved card. */
   earnedAt?: Date | null;
+  /* A text link rather than a button. On the reveal the act is the point and
+     the card is a footnote to it. */
+  quiet?: boolean;
 }
 
 type State = 'idle' | 'working' | 'failed';
@@ -16,7 +19,7 @@ type State = 'idle' | 'working' | 'failed';
 /* One control, one artefact. Everything on the card is the becoming, the mark,
    one line, and the domain — nothing the person typed goes near it, so this is
    safe to post without them having to think about what is on it. */
-export default function SaveCard({ becoming, loop = null, earnedAt = null }: Props) {
+export default function SaveCard({ becoming, loop = null, earnedAt = null, quiet = false }: Props) {
   const [state, setState] = useState<State>('idle');
 
   const run = async () => {
@@ -50,7 +53,12 @@ export default function SaveCard({ becoming, loop = null, earnedAt = null }: Pro
       <button
         onClick={() => void run()}
         disabled={state === 'working'}
-        style={{
+        style={quiet ? {
+          background: 'none', border: 'none', padding: '8px 2px',
+          cursor: state === 'working' ? 'wait' : 'pointer',
+          fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 14, color: '#6E6A66',
+          textDecoration: 'underline', textUnderlineOffset: 3,
+        } : {
           width: '100%', maxWidth: 320, minHeight: 48,
           background: 'none', color: '#1A1A1A',
           border: '1px solid #1A1A1A', borderRadius: 2,

@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import Anthropic from '@anthropic-ai/sdk';
 import { safetyCheck } from './_safety.js';
+import { checkExposure } from './_exposure.js';
 
 export const config = {
   maxDuration: 60,
@@ -73,7 +74,13 @@ When you are given a cycle, every act you write serves it. That is not a prefere
 
 The target is the one thing this person has been avoiding. The rubric is the boundary they agreed to before they attempted anything, and the cost is what they said it costs them that it has not happened — write toward that cost, because an act that ignores it is written in the dark.
 
-Never write an act unrelated to the target. Never write preparation when the target requires contact with the world: drafting is not sending, deciding is not telling, planning is not doing.
+Never write an act unrelated to the target.
+
+If the target requires contact with the world — someone receiving something, something becoming visible, something leaving their hands — then NEITHER act may be completable in private. The test is one question: when the act is finished, has anyone other than this person encountered anything? If the answer is no, you have written the avoidance with an act's face on it.
+
+Under such a target these are not acts, whatever they cost emotionally: writing or noting for themselves, recording a voice memo for themselves, drafting, choosing, listing, planning, rehearsing, deciding, getting something ready. Anything that ends with the work still in their possession.
+
+THE NEXT ONE moves TOWARD the target. An act can be public, honest and brave and still point at a different project, a different relationship or a general improvement. Moving is not moving toward. If it does not shorten the distance to the boundary, it is the wrong act.
 
 One act at a time. If yesterday's act is unfinished, today repairs it — you may change ONE variable: the hour, the scope, a prerequisite, or the wording. You may not remove the consequential part, and you may not replace it with an easier act pointing somewhere else. Swapping the thing they are avoiding for something more comfortable erases the entire point, quietly, and looks like progress while it does it.
 
@@ -270,6 +277,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // Same gate as everything else that puts an instruction in front of a person.
       const hardOk = await safetyCheck(client, draft.hard, `day${body.dayNumber}:hard`);
       const nextOk = await safetyCheck(client, draft.next, `day${body.dayNumber}:next`);
+
+      /* An act nobody sees is not an act when the target needs the world. */
+      if (hardOk && nextOk && body.cycle) {
+        const ctx = `Target: ${body.cycle.target}\nCrossed when: ${body.cycle.rubric}`;
+        const [h, n] = await Promise.all([
+          checkExposure(client, ctx, draft.hard, 'hard', `day${body.dayNumber}:hard`),
+          checkExposure(client, ctx, draft.next, 'next', `day${body.dayNumber}:next`),
+        ]);
+        if (h.verdict !== 'CLEAR' || n.verdict !== 'CLEAR') {
+          corrections = [
+            h.verdict !== 'CLEAR' ? `THE HARD ONE was rejected: ${h.reason ?? 'it can be finished without anyone else encountering anything.'}` : '',
+            n.verdict !== 'CLEAR' ? `THE NEXT ONE was rejected: ${n.reason ?? 'it does not move toward the target.'}` : '',
+          ].filter(Boolean);
+          continue;
+        }
+      }
+
       if (!hardOk || !nextOk) {
         corrections = [
           'an act was blocked by the safety filter — it must not touch anything medical, dietary, psychiatric, substance-related, or involving self-harm, fasting, or restriction. Choose entirely different acts.',

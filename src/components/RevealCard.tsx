@@ -7,6 +7,9 @@ interface Props {
   teaser: string;
   /** Stagger index — cards enter T.cards.stagger apart. */
   index: number;
+  /* Open on arrival. ONE ACT uses it: the act is the point of the page and a
+     collapsed toggle is not the loudest thing on any screen. */
+  defaultOpen?: boolean;
   children: ReactNode;
 }
 
@@ -22,8 +25,8 @@ function Chevron({ open }: { open: boolean }) {
   );
 }
 
-export default function RevealCard({ header, teaser, index, children }: Props) {
-  const [open, setOpen] = useState(false);
+export default function RevealCard({ header, teaser, index, defaultOpen = false, children }: Props) {
+  const [open, setOpen] = useState(defaultOpen);
   const panelId = useId();
   const root = useRef<HTMLDivElement>(null);
   const panel = useRef<HTMLDivElement>(null);
@@ -69,8 +72,8 @@ export default function RevealCard({ header, teaser, index, children }: Props) {
     }
 
     if (first.current) {
-      gsap.set(el, { height: 0 });
-      gsap.set(body.current, { opacity: 0 });
+      gsap.set(el, { height: open ? 'auto' : 0 });
+      gsap.set(body.current, { opacity: open ? 1 : 0 });
       first.current = false;
       return;
     }
@@ -135,7 +138,7 @@ export default function RevealCard({ header, teaser, index, children }: Props) {
         <Chevron open={open} />
       </button>
 
-      <div id={panelId} ref={panel} style={{ overflow: 'hidden', height: 0 }}>
+      <div id={panelId} ref={panel} style={{ overflow: 'hidden', height: defaultOpen ? 'auto' : 0 }}>
         <div ref={body} style={{ paddingBottom: 26 }}>{children}</div>
       </div>
     </div>

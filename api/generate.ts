@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import Anthropic from '@anthropic-ai/sdk';
 import { safetyCheck } from './_safety.js';
 import { prescribesLoop } from './_loopcheck.js';
+import { checkExposure } from './_exposure.js';
 import { findInventedClaims, type InventedClaim } from './_grounding.js';
 /* The thirteen live in one module because day 7 re-runs the becoming selection
    against the same list. Two copies of a closed list is a list that drifts. */
@@ -195,6 +196,17 @@ own words are all untouched by these. Bluntness is fine. Presumption about their
 life is fine. Assertion about their circumstances, their ability, their work, or what
 they own is not.
 
+When THE PATTERN is about being seen — hiding the work, not sending it, not
+putting a name on it — neither act may be completable in private. If nobody else
+encounters anything by the time the act is finished, it is the avoidance with an
+act's face on it. Writing for themselves, recording for themselves, drafting,
+choosing, planning, rehearsing and deciding are not acts under that pattern,
+however uncomfortable they feel. The work has to leave their hands.
+
+THE NEXT ONE moves TOWARD what they said they want. An act can be public, honest,
+brave and still be pointed at something else entirely. Moving is not moving
+toward.
+
 Neither act may instruct the behaviour you have just named in THE PATTERN as this
 person's avoidance. You are describing the move they make instead of the one that
 would change things; telling them to make that move again is the reading
@@ -368,12 +380,19 @@ async function vetActs(client: Anthropic, text: string, data: RequestBody): Prom
 
     const safe = await safetyCheck(client, act, `blueprint:${kind}`);
     const repeatsLoop = safe && (await prescribesLoop(client, pattern, act, `blueprint:${kind}`));
-    if (safe && !repeatsLoop) continue;
+    const exposure = safe && !repeatsLoop
+      ? await checkExposure(client, pattern, act, kind, `blueprint:${kind}`)
+      : { verdict: 'CLEAR' as const, reason: null };
+    if (safe && !repeatsLoop && exposure.verdict === 'CLEAR') continue;
 
-    const replacement = await regenerateAct(client, kind, data, act, repeatsLoop ? pattern : undefined);
+    const why = repeatsLoop ? pattern
+      : exposure.verdict !== 'CLEAR' ? `${pattern}\n\nThe previous act was rejected: ${exposure.reason ?? 'it could be finished without anyone else encountering anything.'}`
+      : undefined;
+    const replacement = await regenerateAct(client, kind, data, act, why);
     if (replacement
       && (await safetyCheck(client, replacement, `blueprint:${kind}:retry`))
-      && !(await prescribesLoop(client, pattern, replacement, `blueprint:${kind}:retry`))) {
+      && !(await prescribesLoop(client, pattern, replacement, `blueprint:${kind}:retry`))
+      && (await checkExposure(client, pattern, replacement, kind, `blueprint:${kind}:retry`)).verdict === 'CLEAR') {
       out = writeAct(out, kind, replacement);
       continue;
     }
