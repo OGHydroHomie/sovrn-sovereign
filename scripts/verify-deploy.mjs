@@ -87,7 +87,13 @@ const absent = [
   ...(arg('absent', '').split(',').map((s) => s.trim()).filter(Boolean)),
 ];
 
-const files = (await walk(DIST)).map((f) => '/' + relative(DIST, f).split('\\').join('/'));
+/* Dotfiles are dropped. Vite copies everything in public/ into dist/, including
+   a .DS_Store macOS writes the moment the folder is opened in Finder, and Vercel
+   will not serve a dotfile — so expecting one means the check fails forever over
+   a file that is not part of the site and never could be. */
+const files = (await walk(DIST))
+  .map((f) => '/' + relative(DIST, f).split('\\').join('/'))
+  .filter((f) => !f.split('/').some((part) => part.startsWith('.')));
 const stable = files.filter((f) => !isFingerprinted(f));
 const hashed = files.filter(isFingerprinted);
 
