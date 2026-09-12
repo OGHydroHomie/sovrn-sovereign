@@ -1,6 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import gsap from 'gsap';
 import Fade from '../components/Fade';
+import AscentField, { CLIMB_MS } from '../components/AscentField';
+import { typeIsPaper } from '../lib/ascent';
 import { EASE, prefersReducedMotion } from '../lib/motion';
 import type { QuizData } from '../types';
 import { saveQuizData, saveLead, getQuizData, saveQuizProgress, getQuizProgress, clearQuizProgress } from '../utils/storage';
@@ -126,8 +128,84 @@ export default function QuizPage({ onComplete, onBack }: Props) {
     setStep(next);
   };
 
+  /* The climb.
+
+     Steps 5 through 8 are the four altitudes — the fear, the life, the pattern,
+     and the birth details at the top. Everything before them is on paper with no
+     field at all, which is why the climb has a first step rather than starting
+     at question one.
+
+       0.0s  the field begins to descend, density interpolating with it
+       0.2s  the question fades out
+       0.9s  the next question fades in
+       1.2s  settled, and another move is allowed
+
+     The step itself changes at 0.9s rather than at 0.0s: the text has to be gone
+     before it is replaced, and the palette inverts with the step, so the type
+     changes colour in the gap where nobody can see it happen. */
+  const CLIMB_FIRST = 4;
+  const onClimb = phase === 'quiz' && step >= CLIMB_FIRST;
+  const altitude = Math.max(0, step - CLIMB_FIRST);
+
+  const [climbTo, setClimbTo] = useState(altitude);
+  const [climbing, setClimbing] = useState(false);
+  const qRef = useRef<HTMLDivElement>(null);
+  /* The whole column the person is working in — question, field, and both
+     controls. The clearing is measured from this rather than from the question
+     alone, because "Back" sits below the question and at ground level it was
+     landing in the dense ground with nothing behind it to read against. */
+  const columnRef = useRef<HTMLDivElement>(null);
+  const climbTimers = useRef<number[]>([]);
+
+  useEffect(() => () => { climbTimers.current.forEach(clearTimeout); }, []);
+
+  /* The wrapper is faded out by hand on the way out; the Fade inside handles the
+     way in. Reset it the moment the new step mounts or the second question of
+     the climb would arrive already invisible. */
+  useLayoutEffect(() => {
+    if (qRef.current) gsap.set(qRef.current, { opacity: 1 });
+  }, [step]);
+
+  /* Move between two altitudes. Returns false if it declined — either because a
+     move is already running, or because there is no field to move. */
+  const climb = (nextStep: number, dir: 1 | -1): boolean => {
+    if (climbing) return false;
+    if (nextStep < CLIMB_FIRST || step < CLIMB_FIRST) return false;
+
+    const reduced = prefersReducedMotion();
+    setClimbTo(nextStep - CLIMB_FIRST);
+
+    if (reduced) {
+      /* No movement, and no waiting on a movement that is not happening. The
+         field still changes density between the two altitudes — that is the
+         information — and the question is simply replaced. */
+      window.scrollTo(0, 0);
+      goTo(nextStep, dir);
+      return true;
+    }
+
+    setClimbing(true);
+    climbTimers.current.forEach(clearTimeout);
+    climbTimers.current = [
+      window.setTimeout(() => {
+        if (qRef.current) {
+          gsap.to(qRef.current, { opacity: 0, duration: 0.3, ease: EASE.out });
+        }
+      }, 200),
+      window.setTimeout(() => {
+        window.scrollTo(0, 0);
+        goTo(nextStep, dir);
+      }, 900),
+      /* A floor under the lock. The field reports when it settles, but if it
+         were ever unmounted mid-move nothing would report anything, and the
+         quiz would be stuck with no way forward. */
+      window.setTimeout(() => setClimbing(false), CLIMB_MS + 120),
+    ];
+    return true;
+  };
+
   const advance = () => {
-    if (!canProceed()) return;
+    if (!canProceed() || climbing) return;
 
     // After Q4 (birthplace) → chart-insight reveal, then Q5
     if (step === 3) {
@@ -141,6 +219,7 @@ export default function QuizPage({ onComplete, onBack }: Props) {
     }
 
     if (step < TOTAL - 1) {
+      if (climb(step + 1, 1)) return;
       window.scrollTo(0, 0);
       goTo(step + 1, 1);
     } else {
@@ -156,7 +235,11 @@ export default function QuizPage({ onComplete, onBack }: Props) {
   };
 
   const back = () => {
+    if (climbing) return;
     if (step > 0) {
+      /* Going back down is the same move in reverse, for the same reason it is
+         the same move forward: the ground has to come back up to meet you. */
+      if (climb(step - 1, -1)) return;
       window.scrollTo(0, 0);
       goTo(step - 1, -1);
     } else {
@@ -169,6 +252,29 @@ export default function QuizPage({ onComplete, onBack }: Props) {
     update('birthTime', '');
     window.scrollTo(0, 0);
     goTo(3, 1);
+  };
+
+  /* Swipe to climb. The three deep questions are textareas, so a key binding is
+     not available — space and return belong to whoever is writing in them. A
+     vertical drag is the only gesture the form is not already using. */
+  const touch = useRef<{ y: number; t: number } | null>(null);
+  const SWIPE_PX = 64;
+  const SWIPE_MS = 800;
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    touch.current = { y: e.touches[0].clientY, t: Date.now() };
+  };
+  const onTouchEnd = (e: React.TouchEvent) => {
+    const start = touch.current;
+    touch.current = null;
+    if (!start || climbing) return;
+    /* A drag inside a scrolled textarea is someone selecting text, not climbing. */
+    const target = e.target as HTMLElement | null;
+    if (target && target.closest('textarea, input')) return;
+    const dy = e.changedTouches[0].clientY - start.y;
+    if (Date.now() - start.t > SWIPE_MS) return;
+    if (dy < -SWIPE_PX) advance();
+    else if (dy > SWIPE_PX) back();
   };
 
   const onEnterKey = (e: React.KeyboardEvent) => {
@@ -207,10 +313,32 @@ export default function QuizPage({ onComplete, onBack }: Props) {
     return () => { tween.kill(); };
   }, [progressValue]);
 
+  /* The type inverts with the step, not with the field's live position, so the
+     colour changes at 0.9s — inside the gap where the question is faded out. */
+  const paperType = onClimb && typeIsPaper(altitude);
+
   return (
-    <div style={{ minHeight: '100svh', display: 'flex', flexDirection: 'column', padding: '0 20px' }}>
+    <div
+      data-climb={onClimb ? '' : undefined}
+      data-tone={paperType ? 'paper' : undefined}
+      onTouchStart={onClimb ? onTouchStart : undefined}
+      onTouchEnd={onClimb ? onTouchEnd : undefined}
+      style={{
+        minHeight: '100svh', display: 'flex', flexDirection: 'column', padding: '0 20px',
+        position: 'relative',
+        /* The field is fixed behind everything; this keeps the questions above it. */
+        ...(onClimb ? { color: 'var(--sv-ink)' } : {}),
+      }}
+    >
+      {onClimb && (
+        <AscentField
+          altitude={climbTo}
+          onSettled={() => setClimbing(false)}
+          clearFor={columnRef}
+        />
+      )}
       {/* Progress bar — persistent across quiz + reveal so it animates 48 → 55 → 64 */}
-      <div style={{ paddingTop: 24, maxWidth: 480, width: '100%', margin: '0 auto' }}>
+      <div style={{ position: 'relative', zIndex: 1, paddingTop: 24, maxWidth: 480, width: '100%', margin: '0 auto' }}>
         <div style={{ height: 3, borderRadius: 999, background: '#E4E0D6', overflow: 'hidden' }}>
           <div
             ref={progressRef}
@@ -221,7 +349,7 @@ export default function QuizPage({ onComplete, onBack }: Props) {
 
       {phase === 'reveal' ? (
         /* ── Chart-insight reveal — auto-advances after 4s ── */
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', paddingBottom: 40 }}>
+        <div style={{ position: 'relative', zIndex: 1, flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', paddingBottom: 40 }}>
           <Fade duration={0.8} y={10}>
             <p className="sv-label" style={{ fontSize: 11, color: '#6E6A66', letterSpacing: '0.22em', fontWeight: 700 }}>
               That was the easy part
@@ -242,21 +370,25 @@ export default function QuizPage({ onComplete, onBack }: Props) {
         </div>
       ) : (
       /* ── Question body — one per screen, vertically centered ── */
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-        <div style={{ position: 'relative', maxWidth: 340, width: '100%', margin: '0 auto', paddingBottom: 40 }}>
+      <div style={{ position: 'relative', zIndex: 1, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+        <div ref={columnRef} style={{ position: 'relative', maxWidth: 340, width: '100%', margin: '0 auto', paddingBottom: 40 }}>
           {/* Decorative question number */}
           <div
             className="sv-label"
             aria-hidden="true"
-            style={{ position: 'absolute', top: -64, right: 0, fontSize: 48, fontWeight: 700, color: 'rgba(26,26,26,0.08)' }}
+            style={{ position: 'absolute', top: -64, right: 0, fontSize: 48, fontWeight: 700, color: 'var(--sv-ghost)' }}
           >
             {q.n}
           </div>
 
+          {/* The wrapper is what leaves; the Fade inside is what arrives. Two
+              elements because the outgoing question has to be faded by hand at
+              0.2s while the incoming one is still 700ms away from existing. */}
+          <div ref={qRef}>
           <Fade key={step} duration={0.3} y={10}>
               <h2
                 className="sv-display"
-                style={{ fontWeight: 700, fontSize: 'clamp(22px, 6.4vw, 26px)', lineHeight: 1.25, color: '#1A1A1A' }}
+                style={{ fontWeight: 700, fontSize: 'clamp(22px, 6.4vw, 26px)', lineHeight: 1.25, color: 'var(--sv-ink)' }}
               >
                 {q.label}
               </h2>
@@ -293,7 +425,7 @@ export default function QuizPage({ onComplete, onBack }: Props) {
                       onKeyDown={onEnterKey}
                       className="sv-field"
                     />
-                    <p className="sv-serif" style={{ marginTop: 10, fontSize: 13, color: '#6E6A66', lineHeight: 1.5 }}>
+                    <p className="sv-serif" style={{ marginTop: 10, fontSize: 13, color: 'var(--sv-mute)', lineHeight: 1.5 }}>
                       {q.helper}
                     </p>
                     <button
@@ -310,7 +442,7 @@ export default function QuizPage({ onComplete, onBack }: Props) {
                         cursor: 'pointer',
                         fontFamily: 'var(--sv-font)',
                         fontSize: 13,
-                        color: '#1A1A1A',
+                        color: 'var(--sv-ink)',
                         textDecoration: 'underline',
                         textUnderlineOffset: 3,
                       }}
@@ -353,7 +485,7 @@ export default function QuizPage({ onComplete, onBack }: Props) {
                                   padding: '10px 14px', textAlign: 'left', cursor: 'pointer',
                                   background: 'transparent', border: 'none',
                                   borderTop: idx === 0 ? 'none' : '1px solid #E4E0D6',
-                                  color: '#1A1A1A', fontFamily: 'var(--sv-font)', fontSize: 15, lineHeight: 1.4,
+                                  color: 'var(--sv-ink)', fontFamily: 'var(--sv-font)', fontSize: 15, lineHeight: 1.4,
                                 }}
                                 onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(26,26,26,0.05)')}
                                 onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
@@ -365,7 +497,7 @@ export default function QuizPage({ onComplete, onBack }: Props) {
                         </ul>
                       )}
                     </div>
-                    <p className="sv-serif" style={{ marginTop: 10, fontSize: 13, color: '#6E6A66', lineHeight: 1.5 }}>
+                    <p className="sv-serif" style={{ marginTop: 10, fontSize: 13, color: 'var(--sv-mute)', lineHeight: 1.5 }}>
                       {q.helper}
                     </p>
                   </>
@@ -373,7 +505,7 @@ export default function QuizPage({ onComplete, onBack }: Props) {
 
                 {(step === 4 || step === 5 || step === 6) && (
                   <>
-                    <p className="sv-serif" style={{ marginBottom: 12, fontSize: 13, color: '#6E6A66', lineHeight: 1.5 }}>
+                    <p className="sv-serif" style={{ marginBottom: 12, fontSize: 13, color: 'var(--sv-mute)', lineHeight: 1.5 }}>
                       {q.helper}
                     </p>
                     <textarea
@@ -402,7 +534,7 @@ export default function QuizPage({ onComplete, onBack }: Props) {
                       placeholder="your@email.com"
                       className="sv-field"
                     />
-                    <p className="sv-serif" style={{ marginTop: 10, fontSize: 13, color: '#6E6A66', lineHeight: 1.5 }}>
+                    <p className="sv-serif" style={{ marginTop: 10, fontSize: 13, color: 'var(--sv-mute)', lineHeight: 1.5 }}>
                       {q.helper}
                     </p>
 
@@ -420,21 +552,22 @@ export default function QuizPage({ onComplete, onBack }: Props) {
                         onChange={(e) => setConsented(e.target.checked)}
                         style={{ width: 20, height: 20, marginTop: 1, flexShrink: 0, accentColor: '#1A1A1A', cursor: 'pointer' }}
                       />
-                      <span style={{ fontFamily: 'var(--sv-font)', fontSize: 13, lineHeight: 1.6, color: '#6E6A66' }}>
+                      <span style={{ fontFamily: 'var(--sv-font)', fontSize: 13, lineHeight: 1.6, color: 'var(--sv-mute)' }}>
                         I understand my birth data and answers are used to generate my
                         Blueprint and are stored to keep my Ledger.
                       </span>
                     </label>
 
-                    <p style={{ marginTop: 10, marginLeft: 32, fontFamily: 'var(--sv-font)', fontSize: 13, color: '#6E6A66' }}>
-                      <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: '#1A1A1A' }}>Privacy</a>
+                    <p style={{ marginTop: 10, marginLeft: 32, fontFamily: 'var(--sv-font)', fontSize: 13, color: 'var(--sv-mute)' }}>
+                      <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--sv-ink)' }}>Privacy</a>
                       <span style={{ padding: '0 8px' }}>·</span>
-                      <a href="/terms" target="_blank" rel="noopener noreferrer" style={{ color: '#1A1A1A' }}>Terms</a>
+                      <a href="/terms" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--sv-ink)' }}>Terms</a>
                     </p>
                   </>
                 )}
               </div>
           </Fade>
+          </div>
 
           {/* Actions */}
           <div style={{ marginTop: 32, display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
@@ -455,7 +588,7 @@ export default function QuizPage({ onComplete, onBack }: Props) {
                 cursor: 'pointer',
                 fontFamily: 'var(--sv-font)',
                 fontSize: 14,
-                color: '#6E6A66',
+                color: 'var(--sv-mute)',
               }}
             >
               ← Back

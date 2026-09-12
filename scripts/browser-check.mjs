@@ -141,6 +141,45 @@ const context = await browser.newContext({
   acceptDownloads: true,
 });
 const page = await context.newPage();
+
+/* The hand-over between the loading screen and the reveal.
+
+   The crystallization opens on frame one of the mark at full card size, and it
+   is meant to continue the black square the loading screen just finished
+   filling — no fade, no gap, no flash of empty paper between two screens. That
+   is a claim about a single animation frame, so it is checked by sampling every
+   animation frame and asserting that no rendered frame has neither object on it.
+   Nothing else in this file can see a defect that lasts 16ms. */
+await page.addInitScript(() => {
+  window.__seam = { on: false, t0: 0, cardAt: null, samples: [] };
+  const vis = (el) => {
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    let o = 1, n = el;
+    while (n && n !== document.body) { o *= Number(getComputedStyle(n).opacity); n = n.parentElement; }
+    return { area: Math.max(0, r.width) * Math.max(0, r.height), o: Number(o.toFixed(3)) };
+  };
+  window.__seam.start = () => {
+    const s = window.__seam;
+    if (s.on) return;
+    s.on = true;
+    s.t0 = performance.now();
+    const tick = () => {
+      /* The loading square is the only 2px black-bordered box in the product;
+         the card is the only thing that ever shows frame one of a mark. */
+      const square = [...document.querySelectorAll('div')].find((d) => {
+        const cs = getComputedStyle(d);
+        return cs.borderTopWidth === '2px' && cs.borderTopColor === 'rgb(0, 0, 0)';
+      });
+      const card = document.querySelector('img[src*="-x1.png"]');
+      s.samples.push({ t: Math.round(performance.now() - s.t0), sq: vis(square), card: vis(card) });
+      if (card && s.cardAt === null) s.cardAt = performance.now();
+      const done = s.cardAt !== null && performance.now() - s.cardAt > 4000;
+      if (!done && performance.now() - s.t0 < 180000) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  };
+});
 page.on('pageerror', (e) => check('no uncaught page errors', false, e.message.slice(0, 120)));
 
 console.log(`browser-check: ${URL_}\n`);
@@ -231,6 +270,7 @@ try {
     await page.getByRole('button', { name: /continue|reveal|blueprint|next/i }).first().click();
   }
   check('quiz accepted all eight answers', true);
+  await page.evaluate(() => window.__seam.start());
   await shot('02-loading');
 
   // ── Generation and the reveal ─────────────────────────────────────────────
@@ -252,6 +292,32 @@ try {
   }, null, { timeout: 20000, polling: 'raf' }).catch(() => {});
   await page.waitForTimeout(300);   // and a beat past the last easing frame
   await shot('03-reveal');
+
+  /* The hand-over. Read before anything else on this page is touched. */
+  {
+    const seam = await page.evaluate(() => window.__seam.samples);
+    const on = (o) => o && o.area > 100 && o.o > 0.01;
+    const lastSquare = [...seam].reverse().find((x) => on(x.sq));
+    const firstCard = seam.find((x) => on(x.card));
+
+    if (!firstCard) {
+      /* No crystallization ran — the frames did not decode in time, which is a
+         legitimate outcome and not a seam. Say so rather than passing quietly. */
+      check('the reveal hands over with no blank frame', true,
+        'crystallization did not run this time; the finished mark was used');
+    } else if (!lastSquare) {
+      check('the reveal hands over with no blank frame', false,
+        'the loading square was never seen, so the hand-over cannot be judged');
+    } else {
+      const between = seam.filter((x) => x.t > lastSquare.t && x.t < firstCard.t);
+      const blank = between.filter((x) => !on(x.sq) && !on(x.card));
+      check('the reveal hands over with no blank frame', blank.length === 0,
+        `square last at ${lastSquare.t}ms, card first at ${firstCard.t}ms, `
+        + `${between.length} frame(s) between, ${blank.length} empty`);
+      check('frame one arrives at full opacity', firstCard.card.o > 0.99,
+        `opacity ${firstCard.card.o} on its first painted frame`);
+    }
+  }
 
   const name = (await page.locator('h1').first().innerText()).trim();
   check('archetype name is on the reveal', /^THE [A-Z ]+$/.test(name), JSON.stringify(name));

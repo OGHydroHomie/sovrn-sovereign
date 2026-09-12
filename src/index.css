@@ -29,6 +29,9 @@
   --sv-mute: #6E6A66;
   --sv-faint: #6E6A66;      /* alias of --sv-mute; see --color-faint */
   --sv-line: #E4E0D6;
+  /* The decorative question number, which is ink at 8%. Named because the climb
+     inverts it along with everything else and an inline rgba() cannot follow. */
+  --sv-ghost: rgba(26, 26, 26, 0.08);
 
   /* DESIGN_FROZEN.md: Geist Sans only, Inter the sole fallback, no display font.
      The three legacy roles all resolve to the same family — there is no second
@@ -244,4 +247,40 @@
 }
 .sv-commit-flash * {
   color: #FBFAF7 !important;
+}
+
+/* ── The climb ────────────────────────────────────────────────────────────────
+   At the depths and at the stars the dither field covers almost the whole
+   screen in ink, so the question has to be set in paper rather than in ink. The
+   whole palette is redefined on the quiz root rather than at each element: the
+   fields, the button and the rules already read these variables, so inverting
+   them here inverts the form without touching a single component.
+
+   DESIGN_FROZEN.md: no dark background colour is introduced. The ground is still
+   paper and the field is still black line art on it — there is simply a great
+   deal of it at both ends of the climb, and type set in ink on 96% ink cannot be
+   read. The reason is the legibility of the words, not a second theme. */
+[data-tone='paper'] {
+  --sv-ink: #FBFAF7;
+  --sv-black: #FBFAF7;
+  --sv-paper: #0C0C0B;
+  --sv-mute: rgba(251, 250, 247, 0.66);
+  --sv-faint: rgba(251, 250, 247, 0.66);
+  --sv-line: rgba(251, 250, 247, 0.34);
+  --sv-ghost: rgba(251, 250, 247, 0.10);
+}
+
+/* The climb's two colour states are a third of a second apart at most, and the
+   swap lands while the question text is faded out. Transitioning the rules and
+   the button keeps the furniture from snapping in the gap. */
+[data-climb] .sv-field,
+[data-climb] .sv-textarea,
+[data-climb] .sv-btn {
+  transition: color 0.45s ease, border-color 0.45s ease, background-color 0.45s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-climb] .sv-field,
+  [data-climb] .sv-textarea,
+  [data-climb] .sv-btn { transition: none; }
 }
