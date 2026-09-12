@@ -1,3 +1,9 @@
+import { useEffect, useRef } from 'react';
+import gsap from 'gsap';
+import AscentField from '../components/AscentField';
+import { HERO_STARS, TOP } from '../lib/ascent';
+import { prefersReducedMotion } from '../lib/motion';
+
 interface Props {
   onEnter: () => void;
   onLeave: () => void;
@@ -15,11 +21,35 @@ interface Props {
    anything is asked for — rather than arriving one question at a time with the
    email at the end. */
 export default function ThresholdPage({ onEnter, onLeave }: Props) {
+  const body = useRef<HTMLDivElement>(null);
+
+  /* The content arrives on a field that is already there. The door has just
+     finished opening onto it, so nothing about the ground changes — only the
+     words appear. */
+  useEffect(() => {
+    const reduced = prefersReducedMotion();
+    const ctx = gsap.context(() => {
+      gsap.fromTo(body.current, { opacity: 0 },
+        { opacity: 1, duration: reduced ? 0.4 : 0.5, ease: 'power1.inOut' });
+    }, body);
+    return () => ctx.revert();
+  }, []);
+
   return (
     <div
       style={{
+        position: 'relative',
         minHeight: '100svh',
-        background: '#FBFAF7',
+        /* Dark, like everything before the reveal.
+
+           The stranger's first three screens used to be near-black, cream, then
+           near-black again: two inversions in three screens, which reads as a
+           flicker rather than a passage. It also spent the payoff early. The
+           product now ends with ink dropping and paper arriving with a person's
+           name on it — light is the reward, so paper appears nowhere before the
+           reveal. Same copy, same choices, same disclosure; only the ground and
+           the type have changed ends. */
+        background: '#000000',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -28,20 +58,13 @@ export default function ThresholdPage({ onEnter, onLeave }: Props) {
         textAlign: 'center',
       }}
     >
-      <div style={{ maxWidth: 420, width: '100%' }}>
-        <h1
-          style={{
-            fontFamily: 'var(--sv-font)',
-            fontWeight: 300,
-            fontSize: 'clamp(28px, 7.6vw, 40px)',
-            lineHeight: 1.18,
-            letterSpacing: '-0.01em',
-            color: '#000000',
-          }}
-        >
-          This life is yours. Take the reins.
-        </h1>
+      {/* The same sky the door opened onto, at the same density. */}
+      <AscentField altitude={TOP} {...HERO_STARS} />
 
+      <div ref={body} style={{ maxWidth: 420, width: '100%', position: 'relative', zIndex: 1 }}>
+        {/* No heading. It was the hero's line word for word, so arriving here
+            meant reading the same sentence twice — once on the way out and once
+            on the way in. This screen's job is the disclosure and the choice. */}
         <p
           style={{
             marginTop: 30,
@@ -49,7 +72,7 @@ export default function ThresholdPage({ onEnter, onLeave }: Props) {
             fontWeight: 300,
             fontSize: 16,
             lineHeight: 1.7,
-            color: '#1A1A1A',
+            color: 'rgba(251,250,247,0.88)',
           }}
         >
           Three questions about the life you want, the belief standing in its way,
@@ -63,7 +86,7 @@ export default function ThresholdPage({ onEnter, onLeave }: Props) {
             fontWeight: 300,
             fontSize: 15,
             lineHeight: 1.7,
-            color: '#6E6A66',
+            color: 'rgba(251,250,247,0.6)',
           }}
         >
           We&rsquo;ll also ask for your name, birth date, time and place, and email.
@@ -76,7 +99,7 @@ export default function ThresholdPage({ onEnter, onLeave }: Props) {
             fontWeight: 400,
             fontSize: 16,
             lineHeight: 1.7,
-            color: '#000000',
+            color: '#FBFAF7',
           }}
         >
           Open your Blueprint. Choose your next act.
@@ -88,8 +111,8 @@ export default function ThresholdPage({ onEnter, onLeave }: Props) {
             marginTop: 40,
             width: '100%',
             minHeight: 52,
-            background: '#000000',
-            color: '#FBFAF7',
+            background: '#FBFAF7',
+            color: '#0C0C0B',
             border: 'none',
             borderRadius: 2,
             fontFamily: 'var(--sv-font)',
@@ -118,7 +141,7 @@ export default function ThresholdPage({ onEnter, onLeave }: Props) {
             fontFamily: 'var(--sv-font)',
             fontWeight: 300,
             fontSize: 14,
-            color: '#6E6A66',
+            color: 'rgba(251,250,247,0.6)',
             textDecoration: 'underline',
             textUnderlineOffset: 3,
           }}

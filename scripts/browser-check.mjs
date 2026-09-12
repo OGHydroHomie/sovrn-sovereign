@@ -260,8 +260,15 @@ try {
   await page.getByRole('button', { name: /begin your blueprint/i }).first().click();
   await page.waitForTimeout(600);
   {
-    const h = (await page.locator('h1').first().innerText()).trim();
-    check('threshold stands between hero and question one', h === 'This life is yours. Take the reins.');
+    /* The threshold has no heading any more — it was the hero's line word for
+       word. What identifies it is the disclosure it exists to make, and that it
+       is dark: paper does not appear anywhere before the reveal. */
+    const t = await page.locator('body').innerText();
+    const ground = await page.evaluate(() => getComputedStyle(document.body).backgroundColor
+      || getComputedStyle(document.querySelector('div')).backgroundColor);
+    check('threshold stands between hero and question one',
+      /three questions about the life you want/i.test(t) && /i create my fate/i.test(t));
+    check('nothing is on paper before the reveal', !/rgb\(251, 250, 247\)/.test(ground), ground);
     await page.getByRole('button', { name: /i create my fate/i }).click();
   }
 

@@ -86,6 +86,16 @@ export interface FieldOpts {
    * is arriving rather than like the image is degrading. */
   dissolveAt?: { x: number; y: number };
   dissolveProgress?: number;
+  /* How rare the stars are, as the cut on the per-pixel hash. The quiz's fourth
+     altitude sits at 1.82% of pixels lit; the hero artwork's own stipple stars
+     measure 0.18%, ten times sparser. Handing over from one to the other at the
+     same setting is a visible jump in density, so the density is a setting. */
+  starCut?: number;
+  /* The ambient level of the star field, before any star is added. This — not
+     the cut — is what sets the density: dithering a level of 0.012 puts about
+     1.2% of pixels down on its own, which is most of the quiz's 1.82% and why
+     moving the cut alone barely shifts it. */
+  starBase?: number;
   /* The words have to stay readable at every altitude, so the field is pushed
      away from the middle through a band across the screen — toward paper where
      the screen is light, toward solid ink where it is dark. Clearing alone
@@ -202,9 +212,15 @@ export function ascentSample(o: FieldOpts): Sample {
          noise gives clusters; a per-pixel hash gives single points, which is what
          a star is. Roughly one pixel in two hundred, with a second rarer cut for
          the few that are brighter than the rest. */
+      const cut = o.starCut ?? 0.9955;
       const h1 = noise(x, ny, phase * 0.15);
-      const star = h1 > 0.9955 ? 1 : h1 > 0.988 ? 0.55 : 0;
-      level += wt[3] * Math.min(1, 0.012 + star);
+      /* The dimmer tier scales with the rarity of the bright one. Fixed at
+         0.0075 it covered four times as many pixels as the stars themselves
+         once the cut went rare, and set a floor the density could not get
+         under however sparse the field was asked to be. */
+      const dim = (1 - cut) * 0.6;
+      const star = h1 > cut ? 1 : h1 > cut - dim ? 0.55 : 0;
+      level += wt[3] * Math.min(1, (o.starBase ?? 0.0145) + star);
     }
 
     /* The band the question sits in, pushed to the nearer pole.
@@ -284,3 +300,13 @@ export function typeIsPaper(a: number): boolean {
 let handoverPhase = 0;
 export function setHandoverPhase(p: number): void { handoverPhase = p; }
 export function getHandoverPhase(): number { return handoverPhase; }
+
+/* The hero's sky.
+ *
+ * The same field as the quiz's fourth altitude, at the density of the artwork's
+ * own stipple stars — measured at 0.18% of pixels lit, against the quiz's 1.82%.
+ * Ten times apart, which is why the transition hands over on these numbers and
+ * not on the default: the generated stars have to be indistinguishable from the
+ * painted ones at the moment one replaces the other, and at the quiz's setting
+ * they are ten times too many. */
+export const HERO_STARS = { starBase: 0.0001, starCut: 0.9991 } as const;

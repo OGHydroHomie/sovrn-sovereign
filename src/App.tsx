@@ -205,6 +205,16 @@ export default function App() {
     });
   }, [openBlueprint]);
 
+  /* The door is inside the hero now: it pushes into the doorway, fades up the
+     starfield behind it, and dissolves. By the time it calls back, the screen is
+     already the field the threshold renders — so the swap is a cut onto an
+     identical ground, and the threshold fades its own words up on top. */
+  const goThrough = useCallback(() => {
+    trackEvent('pageView', 'threshold');
+    window.scrollTo(0, 0);
+    setPage('threshold');
+  }, []);
+
   const handleQuizComplete = (data: QuizData) => handleGenerate(data);
 
   /* Stable identity: LoadingPage holds this in a timer, and a new function on
@@ -224,21 +234,17 @@ export default function App() {
 
 
       <div style={{ position: 'relative', zIndex: 1 }}>
-        {page === 'hero' && (
-          <Fade key="hero" duration={0.5}>
-            <HeroPage
-              onStart={() => {
-                trackEvent('pageView', 'threshold');
-                window.scrollTo(0, 0);
-                setPage('threshold');
-              }}
-            />
-          </Fade>
-        )}
+        {/* Going through the door.
 
-        {/* No Fade. The door does not animate — it is the one screen that is not
-            moving anyone anywhere. */}
+            Both screens are on stage for 900ms: the hero travels up and out
+            while the threshold rises from underneath it. The sensation is meant
+            to be passing through the doorway in the picture, which only works if
+            the thing being left actually leaves — a cross-fade would be two
+            pictures dissolving, not a door. */}
+        {page === 'hero' && <HeroPage onStart={goThrough} />}
+
         {page === 'threshold' && (
+          <>
           <ThresholdPage
             onEnter={() => {
               trackEvent('pageView', 'quiz');
@@ -250,6 +256,7 @@ export default function App() {
               setPage('hero');
             }}
           />
+          </>
         )}
 
         {page === 'quiz' && (
@@ -305,21 +312,9 @@ export default function App() {
         )}
       </div>
 
-      {page === 'hero' && blueprint && quizData && (
-        <button
-          onClick={() => setPage('blueprint')}
-          className="fixed bottom-6 right-6 z-20 text-xs tracking-widest uppercase px-4 py-2 rounded-lg transition-all"
-          style={{
-            background: '#FBFAF7',
-            color: '#1A1A1A',
-            border: '1px solid #1A1A1A',
-            fontFamily: 'var(--sv-font)',
-            letterSpacing: '0.1em',
-          }}
-        >
-          View Your Blueprint
-        </button>
-      )}
+      {/* The returning route lives on the hero itself now, at the very bottom
+          with the wordmark. A floating pill over the artwork was the one piece
+          of furniture the new front door could not carry. */}
     </div>
   );
 }

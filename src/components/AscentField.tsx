@@ -42,6 +42,9 @@ interface Props {
   /* Where the paper starts from. The same point the ink enters at, so the two
      are one event: the ground turning to paper behind the drop as it spreads. */
   dissolveFrom?: React.RefObject<HTMLElement | null>;
+  /** Star rarity and ambient level. Left alone, the field is the quiz's. */
+  starCut?: number;
+  starBase?: number;
 }
 
 /* Pixel scale. The buffer is the viewport divided by this, so the dither runs
@@ -89,7 +92,7 @@ function easeInOut(t: number): number {
 export default function AscentField({
   altitude, onSettled, clearFor, progress: quizProgress = 0,
   forceDrift = false, settling = false, settleSeconds = 6, onStill,
-  initialPhase, dissolve = false, dissolveSeconds = 2.2, dissolveFrom,
+  initialPhase, dissolve = false, dissolveSeconds = 2.2, dissolveFrom, starCut, starBase,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const settled = useRef(onSettled);
@@ -118,6 +121,10 @@ export default function AscentField({
   });
   const quizProgressRef = useRef(quizProgress);
   quizProgressRef.current = quizProgress;
+  const starCutRef = useRef(starCut);
+  starCutRef.current = starCut;
+  const starBaseRef = useRef(starBase);
+  starBaseRef.current = starBase;
   const still = useRef(onStill);
   still.current = onStill;
   /* 1 while drifting, 0 when stopped. Held in a ref so the deceleration is
@@ -293,7 +300,7 @@ export default function AscentField({
 
       dither(field, ascentSample({
         w: field.w, h: field.h, phase: r.phase, still: reduced, pole: r.pole,
-        clearCentre: r.clearCentre, clearHalf: r.clearHalf,
+        clearCentre: r.clearCentre, clearHalf: r.clearHalf, starCut: starCutRef.current, starBase: starBaseRef.current,
         dissolveAt: out.current.on ? { x: out.current.x, y: out.current.y } : undefined,
         dissolveProgress: out.current.on ? out.current.v : undefined,
         /* During a move the arriving altitude is the target, and the boundary

@@ -1,282 +1,253 @@
-import { useEffect } from 'react';
-import { trackEvent } from '../utils/storage';
-import Wordmark from '../components/Wordmark';
-import ReturnLink from '../components/ReturnLink';
+import { useEffect, useRef, useState } from 'react';
+import gsap from 'gsap';
+import { trackEvent, getBlueprint } from '../utils/storage';
+import AscentField from '../components/AscentField';
+import { HERO_STARS, TOP } from '../lib/ascent';
+import { prefersReducedMotion } from '../lib/motion';
 
 interface Props {
   onStart: () => void;
 }
 
-/* Three things the blueprint reveals — stacked, max two sentences each. */
-const REVEALS = [
-  {
-    accent: '#1A1A1A',
-    title: "A name for who you're becoming",
-    body: 'Not a personality type and not a compliment. One name, chosen from thirteen, for the person your own answers keep pointing at.',
-  },
-  {
-    accent: '#1A1A1A',
-    title: "The loop you're running now",
-    body: 'The specific thing you do that keeps it from happening. Named precisely enough to be uncomfortable, and plainly enough to stop today.',
-  },
-  {
-    accent: '#1A1A1A',
-    title: 'One thing to do today',
-    body: 'Two options, both doable in under twenty minutes. You pick one, do it, and write down what actually happened.',
-  },
-];
+/* The door.
+ *
+ * SOVRN above it, one word below it, a hairline, and the picture. No sentence:
+ * the line that used to sit here was the threshold's heading word for word, and
+ * a caption under this artwork is a hedge. The image is the argument.
+ *
+ * Going through is a push *into* the doorway rather than the page sliding away.
+ * The artwork already contains a starfield above the figure's head — light from
+ * beyond the door — so the destination was always in the picture. The field that
+ * arrives is the one the quiz climbs to, at the density of the painted stars, so
+ * the handover is the same system rather than two things matched by eye.
+ */
 
-function DownChevron() {
-  return (
-    <svg
-      className="sv-chevron"
-      width="22"
-      height="22"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="#6E6A66"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M6 9l6 6 6-6" />
-    </svg>
-  );
-}
+const PAPER = '#FBFAF7';
+const SRC = '/hero-host.jpg';
+const SRC_SMALL = '/hero-host-720.jpg';
+
+/* Measured off the artwork, in its own coordinates.
+ *
+ *   the doorway light   v 0.08 .. 0.24, x 0.32 .. 0.83
+ *   the figure's head   v 0.245
+ *   the torso's base    v 0.62
+ *   the feet            v 0.82
+ *
+ * The origin sits in the light above the head, so everything below it travels
+ * downward as the scale runs and the figure leaves through the bottom.
+ */
+const ORIGIN = '52% 18%';
+
+/* 1.8, not the 3.2 that would put the doorway across the whole viewport.
+ *
+ * Scaling about (0.52, 0.18), the bottom edge of the frame sits at artwork
+ * v = 0.18 + 0.82/S. At 3.2 that is v 0.44 — a cut through the middle of the
+ * torso. The torso ends at 0.62, so S must stay under 1.86 for the figure to
+ * leave intact, and the cut at 1.8 falls at v 0.636, in the legs. Losing travel
+ * is the cheaper loss. */
+const SCALE = 1.8;
 
 export default function HeroPage({ onStart }: Props) {
-  const handleStart = () => {
-    trackEvent('quizStart');
-    onStart();
-  };
+  const art = useRef<HTMLDivElement>(null);
+  const sky = useRef<HTMLDivElement>(null);
+  const mark = useRef<HTMLDivElement>(null);
+  const word = useRef<HTMLDivElement>(null);
+  const rule = useRef<HTMLDivElement>(null);
+  const leaving = useRef(false);
+  const [returning, setReturning] = useState(false);
 
   useEffect(() => {
     trackEvent('pageView', 'hero');
+    setReturning(Boolean(getBlueprint()));
+  }, []);
+
+  const enter = () => {
+    if (leaving.current) return;
+    leaving.current = true;
+    trackEvent('quizStart');
+
+    if (prefersReducedMotion()) {
+      /* No scale, no build. The field is already there; the artwork leaves. */
+      gsap.set(sky.current, { opacity: 1 });
+      gsap.to(art.current, { opacity: 0, duration: 0.4, ease: 'power1.inOut' });
+      gsap.to([mark.current, word.current, rule.current], {
+        opacity: 0, duration: 0.4, ease: 'power1.inOut', onComplete: onStart,
+      });
+      return;
+    }
+
+    const tl = gsap.timeline({ onComplete: onStart });
+    /* The hairline goes first — it is the only thing that was moving. */
+    tl.to(rule.current, { opacity: 0, duration: 0.16, ease: 'power1.in' }, 0);
+    tl.to(mark.current, { opacity: 0, y: -70, duration: 0.4, ease: 'power1.in' }, 0);
+    tl.to(word.current, { opacity: 0, y: 70, duration: 0.4, ease: 'power1.in' }, 0);
+    /* Into the doorway. Accelerating, because a door you are walking through
+       does not slow down as it arrives. */
+    tl.to(art.current, {
+      scale: SCALE, duration: 1.2, ease: 'power2.in', transformOrigin: ORIGIN,
+    }, 0.2);
+    /* The sky comes up under the artwork while the artwork is still there, so
+       the painted stars and the generated ones overlap before either is alone. */
+    tl.to(sky.current, { opacity: 1, duration: 1.0, ease: 'power1.inOut' }, 0.6);
+    tl.to(art.current, { opacity: 0, duration: 0.4, ease: 'power1.in' }, 1.2);
+  };
+
+  useEffect(() => {
+    let startY: number | null = null;
+    let startAt = 0;
+    const onTouchStart = (e: TouchEvent) => { startY = e.touches[0].clientY; startAt = Date.now(); };
+    const onTouchEnd = (e: TouchEvent) => {
+      if (startY === null) return;
+      const dy = e.changedTouches[0].clientY - startY;
+      const quick = Date.now() - startAt < 900;
+      startY = null;
+      if (quick && dy < -48) enter();
+    };
+    const onWheel = (e: WheelEvent) => { if (e.deltaY > 12) enter(); };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'Enter' || e.key === 'PageUp') {
+        e.preventDefault();
+        enter();
+      }
+    };
+    window.addEventListener('touchstart', onTouchStart, { passive: true });
+    window.addEventListener('touchend', onTouchEnd, { passive: true });
+    window.addEventListener('wheel', onWheel, { passive: true });
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('touchstart', onTouchStart);
+      window.removeEventListener('touchend', onTouchEnd);
+      window.removeEventListener('wheel', onWheel);
+      window.removeEventListener('keydown', onKey);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /* The only thing moving on the page. */
+  useEffect(() => {
+    if (prefersReducedMotion()) {
+      gsap.set(rule.current, { scaleY: 1, opacity: 0.5 });
+      return;
+    }
+    const ctx = gsap.context(() => {
+      const tl = gsap.timeline({ repeat: -1, repeatDelay: 0.8 });
+      tl.fromTo(rule.current, { scaleY: 0, opacity: 0.75 }, { scaleY: 1, duration: 1.5, ease: 'none' });
+      tl.to(rule.current, { opacity: 0, duration: 0.45, ease: 'power1.in' }, '-=0.45');
+    }, rule);
+    return () => ctx.revert();
   }, []);
 
   return (
-    <div style={{ color: '#6E6A66' }}>
-      {/* ============================================================= *
-       *  ABOVE THE FOLD — one promise, one decision. Spacious.
-       * ============================================================= */}
-      <section
+    <div
+      onClick={enter}
+      style={{
+        position: 'relative', height: '100svh', width: '100%',
+        overflow: 'hidden', background: '#000000',
+        cursor: 'pointer', userSelect: 'none',
+      }}
+    >
+      {/* Behind everything, and dark until the door opens. */}
+      <div ref={sky} style={{ position: 'absolute', inset: 0, opacity: 0 }}>
+        <AscentField altitude={TOP} {...HERO_STARS} />
+      </div>
+
+      {/* The artwork, in a box of its own proportions. Everything that sits on
+          the picture is positioned against this rather than against the screen,
+          so the word never drifts onto the figure when the viewport changes
+          shape. */}
+      <div
+        ref={art}
         style={{
-          minHeight: '100svh',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '48px 20px',
-          position: 'relative',
-          textAlign: 'center',
+          position: 'absolute', inset: 0, margin: 'auto',
+          aspectRatio: '1080 / 1920', maxWidth: '100%', maxHeight: '100%',
+          height: '100%', willChange: 'transform',
         }}
       >
-        <div style={{ maxWidth: 340, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          {/* The wordmark, and the actual one. This was a hardcoded div with a
-              comment calling it the wordmark, so animating the component left
-              the homepage — the first thing anyone sees — perfectly still. */}
-          <Wordmark />
+        <img
+          src={SRC}
+          srcSet={`${SRC_SMALL} 720w, ${SRC} 1080w`}
+          sizes="100vw"
+          alt=""
+          aria-hidden="true"
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          {...({ fetchpriority: 'high' } as any)}
+          decoding="async"
+          style={{ display: 'block', width: '100%', height: '100%', objectFit: 'contain' }}
+        />
 
-          {/* 32px → headline — one line, all bone. The power is in the phrase. */}
-          <h1
-            className="sv-display"
-            style={{
-              marginTop: 32,
-              fontWeight: 700,
-              fontSize: 'clamp(30px, 8.2vw, 48px)',
-              lineHeight: 1.1,
-              color: '#1A1A1A',
-              letterSpacing: '-0.02em',
-            }}
-          >
-            Find out who you're becoming.
-          </h1>
-
-          {/* 24px → body */}
-          <p
-            className="sv-display"
-            style={{ marginTop: 24, fontWeight: 400, fontSize: 16, lineHeight: 1.6, color: '#6E6A66' }}
-          >
-            Something still feels off — like you're living adjacent to your actual
-            life. Enter your birth data. Find out why.
-          </p>
-
-          {/* What arrives. None of this was stated anywhere above the fold, so the
-              page asked for a birth date without saying what it was buying. */}
-          <p
-            style={{
-              marginTop: 18, fontFamily: 'var(--sv-font)', fontWeight: 300,
-              fontSize: 15, lineHeight: 1.7, color: '#1A1A1A',
-            }}
-          >
-            You get a written reading of who you are and the pattern you keep
-            running, one act to do today, and a new one every morning at 6am
-            written from what you actually did.
-          </p>
-
-          {/* 40px → button */}
-          <button className="sv-btn" style={{ marginTop: 40 }} onClick={handleStart}>
-            Begin Your Blueprint
-          </button>
-
-          {/* 20px → meta */}
-          <p
-            style={{
-              marginTop: 20,
-              fontFamily: 'var(--sv-font)',
-              fontWeight: 400,
-              fontSize: 13,
-              color: '#6E6A66',
-            }}
-          >
-            Free · 5 minutes · No password
-          </p>
-
-
-          {/* The way back in for someone on a new device. */}
-          <div style={{ marginTop: 26 }}>
-            <ReturnLink />
-          </div>
-        </div>
-
-        {/* Scroll hint */}
-        <div style={{ position: 'absolute', bottom: 28, left: 0, right: 0, display: 'flex', justifyContent: 'center' }}>
-          <DownChevron />
-        </div>
-      </section>
-
-      {/* ============================================================= *
-       *  BELOW THE FOLD — what your blueprint reveals
-       * ============================================================= */}
-      <section style={{ padding: '8px 20px 64px', maxWidth: 520, margin: '0 auto' }}>
-        <p
-          className="sv-label"
+        {/* SOVRN, above the door. The first word anyone reads. Display size and
+            wide tracking; the same typeface as everything else. It does not
+            breathe here — the hairline is the only motion on this screen. */}
+        <div
+          ref={mark}
           style={{
-            fontSize: 11,
-            color: '#1A1A1A',
-            letterSpacing: '0.2em',
-            fontWeight: 700,
-            textAlign: 'center',
+            position: 'absolute', left: 0, right: 0, top: '10.5%',
+            textAlign: 'center', color: PAPER,
+            fontFamily: 'var(--sv-font)', fontWeight: 300,
+            fontSize: 'clamp(30px, 9.4vw, 54px)',
+            letterSpacing: '0.42em',
+            /* Tracking pushes the last letter right; this recentres the word. */
+            textIndent: '0.42em',
+            lineHeight: 1,
           }}
         >
-          What your blueprint reveals
-        </p>
-
-        <div style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {REVEALS.map((card) => (
-            <div
-              key={card.title}
-              className="sv-card"
-              style={{ borderLeft: `2px solid ${card.accent}`, textAlign: 'left' }}
-            >
-              <h3
-                className="sv-label"
-                style={{ fontSize: 13, color: '#1A1A1A', fontWeight: 700, lineHeight: 1.3 }}
-              >
-                {card.title}
-              </h3>
-              <p
-                className="sv-serif"
-                style={{ marginTop: 12, fontSize: 15, lineHeight: 1.6, color: '#6E6A66' }}
-              >
-                {card.body}
-              </p>
-            </div>
-          ))}
+          SOVRN
         </div>
 
-        {/* A real excerpt, legible. It was blurred to 6px at 0.7 opacity, which
-            showed nothing and looked like a failed render — an unreadable teaser
-            teases nothing. It is labelled as a sample so it cannot be mistaken
-            for the visitor's own. */}
-        <div style={{ marginTop: 48 }}>
-          <p
-            className="sv-label"
-            style={{ fontSize: 11, letterSpacing: '0.18em', color: '#6E6A66', textAlign: 'center', marginBottom: 14 }}
-          >
-            A SAMPLE READING
-          </p>
-          <div>
-            <div
-              className="sv-card"
-              style={{ borderLeft: '2px solid #1A1A1A', textAlign: 'left', maxWidth: 360, margin: '0 auto' }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                <span className="sv-label" style={{ fontSize: 10, color: '#6E6A66', letterSpacing: '0.18em' }}>
-                  Who you are
-                </span>
-              </div>
-              <div
-                className="sv-display"
-                style={{ fontWeight: 300, fontSize: 30, color: '#000000', marginTop: 10, letterSpacing: '0.01em' }}
-              >
-                THE HEADLINER
-              </div>
-              <p style={{ marginTop: 8, fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 13, color: '#6E6A66' }}>
-                Right now you&rsquo;re the Opening Act.
-              </p>
-              <p className="sv-serif" style={{ marginTop: 14, fontSize: 14, lineHeight: 1.7, color: '#1A1A1A' }}>
-                You were built to be heard. Not to be approved of, not to be safe —
-                to be heard, with your name on it, in a room full of strangers who
-                don&rsquo;t owe you anything.
-              </p>
-              <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
-                {['Who you are', 'The pattern', 'One act'].map((t) => (
-                  <span
-                    key={t}
-                    style={{
-                      fontFamily: 'var(--sv-font)',
-                      fontSize: 11,
-                      color: '#1A1A1A',
-                      padding: '6px 12px',
-                      border: '1px solid #E4E0D6',
-                      borderRadius: 999,
-                    }}
-                  >
-                    {t}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <p
-            style={{
-              marginTop: 16,
-              fontFamily: 'var(--sv-font)',
-              fontWeight: 400,
-              fontSize: 14,
-              color: '#6E6A66',
-              textAlign: 'center',
-            }}
-          >
-            {'This was generated from a birthday and three questions.'}
-          </p>
-        </div>
-
-        {/* Second CTA — a different angle from the hero button */}
-        <div style={{ marginTop: 32, display: 'flex', justifyContent: 'center' }}>
-          <button className="sv-btn" onClick={handleStart}>
-            See which one you are
-          </button>
-        </div>
-
-        {/* Footer */}
-        <p
+        {/* One word, in the clean dark below the figure's feet at v 0.82. */}
+        <div
+          ref={word}
           style={{
-            marginTop: 40,
-            fontFamily: 'var(--sv-font)',
-            fontWeight: 400,
-            fontSize: 11,
-            letterSpacing: '0.1em',
-            color: '#6E6A66',
+            position: 'absolute', left: 0, right: 0, top: '87%',
             textAlign: 'center',
+            fontFamily: 'var(--sv-font)', fontWeight: 300,
+            fontSize: 'clamp(13px, 3.5vw, 15px)',
+            letterSpacing: '0.16em',
+            color: 'rgba(251,250,247,0.72)',
           }}
         >
-          SOVRN — 2026
-        </p>
-      </section>
+          ascend
+        </div>
+
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'absolute', left: 0, right: 0, top: '91.5%',
+            display: 'flex', justifyContent: 'center',
+          }}
+        >
+          <div
+            ref={rule}
+            style={{ width: 1, height: 40, background: PAPER, transformOrigin: '50% 100%', opacity: 0 }}
+          />
+        </div>
+      </div>
+
+      <button
+        onClick={enter}
+        style={{
+          position: 'absolute', width: 1, height: 1, padding: 0, margin: -1,
+          overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0,
+        }}
+      >
+        Enter
+      </button>
+
+      {returning && (
+        <a
+          href="/ledger"
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            position: 'absolute', right: 20, bottom: 18, zIndex: 2,
+            fontFamily: 'var(--sv-font)', fontSize: 12, fontWeight: 400,
+            letterSpacing: '0.02em', color: 'rgba(251,250,247,0.55)',
+            textDecoration: 'none', borderBottom: '1px solid rgba(251,250,247,0.26)',
+            paddingBottom: 1,
+          }}
+        >
+          Your Ledger
+        </a>
+      )}
     </div>
   );
 }

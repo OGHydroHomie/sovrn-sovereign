@@ -2,12 +2,21 @@ import { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import gsap from 'gsap';
 import Fade from '../components/Fade';
 import AscentField, { CLIMB_MS } from '../components/AscentField';
-import { typeIsPaper } from '../lib/ascent';
+import { typeIsPaper, HERO_STARS, TOP } from '../lib/ascent';
 import { EASE, prefersReducedMotion } from '../lib/motion';
 import type { QuizData } from '../types';
 import { saveQuizData, saveLead, getQuizData, saveQuizProgress, getQuizProgress, clearQuizProgress } from '../utils/storage';
 import { captureEmail } from '../lib/capture';
 import { recordConsent } from '../lib/session';
+
+/* The small caps over each part of a date. Its contrast is checked with
+   everything else on the screen — a label nobody can read is a field with no
+   name on it. */
+const PART_LABEL: React.CSSProperties = {
+  display: 'block', marginBottom: 7,
+  fontSize: 10, fontWeight: 700, letterSpacing: '0.18em',
+  textTransform: 'uppercase', color: 'var(--sv-mute)',
+};
 
 interface Props {
   onComplete: (data: QuizData) => void;
@@ -144,8 +153,16 @@ export default function QuizPage({ onComplete, onBack }: Props) {
      before it is replaced, and the palette inverts with the step, so the type
      changes colour in the gap where nobody can see it happen. */
   const CLIMB_FIRST = 4;
-  const onClimb = phase === 'quiz' && step >= CLIMB_FIRST;
-  const altitude = Math.max(0, step - CLIMB_FIRST);
+  /* The field is behind every question now, not only the climb.
+
+     Questions one to four used to be on paper, which put a screen at 245
+     luminance between two at 10 and 17 — the flicker the dark threshold was
+     meant to end, moved one screen later. They sit at the stars, which is where
+     the door left everyone, and the descent into the depths happens at question
+     five exactly as the climb was designed. */
+  const onClimb = phase === 'quiz';
+  const altitudeAt = (n: number) => (n < CLIMB_FIRST ? TOP : n - CLIMB_FIRST);
+  const altitude = altitudeAt(step);
 
   const [climbTo, setClimbTo] = useState(altitude);
   const [climbing, setClimbing] = useState(false);
@@ -174,10 +191,14 @@ export default function QuizPage({ onComplete, onBack }: Props) {
      move is already running, or because there is no field to move. */
   const climb = (nextStep: number, dir: 1 | -1): boolean => {
     if (climbing) return false;
-    if (nextStep < CLIMB_FIRST || step < CLIMB_FIRST) return false;
+    if (nextStep < 0 || nextStep > TOTAL - 1) return false;
+    /* Only when the altitude actually changes. The first four questions are all
+       at the stars, and making each of them wait 1.2s for a field that is not
+       moving would be ceremony charged to someone typing their name. */
+    if (altitudeAt(nextStep) === altitudeAt(step)) return false;
 
     const reduced = prefersReducedMotion();
-    setClimbTo(nextStep - CLIMB_FIRST);
+    setClimbTo(altitudeAt(nextStep));
 
     if (reduced) {
       /* No movement, and no waiting on a movement that is not happening. The
@@ -249,6 +270,47 @@ export default function QuizPage({ onComplete, onBack }: Props) {
     } else {
       onBack();
     }
+  };
+
+  /* Birth date and time, as parts.
+   *
+   * The native date and time pickers were the last two things on the path that
+   * could not be made dark: a browser's own control carries its own palette, and
+   * `color-scheme: light` on the field was there precisely to stop them
+   * rendering white-on-white. Plain numeric inputs are the only way to own them.
+   *
+   * The parts are the source of truth while someone is typing; the composed
+   * ISO strings the chart needs are derived from them. Typing "1" into the year
+   * must not produce a birth date of the year 1. */
+  const [dob, setDob] = useState({ day: '', month: '', year: '' });
+  const [tob, setTob] = useState({ hour: '', minute: '' });
+
+  const setDobPart = (key: 'day' | 'month' | 'year', v: string) => {
+    const next = { ...dob, [key]: v };
+    setDob(next);
+    const d = Number(next.day), m = Number(next.month), y = Number(next.year);
+    const whole = next.year.length === 4 && d >= 1 && d <= 31 && m >= 1 && m <= 12
+      && y >= 1900 && y <= new Date().getFullYear();
+    /* And the date has to exist: the 31st of February is four valid numbers. */
+    const real = whole && (() => {
+      const probe = new Date(Date.UTC(y, m - 1, d));
+      return probe.getUTCFullYear() === y && probe.getUTCMonth() === m - 1 && probe.getUTCDate() === d;
+    })();
+    update('birthDate', real
+      ? `${next.year}-${next.month.padStart(2, '0')}-${next.day.padStart(2, '0')}`
+      : '');
+  };
+
+  const setTobPart = (key: 'hour' | 'minute', v: string) => {
+    const next = { ...tob, [key]: v };
+    setTob(next);
+    const h = Number(next.hour), mi = Number(next.minute);
+    const whole = next.hour !== '' && next.minute !== ''
+      && h >= 0 && h <= 23 && mi >= 0 && mi <= 59;
+    update('birthTime', whole
+      ? `${next.hour.padStart(2, '0')}:${next.minute.padStart(2, '0')}`
+      : '');
+    if (whole) update('birthTimeUnknown', false);
   };
 
   const skipTime = () => {
@@ -340,6 +402,10 @@ export default function QuizPage({ onComplete, onBack }: Props) {
           onSettled={() => setClimbing(false)}
           clearFor={[columnRef, numberRef]}
           progress={progressValue / 100}
+          /* At the stars, the same rarity the door handed over on — so the field
+             behind question one is the field the door opened into, not a denser
+             one that happens to share a name. */
+          {...(climbTo >= TOP ? HERO_STARS : {})}
         />
       )}
       {/* Progress bar — persistent across quiz + reveal so it animates 48 → 55 → 64 */}
@@ -416,24 +482,56 @@ export default function QuizPage({ onComplete, onBack }: Props) {
                 )}
 
                 {step === 1 && (
-                  <input
-                    type="date"
-                    value={data.birthDate}
-                    onChange={(e) => update('birthDate', e.target.value)}
-                    onKeyDown={onEnterKey}
-                    className="sv-field"
-                  />
+                  <div style={{ display: 'flex', gap: 12 }}>
+                    {([
+                      ['day', 'DD', 2, dob.day],
+                      ['month', 'MM', 2, dob.month],
+                      ['year', 'YYYY', 4, dob.year],
+                    ] as const).map(([key, ph, len, val], i) => (
+                      <div key={key} style={{ flex: key === 'year' ? 1.6 : 1 }}>
+                        <label htmlFor={`dob-${key}`} className="sv-label" style={PART_LABEL}>{key}</label>
+                        <input
+                          id={`dob-${key}`}
+                          type="text"
+                          inputMode="numeric"
+                          autoComplete="off"
+                          autoFocus={i === 0}
+                          maxLength={len}
+                          value={val}
+                          placeholder={ph}
+                          onChange={(e) => setDobPart(key, e.target.value.replace(/\D/g, '').slice(0, len))}
+                          onKeyDown={onEnterKey}
+                          className="sv-field"
+                          style={{ textAlign: 'center', letterSpacing: '0.08em' }}
+                        />
+                      </div>
+                    ))}
+                  </div>
                 )}
 
                 {step === 2 && (
                   <>
-                    <input
-                      type="time"
-                      value={data.birthTime}
-                      onChange={(e) => update('birthTime', e.target.value)}
-                      onKeyDown={onEnterKey}
-                      className="sv-field"
-                    />
+                    <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end' }}>
+                      {([['hour', 'HH', tob.hour], ['minute', 'MM', tob.minute]] as const).map(([key, ph, val], i) => (
+                        <div key={key} style={{ flex: 1 }}>
+                          <label htmlFor={`tob-${key}`} className="sv-label" style={PART_LABEL}>{key}</label>
+                          <input
+                            id={`tob-${key}`}
+                            type="text"
+                            inputMode="numeric"
+                            autoComplete="off"
+                            autoFocus={i === 0}
+                            maxLength={2}
+                            value={val}
+                            placeholder={ph}
+                            onChange={(e) => setTobPart(key, e.target.value.replace(/\D/g, '').slice(0, 2))}
+                            onKeyDown={onEnterKey}
+                            className="sv-field"
+                            style={{ textAlign: 'center', letterSpacing: '0.08em' }}
+                          />
+                        </div>
+                      ))}
+                    </div>
                     <p className="sv-serif" style={{ marginTop: 10, fontSize: 13, color: 'var(--sv-mute)', lineHeight: 1.5 }}>
                       {q.helper}
                     </p>
@@ -441,22 +539,23 @@ export default function QuizPage({ onComplete, onBack }: Props) {
                       type="button"
                       onClick={skipTime}
                       style={{
-                        marginTop: 6,
+                        marginTop: 14,
                         display: 'inline-flex',
-                        alignItems: 'center',
-                        minHeight: 48,
+                        alignItems: 'center', justifyContent: 'center',
+                        width: '100%', minHeight: 48,
                         background: 'none',
-                        border: 'none',
-                        padding: '0 2px',
+                        border: '1px solid var(--sv-line)',
+                        borderRadius: 2,
+                        padding: '14px 18px',
                         cursor: 'pointer',
                         fontFamily: 'var(--sv-font)',
-                        fontSize: 13,
+                        fontWeight: 400,
+                        fontSize: 14,
+                        letterSpacing: '0.02em',
                         color: 'var(--sv-ink)',
-                        textDecoration: 'underline',
-                        textUnderlineOffset: 3,
                       }}
                     >
-                      I don't know my birth time
+                      I don&rsquo;t know my birth time
                     </button>
                   </>
                 )}
@@ -478,9 +577,8 @@ export default function QuizPage({ onComplete, onBack }: Props) {
                           style={{
                             listStyle: 'none', margin: 0, padding: 0,
                             position: 'absolute', top: 'calc(100% + 8px)', left: 0, right: 0, zIndex: 20,
-                            background: '#FBFAF7',
-                            WebkitBackdropFilter: 'blur(12px)', backdropFilter: 'blur(12px)',
-                            border: '1px solid #E4E0D6', borderRadius: 12,
+                            background: '#0C0C0B',
+                            border: '1px solid rgba(251,250,247,0.28)', borderRadius: 2,
                             overflow: 'hidden', boxShadow: 'none',
                           }}
                         >
@@ -493,10 +591,10 @@ export default function QuizPage({ onComplete, onBack }: Props) {
                                   display: 'flex', alignItems: 'center', width: '100%', minHeight: 48,
                                   padding: '10px 14px', textAlign: 'left', cursor: 'pointer',
                                   background: 'transparent', border: 'none',
-                                  borderTop: idx === 0 ? 'none' : '1px solid #E4E0D6',
+                                  borderTop: idx === 0 ? 'none' : '1px solid rgba(251,250,247,0.16)',
                                   color: 'var(--sv-ink)', fontFamily: 'var(--sv-font)', fontSize: 15, lineHeight: 1.4,
                                 }}
-                                onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(26,26,26,0.05)')}
+                                onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(251,250,247,0.10)')}
                                 onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                               >
                                 {formatPlace(item)}
