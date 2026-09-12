@@ -580,3 +580,34 @@ two-digit day box and then blamed the product when Next stayed disabled; and my
 for the whole app while every page paints over it — it measures the rendered
 screen now. **Open:** the disabled Next button sits at about 4.2:1, under the
 4.5 bar but inside the inactive-control exemption, and it was the same on paper.
+
+---
+
+**2026-09-12 — Voice input, and the read as the headline.** Two builds, both
+deployed at `645ac44`, 49/49 on production. **Say it instead:** a mic in the
+corner of the six fields people write themselves into — the fear, the life, the
+pattern, the target, the cost, and the filing. Web Speech, no dependency. Words
+land as text and stay editable, dictation appends rather than replaces, and where
+the browser has no recognition nothing renders at all. A refused microphone
+removes its own control, because refusal cannot be undone inside a session and
+leaving it would be a button that does nothing forever. **The read is the
+headline:** it was the smallest thing in the morning email — declaration 17px,
+read 15px in grey, act 19px in black — so the one line written about this person
+this morning came third, under two lines that are not it. It now opens the body
+at 26px in black, and the **subject line is the sentence itself** rather than
+"Day 4", trimmed at a word boundary. On the Ledger it is 27px against the act's
+16px. Day seven deliberately keeps its own subject and still carries no read: the
+week read is the payoff of the whole seven days and it is spent the moment it
+lands in an inbox. **What broke:** the subject trim was one character over its
+own limit, because the ellipsis was appended after slicing to the limit rather
+than inside it — which is the entire point of having one; the mic glyph was at
+the muted colour *and* 0.75 opacity, measuring 2.54:1 on the cream reveal against
+the 3:1 a control needs, so the opacity is gone and quiet is a colour; and my
+`/ledger` probe printed "the session this used was deleted" from inside a
+`.catch(() => {})`, so it reported a cleanup that had not happened. **Open, and
+mine:** accounts had grown to 160 because every local Playwright context mints an
+anonymous identity and my ad-hoc probes do not use the check's recorded-session
+cleanup. Swept 127 empty anonymous rows older than an hour plus the one probe
+account by hand; 33 accounts left, 14 blueprints and 22 ledger rows intact, zero
+orphans. The browser check cleans up after itself; my one-off probes still do
+not, and that is the third time this has come up.
