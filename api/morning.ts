@@ -123,14 +123,26 @@ function esc(text: string): string {
    into an error page for someone whose browser was signed in the whole time. The
    magic link is underneath, for the case it was always for: a device that has
    never seen this account. */
+/* The read leads.
+ *
+ * It used to sit third: the declaration at 17px, then the read at 15px in grey,
+ * then the act at 19px in black. The one sentence in this product that no other
+ * product can write was the smallest and faintest thing in the email, under two
+ * lines that are not it. It is the headline now — display size, black, first —
+ * and the act follows from it, quieter.
+ *
+ * The declaration moves under the read rather than out. It is still the line
+ * they wrote themselves into, and it still explains why the act underneath is
+ * theirs; it is simply no longer the first thing said, because it is the same
+ * every morning and the read never is. */
 export function emailHtml(declaration: string, read: string, mission: string, link: string, newDeviceLink?: string): string {
   return `<!doctype html><html><body style="margin:0;padding:0;background:#FBFAF7;">
   <div style="max-width:520px;margin:0 auto;padding:48px 24px;font-family:Geist,Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1A1A1A;">
     <div style="font-size:13px;letter-spacing:0.22em;font-weight:700;color:#1A1A1A;">SOVRN</div>
     <div style="height:1px;background:#E4E0D6;margin:14px 0 32px;"></div>
-    ${declaration ? `<p style="margin:0 0 22px;font-size:17px;line-height:1.55;font-weight:400;color:#1A1A1A;">${esc(declaration)}</p>` : ''}
-    ${read ? `<p style="margin:0 0 20px;font-size:15px;line-height:1.65;font-weight:300;color:#6E6A66;">${esc(read)}</p>` : ''}
-    <p style="margin:0;font-size:19px;line-height:1.5;font-weight:400;color:#1A1A1A;">${esc(mission).replace(/\n/g, '<br>')}</p>
+    ${read ? `<p style="margin:0 0 26px;font-size:26px;line-height:1.35;font-weight:300;letter-spacing:-0.01em;color:#000000;">${esc(read)}</p>` : ''}
+    ${declaration ? `<p style="margin:0 0 22px;font-size:15px;line-height:1.6;font-weight:300;color:#6E6A66;">${esc(declaration)}</p>` : ''}
+    <p style="margin:0;font-size:17px;line-height:1.55;font-weight:400;color:#1A1A1A;">${esc(mission).replace(/\n/g, '<br>')}</p>
     <a href="${link}" style="display:inline-block;margin-top:32px;padding:16px 28px;background:#000000;color:#FBFAF7;text-decoration:none;font-size:13px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;border-radius:2px;">Open your Ledger</a>
     ${newDeviceLink ? `<p style="margin:16px 0 0;font-size:12px;line-height:1.6;color:#9A9A9A;">Opening this on a device you have not used before? <a href="${newDeviceLink}" style="color:#6E6A66;">Sign in with a link instead</a>.</p>` : ''}
     <div style="height:1px;background:#E4E0D6;margin:40px 0 16px;"></div>
@@ -141,8 +153,34 @@ export function emailHtml(declaration: string, read: string, mission: string, li
   </div></body></html>`;
 }
 
+
+/* The subject line is the read itself.
+ *
+ * "Day 4" is a filing reference. It tells someone which email this is and
+ * nothing about why to open it, and in an inbox it competes with every other
+ * numbered notification ever sent. The read is a sentence about them, written
+ * this morning, and it is the only thing here worth putting in front of someone
+ * who has not opened anything yet.
+ *
+ * Trimmed at a word boundary, because a subject line is cut by the client at a
+ * width nobody controls and a sentence severed mid-word reads as a bug. The day
+ * number is the fallback for an entry written before reads existed. */
+export function emailSubject(read: string, fallback: string): string {
+  const LIMIT = 78;
+  const line = (read ?? '').trim().replace(/\s+/g, ' ');
+  if (!line) return fallback;
+  if (line.length <= LIMIT) return line;
+  /* The ellipsis is part of the budget. Slicing to the limit and then adding it
+     produced a subject one character over — which is the whole point of having
+     a limit. */
+  const cut = line.slice(0, LIMIT - 1);
+  const lastSpace = cut.lastIndexOf(' ');
+  const body = lastSpace > 40 ? cut.slice(0, lastSpace) : cut;
+  return `${body.replace(/[.,;:]$/, '')}…`;
+}
+
 export function emailText(declaration: string, read: string, mission: string, link: string, newDeviceLink?: string): string {
-  return `${declaration ? declaration + '\n\n' : ''}${read ? read + '\n\n' : ''}${mission}\n\nOpen your Ledger: ${link}${newDeviceLink ? `\n\nOn a new device, sign in with a link instead: ${newDeviceLink}` : ''}\n\n—\n${SITE}/delete to remove everything.`;
+  return `${read ? read + '\n\n' : ''}${declaration ? declaration + '\n\n' : ''}${mission}\n\nOpen your Ledger: ${link}${newDeviceLink ? `\n\nOn a new device, sign in with a link instead: ${newDeviceLink}` : ''}\n\n—\n${SITE}/delete to remove everything.`;
 }
 
 async function sendViaResend(to: string, subject: string, html: string, text: string) {
@@ -236,6 +274,11 @@ async function sendRecalibration(
   const declaration = (row?.declaration_line ?? '').trim();
   const out = await sendViaResend(
     address,
+    /* Day seven keeps its own subject, and its body still carries no read.
+       The week read is the payoff of the whole seven days and it is spent the
+       moment it is put in an inbox — it waits on the screen, under the becoming
+       being un-redacted, which is the one piece of ceremony this product has.
+       Promoting the read everywhere does not mean spending it here. */
     'Seven days.',
     emailHtml(declaration, '', question, `${SITE}/ledger`, linkData.properties.action_link),
     emailText(declaration, '', question, `${SITE}/ledger`, linkData.properties.action_link)
@@ -449,7 +492,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const declaration = (row?.declaration_line ?? '').trim();
     const out = await sendViaResend(
       address,
-      `Day ${nextDay}`,
+      emailSubject(day.read ?? '', `Day ${nextDay}`),
       emailHtml(declaration, day.read ?? '', day.hard, `${SITE}/ledger`, link),
       emailText(declaration, day.read ?? '', day.hard, `${SITE}/ledger`, link)
     );

@@ -141,10 +141,11 @@ export default function DaySeven({ entry, entries, becoming, timezone, onChanged
         {entry.read_line && (
           <p
             style={{
-              margin: '0 0 40px',
+              margin: '0 0 44px',
               fontFamily: 'var(--sv-font)', fontWeight: 300,
-              fontSize: 'clamp(17px, 4.6vw, 20px)', lineHeight: 1.6,
-              letterSpacing: '-0.005em', color: '#1A1A1A',
+              fontSize: 'clamp(24px, 6.4vw, 30px)', lineHeight: 1.34,
+              letterSpacing: '-0.015em', color: '#000000',
+              textWrap: 'balance',
             }}
           >
             {entry.read_line}

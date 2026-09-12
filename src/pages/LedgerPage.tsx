@@ -311,20 +311,25 @@ export default function LedgerPage() {
         {current.read_line && (
           <p
             style={{
-              margin: '0 0 28px',
+              margin: '0 0 30px',
               fontFamily: 'var(--sv-font)', fontWeight: 300,
-              fontSize: 'clamp(20px, 5.4vw, 24px)', lineHeight: 1.42,
-              letterSpacing: '-0.01em', color: '#000000',
+              fontSize: 'clamp(26px, 7vw, 34px)', lineHeight: 1.28,
+              letterSpacing: '-0.015em', color: '#000000',
+              textWrap: 'balance',
             }}
           >
             {current.read_line}
           </p>
         )}
         <div style={{ borderTop: '1px solid #E4E0D6', paddingTop: 22 }}>
-          <p className="sv-label" style={{ fontSize: 11, color: '#000000', letterSpacing: '0.14em' }}>
+          <p className="sv-label" style={{ fontSize: 11, color: '#6E6A66', letterSpacing: '0.14em' }}>
             DAY {current.day_number} · Committed {formatTime(current.committed_at)} · Open
           </p>
-          <p style={{ marginTop: 12, fontFamily: 'var(--sv-font)', fontWeight: 400, fontSize: 17, lineHeight: 1.55, color: '#1A1A1A' }}>
+          {/* The act, under the read and quieter than it. It used to be set at
+              the same weight and nearly the same size, which made the page two
+              headlines — and of the two, the one written about this person this
+              morning is the one worth reading first. */}
+          <p style={{ marginTop: 12, fontFamily: 'var(--sv-font)', fontWeight: 400, fontSize: 16, lineHeight: 1.55, color: '#1A1A1A' }}>
             {current.mission_text}
           </p>
 
