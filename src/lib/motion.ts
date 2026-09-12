@@ -73,6 +73,39 @@ export const T = {
     loop: 0.7,
   },
 
+  /* 2b — the crystallization reveal.
+
+     Six frames resolve from near-chaos into the mark, then the page holds on a
+     finished picture for a full second before a single word appears. The hold
+     is the point: the sequence is not a loader finishing, it is a thing
+     arriving and then being looked at. Nothing overlaps — every beat has the
+     screen to itself.
+
+       0.0 -> 1.6   x1 crystallizes through to x6
+       1.6 -> 2.6   hold, resolved, no text
+       2.6          the name stamps in
+       3.4          the loop line fades under it
+       4.0          the three sections rise
+
+     The advance is eased rather than linear, so the early frames pass quickly
+     and the last ones settle — the picture resolves fast and then finishes
+     slowly, which is how the eye expects a thing coming into focus to behave. */
+  crystal: {
+    advance: 1.6,
+    hold: 1.0,           // 1.6 -> 2.6, on a finished card, in silence
+    nameAt: 2.6,
+    nameStamp: 0.18,     // scale only; the opacity is a hard cut
+    nameScaleFrom: 1.04,
+    loopAt: 3.4,
+    loop: 0.4,
+    cardsAt: 4.0,
+    cardsStagger: 0.12,
+    /* Reduced motion: no crystallization at all. The final frame cross-fades in
+       and every later beat keeps its place in the sequence, so the reveal still
+       reads in the same order — it just does not animate its way there. */
+    reducedFade: 0.4,
+  },
+
   /* 3 — the three cards */
   cards: {
     firstAt: 1.7,          // after the header has settled

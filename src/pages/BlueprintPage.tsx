@@ -8,6 +8,7 @@ import type { LedgerEntry } from '../lib/ledger';
 import { parseBlueprint, teaser } from '../lib/blueprint';
 import RevealCard from '../components/RevealCard';
 import ArchetypeMark from '../components/ArchetypeMark';
+import Crystallization from '../components/Crystallization';
 import SaveCard from '../components/SaveCard';
 import SurfaceNav, { NavLink } from '../components/SurfaceNav';
 import TargetAdmission from '../components/TargetAdmission';
@@ -30,7 +31,16 @@ interface Props {
      an act with nothing to serve is the thing this build exists to end. */
   hasCycle?: boolean;
   onCycleOpened?: () => void | Promise<void>;
+  /* The first reveal, with all six crystallization frames already decoded. Runs
+     the four-beat sequence; false opens on the finished mark and the shorter
+     header timeline the page has always had. */
+  crystallize?: boolean;
 }
+
+/* The card on the reveal. Named once because the crystallization and the
+   finished mark both render into it and a difference between them would show up
+   as the picture jumping at the end of the sequence. */
+const MARK_SIZE = 'clamp(220px, 58vw, 280px)';
 
 const QUIET_LINK: React.CSSProperties = {
   background: 'none', border: 'none', padding: '8px 2px', cursor: 'pointer',
@@ -69,6 +79,7 @@ function Body({ text }: { text: string }) {
 export default function BlueprintPage({
   text, quizData = null, dayOne = null, onChooseAct, readOnly = false, chosen = null,
   hasCycle = true, onCycleOpened,
+  crystallize = false,
 }: Props) {
   /* Derived from the reading, not rolled fresh. It was Math.random() in a state
      initialiser, so the same person's blueprint was No. 6936, then 3289, then
@@ -100,11 +111,42 @@ export default function BlueprintPage({
     const reduced = prefersReducedMotion();
     const ctx = gsap.context(() => {
       const tl = gsap.timeline();
+
+      if (crystallize && !reduced) {
+        /* The four beats. The mark is already on screen and crystallizing under
+           its own tween; this timeline owns everything that comes after it, and
+           the numbers are absolute positions on one clock rather than delays
+           chained off each other, so the gaps stay exactly as specified when any
+           single duration is tuned.
+
+           The name is a stamp, not a fade: it scales down the last 4% and its
+           opacity is a hard cut at the same instant. A word that fades up is
+           still arriving; a word that is simply there has arrived. */
+        tl.set(nameRef.current, { opacity: 1, scale: T.crystal.nameScaleFrom }, T.crystal.nameAt);
+        tl.to(nameRef.current,
+          { scale: 1, duration: T.crystal.nameStamp, ease: EASE.in },
+          T.crystal.nameAt);
+
+        /* "In progress" belongs with the loop line, not with the stamp. Both are
+           qualifications of the name and the name is given its own second before
+           anything qualifies it. */
+        for (const el of [progressRef.current, loopRef.current]) {
+          if (!el) continue;
+          tl.fromTo(el, { opacity: 0 },
+            { opacity: 1, duration: T.crystal.loop, ease: EASE.in },
+            T.crystal.loopAt);
+        }
+        return;
+      }
+
+      /* Every other way onto this page: the saved view, a return visit, reduced
+         motion. The mark is finished on arrival and cross-fades in where the
+         crystallization would have ended. */
+      tl.fromTo(markRef.current, { opacity: 0 },
+        { opacity: 1, duration: reduced ? T.crystal.reducedFade : T.reveal.mark, ease: EASE.in },
+        0);
       tl.fromTo(nameRef.current, { opacity: 0 },
-        { opacity: 1, duration: reduced ? 0.01 : T.reveal.name, ease: EASE.in }, 0);
-      tl.fromTo(markRef.current,
-        { opacity: 0, scale: reduced ? 1 : T.reveal.markFrom },
-        { opacity: 1, scale: 1, duration: reduced ? 0.01 : T.reveal.mark, ease: EASE.in },
+        { opacity: 1, duration: reduced ? 0.01 : T.reveal.name, ease: EASE.in },
         reduced ? 0 : T.reveal.markAt);
       if (progressRef.current) {
         tl.fromTo(progressRef.current, { opacity: 0 },
@@ -118,7 +160,12 @@ export default function BlueprintPage({
       }
     }, headerRef);
     return () => ctx.revert();
-  }, [bp.becoming, bp.loop]);
+  }, [bp.becoming, bp.loop, crystallize]);
+
+  /* Spread onto all three so a change lands on all three. */
+  const cardTiming = crystallize && !prefersReducedMotion()
+    ? { enterAt: T.crystal.cardsAt, stagger: T.crystal.cardsStagger }
+    : {};
 
   const choose = async (which: 'hard' | 'next') => {
     if (saving || dayOne || readOnly || !onChooseAct) return;
@@ -245,13 +292,30 @@ export default function BlueprintPage({
         <div ref={headerRef} style={{ paddingTop: '9vh', textAlign: 'center' }}>
           {/* The mark, above the name. Falls back to the square until the art
               exists, which is what it renders today. */}
-          <div ref={markRef} style={{ display: 'flex', justifyContent: 'center', marginBottom: 14, opacity: 0 }}>
-            <ArchetypeMark becoming={bp.becoming} size="clamp(220px, 58vw, 280px)" />
+          {/* The card. On the first reveal it is already on screen at frame one
+              when this paints — no opacity of its own, nothing to fade — and it
+              resolves into the mark under its own tween. Everywhere else the
+              slot starts at zero and the header timeline fades the finished mark
+              in. The two cases render the same box at the same size, so the
+              picture ends up in exactly the same place either way. */}
+          <div
+            ref={markRef}
+            style={{
+              display: 'flex', justifyContent: 'center', marginBottom: 14,
+              opacity: crystallize ? 1 : 0,
+            }}
+          >
+            {crystallize
+              ? <Crystallization becoming={bp.becoming} size={MARK_SIZE} ready />
+              : <ArchetypeMark becoming={bp.becoming} size={MARK_SIZE} />}
           </div>
 
           <h1
             ref={nameRef}
             style={{
+              /* Hidden on both routes until its beat — the stamp sets opacity to
+                 1 outright rather than tweening it, so there is no fade to
+                 catch it half-way. */
               opacity: 0,
               fontFamily: 'var(--sv-font)',
               fontWeight: 300,
@@ -294,17 +358,20 @@ export default function BlueprintPage({
           )}
         </div>
 
-        {/* Three cards, collapsed by default */}
+        {/* Three cards, collapsed by default. On the crystallization reveal they
+            are held until 4.0s — after the mark has resolved, after the name has
+            stamped, after the loop line. They rise last because they are the
+            only thing on the page that asks anything of the reader. */}
         <div style={{ marginTop: 56 }}>
-          <RevealCard header="WHO YOU ARE" teaser={teaser(bp.whoYouAre)} index={0}>
+          <RevealCard header="WHO YOU ARE" teaser={teaser(bp.whoYouAre)} index={0} {...cardTiming}>
             <Body text={bp.whoYouAre} />
           </RevealCard>
 
-          <RevealCard header="THE PATTERN" teaser={teaser(bp.thePattern)} index={1}>
+          <RevealCard header="THE PATTERN" teaser={teaser(bp.thePattern)} index={1} {...cardTiming}>
             <Body text={bp.thePattern} />
           </RevealCard>
 
-          <RevealCard header="ONE ACT" teaser={oneActTeaser} index={2} defaultOpen>
+          <RevealCard header="ONE ACT" teaser={oneActTeaser} index={2} {...cardTiming} defaultOpen>
             {!readOnly && !dayOne && !hasCycle ? (
               /* The naming comes first. Everything after it points somewhere. */
               <TargetAdmission onOpened={() => onCycleOpened?.() ?? undefined} />

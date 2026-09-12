@@ -3,6 +3,7 @@ import { useRef } from 'react';
 import { useFadeTo } from '../components/Fade';
 import SquareReveal from '../components/SquareReveal';
 import { T, prefersReducedMotion } from '../lib/motion';
+import { markFrameUrls, preloadFrames } from '../lib/marks';
 
 interface Props {
   /* Set when generation failed. The person stays here rather than being sent
@@ -10,10 +11,14 @@ interface Props {
      localStorage, and retry reuses them. */
   error?: string | null;
   onRetry?: () => void;
-  /** Set the moment the reading arrives. Runs the square's dissolve into the name. */
+  /* Set the moment the reading arrives. The square completes its fill and the
+     page turns; the name itself now belongs to the reveal, which stamps it in
+     after the mark has crystallized. */
   archetype?: string | null;
-  /** Called once the name has landed and the reading is allowed to open. */
-  onRevealed?: () => void;
+  /* Called when the reveal may open. The flag says whether all six
+     crystallization frames decoded in time — false means the reveal shows the
+     finished mark instead, and never a half-run sequence. */
+  onRevealed?: (framesReady: boolean) => void;
 }
 
 
@@ -37,12 +42,35 @@ export default function LoadingPage({ error = null, onRetry, archetype = null, o
   const reduceMotion = prefersReducedMotion();
   const done = Boolean(archetype);
 
-  /* Hold on the name before handing over to the reading. */
+  /* The hand-over.
+
+     Two things have to finish before the page turns: the square has to close out
+     its fill, so the reveal opens on the same solid black it left on, and all
+     six crystallization frames have to be decoded, so frame one paints on the
+     reveal's first frame rather than a beat later. Both run at once and the
+     slower one decides — but the frames are never allowed to be the reason
+     someone waits, so preloadFrames gives up on its own and reports false.
+
+     Under reduced motion there is nothing to preload: the reveal cross-fades
+     the finished mark in and the five earlier frames are never fetched. */
   useEffect(() => {
     if (!done || !onRevealed) return;
-    const t = setTimeout(onRevealed, (reduceMotion ? 0.4 : T.square.hold) * 1000);
-    return () => clearTimeout(t);
-  }, [done, onRevealed, reduceMotion]);
+    let live = true;
+
+    const settled = new Promise<void>((resolve) => {
+      setTimeout(resolve, (reduceMotion ? 0 : T.square.fillCatchUp) * 1000);
+    });
+    const urls = markFrameUrls(archetype);
+    const frames = reduceMotion || !urls
+      ? Promise.resolve(false)
+      : preloadFrames(urls);
+
+    void Promise.all([settled, frames]).then(([, framesReady]) => {
+      if (live) onRevealed(framesReady);
+    });
+
+    return () => { live = false; };
+  }, [done, onRevealed, reduceMotion, archetype]);
 
   /* The caption fades up while the square fills, and out again the moment the
      name takes its place. */
@@ -107,7 +135,10 @@ export default function LoadingPage({ error = null, onRetry, archetype = null, o
         <>
           {/* The same mark, and the same motion, the becoming resolves with on
               day 7. One component so the two cannot drift apart. */}
-          <SquareReveal name={archetype} fillDuration={T.square.fill} breathe size={SIZE} />
+          {/* The square no longer dissolves into the name — it completes, and
+              the reveal picks the same rectangle up as the first frame of the
+              crystallization. `name` is left unset on purpose. */}
+          <SquareReveal name={null} settle={done} fillDuration={T.square.fill} breathe size={SIZE} />
 
           <p
             ref={captionRef}

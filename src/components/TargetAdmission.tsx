@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { admitTarget, openCycle, type Admission } from '../lib/cycle';
 
 interface Props {
@@ -58,15 +58,27 @@ export default function TargetAdmission({ onOpened }: Props) {
     await onOpened();
   };
 
+  /* Focus without scrolling.
+
+     `autoFocus` on the first textarea made the browser scroll it into view the
+     moment the reveal mounted, which put the archetype card — and the name above
+     it — off the top of the screen before anyone had seen either. The whole
+     crystallization was running above the fold, to nobody. The focus is still
+     wanted, so it is taken by hand with preventScroll rather than dropped. */
+  const focusRef = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => {
+    focusRef.current?.focus({ preventScroll: true });
+  }, [step]);
+
   return (
     <div style={{ maxWidth: 520, margin: '0 auto' }}>
       {step === 'name' && (
         <>
           <p style={LABEL}>What have you been putting off?</p>
           <textarea
+            ref={focusRef}
             value={target}
             rows={3}
-            autoFocus
             onChange={(e) => setTarget(e.target.value)}
             style={FIELD}
           />
@@ -89,9 +101,9 @@ export default function TargetAdmission({ onOpened }: Props) {
         <>
           <p style={LABEL}>What does it cost you that this hasn&rsquo;t happened?</p>
           <textarea
+            ref={focusRef}
             value={cost}
             rows={4}
-            autoFocus
             onChange={(e) => setCost(e.target.value)}
             style={FIELD}
           />

@@ -5,6 +5,11 @@ import { EASE, T, prefersReducedMotion } from '../lib/motion';
 interface Props {
   /** Set to run the dissolve. Until then the square holds. */
   name: string | null;
+  /* Finish the fill and stop the breath, without dissolving and without a name.
+     The crystallization reveal hands over from a solid black square to a solid
+     black card, so the square has to *complete* rather than leave — it is the
+     same rectangle continuing, not one object replacing another. */
+  settle?: boolean;
   /* Seconds for the square to fill from outline to solid. 0 means it is already
      solid — day 7 opens on a finished mark, not a filling one. */
   fillDuration?: number;
@@ -33,6 +38,7 @@ interface Props {
    as one frozen frame and the name cross-fades in its place. */
 export default function SquareReveal({
   name,
+  settle = false,
   fillDuration = 0,
   breathe = false,
   size = 'clamp(132px, 42vw, 180px)',
@@ -78,6 +84,25 @@ export default function SquareReveal({
     }, root);
     return () => ctx.revert();
   }, [fillDuration, breathe]);
+
+  /* Completing in place: the fill runs out, the breath stops, nothing leaves.
+     What follows this is the first frame of the crystallization, at the same
+     black, so the handover is a change of size and not a change of subject. */
+  useEffect(() => {
+    if (!settle) return;
+    const reduced = prefersReducedMotion();
+    const ctx = gsap.context(() => {
+      fillTween.current?.kill();
+      gsap.killTweensOf(breathEl.current);
+      gsap.to(breathEl.current, { scale: 1, duration: reduced ? 0 : 0.2, ease: EASE.in });
+      gsap.to(fillEl.current, {
+        height: '100%',
+        duration: reduced ? 0 : T.square.fillCatchUp,
+        ease: EASE.in,
+      });
+    }, root);
+    return () => ctx.revert();
+  }, [settle]);
 
   /* The arrival. */
   useEffect(() => {

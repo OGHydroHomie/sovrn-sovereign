@@ -5,6 +5,8 @@ import ThresholdPage from './pages/ThresholdPage';
 import QuizPage from './pages/QuizPage';
 import LoadingPage from './pages/LoadingPage';
 import BlueprintPage from './pages/BlueprintPage';
+import { markFrameUrls, preloadFrames } from './lib/marks';
+import { prefersReducedMotion } from './lib/motion';
 import type { AppPage, QuizData } from './types';
 import { generateBlueprint } from './utils/api';
 import { saveBlueprint, getBlueprint, getQuizData, trackEvent } from './utils/storage';
@@ -60,6 +62,11 @@ export default function App() {
      appearing on one screen and again on the next. */
   const [archetype, setArchetype] = useState<string | null>(null);
   const [cycle, setCycle] = useState<Cycle | null>(null);
+  /* True for one showing only: the first reveal, with all six frames decoded.
+     A returning visitor and the saved view open on the finished mark — a
+     picture comes into focus once, and replaying it on every visit would turn
+     the one moment the product spends on ceremony into a transition. */
+  const [crystallize, setCrystallize] = useState(false);
   const blueprintRef = useRef('');
   /* Mirrors quizData for callbacks that must not re-create on every answer. */
   const quizRef = useRef<QuizData | null>(null);
@@ -118,6 +125,25 @@ export default function App() {
       const s = params.get('screen');
       if (s === 'loading' || s === 'quiz') {
         setPage(s);
+        /* ?screen=loading&land=2000 lands a mock reading after two seconds and
+           then leaves the app alone. Everything after that is the real path —
+           the square settles, LoadingPage preloads the frames, handleRevealed
+           fires with what it found, the reveal opens and crystallizes. It is
+           the only way to look at the hand-over between the two screens without
+           spending twenty seconds and a generation on it. */
+        const land = Number(params.get('land'));
+        if (s === 'loading' && Number.isFinite(land) && land > 0) {
+          setQuizData({
+            name: 'Elijah', birthDate: '1990-04-05', birthTime: '08:30',
+            birthTimeUnknown: false, birthPlace: 'Detroit, USA',
+            deepestFear: '', desiredReality: '', repeatingPattern: '', email: '',
+          });
+          setTimeout(() => {
+            setBlueprint(DEV_MOCK_BLUEPRINT);
+            blueprintRef.current = DEV_MOCK_BLUEPRINT;
+            setArchetype(parseBlueprint(DEV_MOCK_BLUEPRINT).becoming || 'YOUR BLUEPRINT');
+          }, land);
+        }
       } else if (s === 'blueprint') {
         setQuizData({
           name: 'Elijah', birthDate: '1990-04-05', birthTime: '08:30',
@@ -126,7 +152,22 @@ export default function App() {
         });
         setBlueprint(DEV_MOCK_BLUEPRINT);
         blueprintRef.current = DEV_MOCK_BLUEPRINT;
-        setPage('blueprint');
+        /* ?screen=blueprint&crystallize=1 previews the reveal sequence. It goes
+           through the same preload and the same flag the real path uses — the
+           only thing skipped is the twenty seconds of generation in front of
+           it — so what runs here is what runs after a real reading lands. */
+        if (params.get('crystallize') === '1') {
+          /* Mirrors LoadingPage exactly, including not fetching the five earlier
+             frames when the person has asked for less motion — a preview that
+             loads what the real path would not is a preview of something else. */
+          const urls = prefersReducedMotion() ? null : markFrameUrls(parseBlueprint(DEV_MOCK_BLUEPRINT).becoming);
+          void (urls ? preloadFrames(urls) : Promise.resolve(false)).then((ok) => {
+            setCrystallize(ok);
+            setPage('blueprint');
+          });
+        } else {
+          setPage('blueprint');
+        }
       }
     }
   }, []);
@@ -168,7 +209,14 @@ export default function App() {
 
   /* Stable identity: LoadingPage holds this in a timer, and a new function on
      every render would restart the hold and never fire. */
-  const handleRevealed = useCallback(() => setPage('blueprint'), []);
+  const handleRevealed = useCallback((framesReady: boolean) => {
+    /* The sequence starts at the top of the page or it starts off-screen. Every
+       other transition in this file already does this; the reveal did not, and
+       an autofocus inside it was quietly scrolling the card out of view. */
+    window.scrollTo(0, 0);
+    setCrystallize(framesReady);
+    setPage('blueprint');
+  }, []);
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#FBFAF7', position: 'relative' }}>
@@ -224,17 +272,36 @@ export default function App() {
           </Fade>
         )}
 
+        {/* The reveal is the one page that does not fade in. Frame one of the
+            crystallization has to be on screen in the first paint, at full
+            opacity, continuing the black square the loading screen just
+            finished filling — a 300ms cross-fade over the top of that is the
+            seam the sequence exists to avoid. Every other route here still
+            fades, because for them this is a page change like any other. */}
         {page === 'blueprint' && quizData && (
-          <Fade key="blueprint" duration={0.3}>
+          crystallize ? (
             <BlueprintPage
+              key="blueprint"
               text={blueprint}
               quizData={quizData}
               dayOne={dayOne}
               onChooseAct={handleChooseAct}
               hasCycle={Boolean(cycle)}
               onCycleOpened={refreshCycle}
+              crystallize
             />
-          </Fade>
+          ) : (
+            <Fade key="blueprint" duration={0.3}>
+              <BlueprintPage
+                text={blueprint}
+                quizData={quizData}
+                dayOne={dayOne}
+                onChooseAct={handleChooseAct}
+                hasCycle={Boolean(cycle)}
+                onCycleOpened={refreshCycle}
+              />
+            </Fade>
+          )
         )}
       </div>
 

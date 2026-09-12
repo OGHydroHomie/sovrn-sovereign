@@ -10,6 +10,11 @@ interface Props {
   /* Open on arrival. ONE ACT uses it: the act is the point of the page and a
      collapsed toggle is not the loudest thing on any screen. */
   defaultOpen?: boolean;
+  /* When the first of the three arrives, and the gap between them. The
+     crystallization reveal holds them back until the name and the loop line
+     have both landed; every other route uses the page's own shorter timing. */
+  enterAt?: number;
+  stagger?: number;
   children: ReactNode;
 }
 
@@ -25,7 +30,11 @@ function Chevron({ open }: { open: boolean }) {
   );
 }
 
-export default function RevealCard({ header, teaser, index, defaultOpen = false, children }: Props) {
+export default function RevealCard({
+  header, teaser, index, defaultOpen = false,
+  enterAt = T.cards.firstAt, stagger = T.cards.stagger,
+  children,
+}: Props) {
   const [open, setOpen] = useState(defaultOpen);
   const panelId = useId();
   const root = useRef<HTMLDivElement>(null);
@@ -42,12 +51,12 @@ export default function RevealCard({ header, teaser, index, defaultOpen = false,
         {
           opacity: 1, y: 0,
           duration: reduced ? 0.01 : T.cards.enter,
-          delay: reduced ? 0 : T.cards.firstAt + T.cards.stagger * index,
+          delay: reduced ? 0 : enterAt + stagger * index,
           ease: EASE.in,
         });
     }, root);
     return () => ctx.revert();
-  }, [index]);
+  }, [index, enterAt, stagger]);
 
   /* Open and close on a measured height.
 

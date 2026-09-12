@@ -38,3 +38,48 @@ export function markUrl(becoming: string | null | undefined): string | null {
   const slug = markSlug(becoming ?? '');
   return slug ? `${MARK_DIR}/${slug}.${MARK_EXT}` : null;
 }
+
+/* The crystallization frames: {slug}-x1 through {slug}-x6, near-chaos to
+   resolved. x6 is byte-identical to {slug}.png, which is what makes the last
+   frame and the settled mark the same picture rather than two that have to be
+   kept in step.
+
+   Six is the whole set. If the count ever changes, this constant and the files
+   move together — nothing else counts frames. */
+export const MARK_FRAMES = 6;
+
+/** The six frames in order, or null if there is no becoming to name them for. */
+export function markFrameUrls(becoming: string | null | undefined): string[] | null {
+  const slug = markSlug(becoming ?? '');
+  if (!slug) return null;
+  return Array.from({ length: MARK_FRAMES }, (_, i) => `${MARK_DIR}/${slug}-x${i + 1}.${MARK_EXT}`);
+}
+
+/**
+ * Fetch and decode every frame before anything animates.
+ *
+ * Resolves true only when all six are decoded and ready to paint. A stall
+ * halfway through the crystallization is worse than not running it at all —
+ * the sequence reads as one continuous event or it reads as broken — so the
+ * caller is expected to fall back to the final frame on false.
+ *
+ * `decode()` rather than `onload` because a loaded image can still block the
+ * first paint while the browser rasterises it, which is exactly the stall this
+ * is meant to rule out.
+ */
+export async function preloadFrames(urls: string[], timeoutMs = 6000): Promise<boolean> {
+  if (typeof window === 'undefined' || typeof Image === 'undefined') return false;
+
+  const load = (src: string) => new Promise<boolean>((resolve) => {
+    const img = new Image();
+    img.onload = () => (img.decode ? img.decode().then(() => resolve(true), () => resolve(true)) : resolve(true));
+    img.onerror = () => resolve(false);
+    img.src = src;
+  });
+
+  /* A slow connection must not hold the reading hostage. The reading is the
+     thing they waited for; the animation is how it arrives. */
+  const timeout = new Promise<boolean>((resolve) => setTimeout(() => resolve(false), timeoutMs));
+  const all = Promise.all(urls.map(load)).then((r) => r.every(Boolean));
+  return Promise.race([all, timeout]);
+}
