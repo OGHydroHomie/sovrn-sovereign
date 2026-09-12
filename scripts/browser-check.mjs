@@ -243,8 +243,16 @@ const shot = async (name) => { if (SHOTS) await page.screenshot({ path: `${SHOTS
 try {
   // ── Hero ──────────────────────────────────────────────────────────────────
   await page.goto(URL_, { waitUntil: 'networkidle', timeout: 60000 });
+  /* The hero is one image, one word and a mark now — the sentence that used to
+     be its heading was the threshold's, word for word. What identifies it is the
+     artwork being there and the page being dark. */
   const heroHeading = await page.locator('h1').first().innerText();
-  check('hero renders a heading', heroHeading.trim().length > 0, JSON.stringify(heroHeading.trim().slice(0, 44)));
+  check('hero renders a heading', heroHeading.trim() === 'SOVRN', JSON.stringify(heroHeading.trim().slice(0, 44)));
+  const heroArt = await page.locator('img[src*="hero-host"]').count();
+  check('the hero is the artwork', heroArt === 1, `${heroArt} hero image(s)`);
+  const heroWords = (await page.locator('body').innerText()).replace(/\s+/g, ' ').trim();
+  check('the hero explains nothing', heroWords.replace(/SOVRN|ascend|Enter|Your Ledger/g, '').trim().length === 0,
+    JSON.stringify(heroWords.slice(0, 80)));
 
   /* The app mints its anonymous identity on mount, so the account exists here —
      before a single question is answered. Record it now rather than after the
@@ -257,8 +265,10 @@ try {
   }
   await shot('01-hero');
 
-  await page.getByRole('button', { name: /begin your blueprint/i }).first().click();
-  await page.waitForTimeout(600);
+  /* Any of swipe, click, wheel, space or arrow-up; the check uses the one a
+     mouse would. The door takes 1.6s and the threshold fades up over 500ms. */
+  await page.locator('h1').first().click();
+  await page.waitForTimeout(2300);
   {
     /* The threshold has no heading any more — it was the hero's line word for
        word. What identifies it is the disclosure it exists to make, and that it

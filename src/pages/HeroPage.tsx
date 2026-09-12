@@ -178,9 +178,14 @@ export default function HeroPage({ onStart }: Props) {
         {/* SOVRN, above the door. The first word anyone reads. Display size and
             wide tracking; the same typeface as everything else. It does not
             breathe here — the hairline is the only motion on this screen. */}
-        <div
+        {/* The page's heading, and the only one it has. It is a brand mark set
+            large rather than a sentence, but it is still the thing this page is
+            called — and a landing page with no heading at all is a page a screen
+            reader cannot announce. */}
+        <h1
           ref={mark}
           style={{
+            margin: 0,
             position: 'absolute', left: 0, right: 0, top: '10.5%',
             textAlign: 'center', color: PAPER,
             fontFamily: 'var(--sv-font)', fontWeight: 300,
@@ -192,7 +197,7 @@ export default function HeroPage({ onStart }: Props) {
           }}
         >
           SOVRN
-        </div>
+        </h1>
 
         {/* One word, in the clean dark below the figure's feet at v 0.82. */}
         <div
