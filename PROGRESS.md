@@ -459,3 +459,43 @@ reaching full opacity now, not on a number of seconds. 42/42 after that. **Open:
 one empty anonymous account from 02:07 was deliberately left — it is younger than
 an hour, so it may be someone mid-flow rather than my litter, and the sweep's age
 guard exists precisely to not take that guess.
+
+---
+
+**2026-09-12 — Build A: the ascent, deployed.** The last four questions are a
+climb. The background is a dither field generated in code on one canvas — the
+same Floyd-Steinberg kernel the marks were processed with, run over the viewport
+at pixel scale 4, about twenty-one thousand pixels at 4.7ms a redraw. Four
+altitudes, and everything visible is a function of one number running 0 to 3, so
+there are no presets to step between. It ticks on `setTimeout`, five times a
+second while someone reads and thirty for the 1.2s of a move; a rAF loop would
+keep the compositor awake for the whole quiz. Reduced motion holds the field
+byte-identical over 2.5s and changes density only. Confirmed on production at
+`a1511ee`: canvas present, 108×200 buffer, 96.7% ink at the depths, zero dots
+over text. The seam assertion folded into the browser check ran for the first
+time on the first post-deploy run and passed with real numbers — square last
+painted at 56726ms, card first at 56752ms, **0 frames between, 0 empty**, frame
+one arriving at opacity 1. 44/44. **What broke:** four things, all mine and all
+found by looking rather than reasoning. The clearing behind the words thinned the
+field but never removed it — error diffusion cannot be asked to leave an area
+alone, and at 94% of the way to paper one dot in twenty still landed on the
+letterforms; the field is punched after the dither now, measured at 0.00% over
+every text element at every altitude. A move cross-faded density across the whole
+screen, so its midpoint was a full screen of 50% dither, which on the way down
+from the stars read as a blow-out to white; the altitude is a function of screen
+row during a move now and a boundary sweeps. Going back ran the same top-down
+sweep as going forward, so it felt like more climb rather than its undoing — it
+sweeps bottom-up now. And the first filmstrip I showed **mislabelled the
+descent**: I extracted frames by assuming when the Back click landed, so a frame
+captured mid-move was presented as a settled one; every strip is now cut from a
+clock started at the click and prints the headings it moved between. **What broke
+downstream:** the browser check failed its first post-deploy run — not a product
+fault, but the harness pacing its clicks at 500ms against a climb that refuses a
+second advance for 1.2s, so its clicks were silently ignored, later answers went
+into earlier fields, and it waited three minutes for a reveal that was never
+coming. It waits for the question to change now. That is the third time this week
+a fixed timeout in that file has reported the product as broken. **Open:** a
+throwaway production check I wrote to screenshot the climb failed its own
+cleanup, leaving one empty anonymous account; I removed it by hand and verified
+13 blueprints, 19 ledger rows and zero orphans intact. One-off scripts should use
+the check's own recorded-session cleanup rather than hand-rolling it.

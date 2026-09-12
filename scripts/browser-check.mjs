@@ -251,8 +251,18 @@ try {
     EMAIL.replace('@', `+bc${stamp}@`),
   ];
 
+  /* Wait for the question itself to change rather than for a number of
+     milliseconds. The last four questions are a climb, and a climb refuses a
+     second advance until it settles 1.2s later — so a harness pacing its clicks
+     at 500ms had its clicks silently ignored, typed the next answer into the
+     same field, and never reached question eight at all. The run then sat for
+     three minutes waiting for a reveal that was never coming. Waiting on the
+     product's own state is the only pacing that cannot go stale. */
+  const headingNow = async () =>
+    (await page.locator('h2').first().innerText().catch(() => '')).replace(/\s+/g, ' ').trim();
+
   for (let step = 0; step < answers.length; step++) {
-    await page.waitForTimeout(500);
+    const before = await headingNow();
     const field = page.locator('input:visible, textarea:visible').first();
     await field.waitFor({ state: 'visible', timeout: 20000 });
     await field.fill(answers[step]);
@@ -268,6 +278,22 @@ try {
       if (await consent.count()) await consent.check({ force: true });
     }
     await page.getByRole('button', { name: /continue|reveal|blueprint|next/i }).first().click();
+
+    if (step < answers.length - 1) {
+      /* The question has to actually change before the next answer is typed.
+         Question four hands off to the chart-insight reveal for three seconds
+         before question five appears, so this waits through that too. */
+      await page.waitForFunction(
+        (was) => {
+          const h = document.querySelector('h2');
+          const now = (h?.textContent ?? '').replace(/\s+/g, ' ').trim();
+          return now !== '' && now !== was;
+        },
+        before, { timeout: 30000, polling: 'raf' },
+      );
+      /* And a beat past the climb's settle, so the next click is not refused. */
+      await page.waitForTimeout(450);
+    }
   }
   check('quiz accepted all eight answers', true);
   await page.evaluate(() => window.__seam.start());
