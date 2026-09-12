@@ -124,7 +124,7 @@ export default function AscentField({
      something the tick does rather than something React re-renders. */
   const settle = useRef({ on: false, gain: 1, at: 0, told: false, seconds: settleSeconds });
   settle.current.seconds = settleSeconds;
-  const out = useRef({ on: false, at: 0, v: 0, seconds: dissolveSeconds, x: 0.5, y: 0.55 });
+  const out = useRef({ on: false, at: 0, v: 0, seconds: dissolveSeconds, x: 0.5, y: 0.55, done: false });
   out.current.seconds = dissolveSeconds;
 
   useEffect(() => {
@@ -276,6 +276,12 @@ export default function AscentField({
            it rather than chasing it. */
         const P = 1.7, c = Math.pow(2, P - 1);
         o.v = k < 0.5 ? c * Math.pow(k, P) : 1 - c * Math.pow(1 - k, P);
+        /* Once the paper has arrived the field has no further job, and leaving
+           it drawing is not free: the front is computed against the viewport's
+           proportions, so a rotation or a resize afterwards re-runs it against a
+           different shape and can bring the dark back on a page that finished
+           the sequence a minute ago. It also stops the tick for good. */
+        if (k >= 1) { o.done = true; canvas.style.display = 'none'; stopped = true; }
         const src = dissolveFrom?.current;
         if (src) {
           const b = src.getBoundingClientRect();

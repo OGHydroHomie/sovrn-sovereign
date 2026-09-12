@@ -380,16 +380,40 @@ try {
      occupies space — it just letterboxes inside a box of the wrong shape. So
      check the rendered box against the file's own dimensions, not against a
      minimum width. */
-  const mark = await page.locator('img[src*="/marks/"]').first().evaluate((el) => {
-    const r = el.getBoundingClientRect();
-    return {
-      natural: [el.naturalWidth, el.naturalHeight],
-      renderedRatio: r.width / r.height,
-      naturalRatio: el.naturalWidth / el.naturalHeight,
-      width: r.width,
-    };
-  }).catch(() => null);
+  /* On the first reveal the mark is a canvas the ink was painted into, not an
+     <img> — so the old selector found nothing and reported the mark missing on a
+     page that was showing it. Either is acceptable; what has to hold is the
+     shape and that something is actually drawn. */
+  const mark = await page.locator('canvas[data-crystallization], img[src*="/marks/"]').first()
+    .evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      const isCanvas = el.tagName === 'CANVAS';
+      let ink = 1;
+      if (isCanvas) {
+        try {
+          const t = document.createElement('canvas');
+          t.width = 40; t.height = 60;
+          const cc = t.getContext('2d');
+          cc.drawImage(el, 0, 0, 40, 60);
+          const d = cc.getImageData(0, 0, 40, 60).data;
+          let dark = 0;
+          for (let i = 0; i < d.length; i += 4) if (d[i + 3] > 8 && d[i] < 128) dark++;
+          ink = dark / (d.length / 4);
+        } catch { ink = -1; }
+      }
+      return {
+        natural: isCanvas ? ['canvas', `${el.width}x${el.height}`] : [el.naturalWidth, el.naturalHeight],
+        renderedRatio: r.width / r.height,
+        /* A canvas has no intrinsic size to compare against, so the art's own
+           2:3 is the reference instead. */
+        naturalRatio: isCanvas ? 1080 / 1620 : el.naturalWidth / el.naturalHeight,
+        width: r.width,
+        ink,
+      };
+    }).catch(() => null);
   check('archetype mark occupies space', !!mark && mark.width > 100, mark ? `${Math.round(mark.width)}px wide` : 'not found');
+  check('the mark has actually been drawn', !!mark && mark.ink > 0.2,
+    mark ? `${(mark.ink * 100).toFixed(0)}% ink on the card` : 'no mark');
   check(
     'archetype mark is drawn at the file\'s own aspect',
     !!mark && Math.abs(mark.renderedRatio - mark.naturalRatio) < 0.005,
@@ -472,9 +496,19 @@ try {
   await commit.waitFor({ state: 'visible', timeout: 20000 });
   check('the acts are offered once a target exists', true);
   await commit.click();
-  await page.waitForTimeout(4000);
-  check('committing writes the first act of the cycle',
-    /what actually happened/i.test(await page.locator('body').innerText()));
+  /* Wait for the act to be written rather than for four seconds. The commit
+     animation, the insert and the refresh are three round trips and the last of
+     them is not fast. */
+  await page.waitForFunction(
+    () => /what actually happened/i.test(document.body.innerText),
+    null, { timeout: 25000, polling: 500 },
+  ).catch(() => {});
+  const afterCommit = /what actually happened/i.test(await page.locator('body').innerText());
+  check('committing writes the first act of the cycle', afterCommit,
+    afterCommit ? '' : `still showing: ${JSON.stringify(
+      (await page.locator('button').evaluateAll((els) => els
+        .map((e) => (e.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 28))
+        .filter(Boolean))).join(' | ').slice(0, 200))}`);
 
   /* The card controls live below the acts as quiet text links and only exist
      once an act is committed — the reveal is not allowed to offer a souvenir
@@ -483,7 +517,7 @@ try {
   // ── The card ──────────────────────────────────────────────────────────────
   const [download] = await Promise.all([
     page.waitForEvent('download', { timeout: 30000 }),
-    page.getByRole('button', { name: /save your card/i }).first().click(),
+    page.getByRole('button', { name: /share your card|save your card/i }).first().click(),
   ]);
   const path = await download.path();
   const bytes = new Uint8Array(await readFile(path));
@@ -531,7 +565,14 @@ try {
       inSource: inkBox(src, 0, 0, src.naturalWidth, src.naturalHeight),
       srcSize: [src.naturalWidth, src.naturalHeight],
     };
-  }, { b64: Buffer.from(bytes).toString('base64'), srcUrl: new URL(await page.locator('img[src*="/marks/"]').first().getAttribute('src'), page.url()).href });
+  }, {
+    b64: Buffer.from(bytes).toString('base64'),
+    /* Derived from the archetype rather than read off an <img>. The reveal paints
+       the mark into a canvas now, so there is no element on the page carrying the
+       file's URL — asking one for its src waits thirty seconds and then fails on
+       a page that is working perfectly. */
+    srcUrl: `${URL_}/marks/${name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')}.png`,
+  });
 
   check('card contains the mark', !!markRegion.inCard && markRegion.inCard.n > 2000,
     markRegion.inCard ? `${markRegion.inCard.n} ink pixels in the mark box` : 'mark box is empty');
