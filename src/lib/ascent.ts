@@ -72,6 +72,20 @@ export interface FieldOpts {
      cross-fade between two densities, which is movement of tone rather than
      movement of anything across the screen. */
   still?: boolean;
+  /* The paper arriving, as a front that travels outward from a point.
+   *
+   * Not a uniform lift toward paper: pushing the whole field's level up at once
+   * walks every pixel on screen through the middle of the scale together, which
+   * is a full-screen halftone churning at the redraw rate. It reads as static,
+   * and it is the opposite of the stillness the screen before it spent six
+   * seconds earning.
+   *
+   * A front instead. Inside it the field is paper and there is nothing at all;
+   * outside it the field is untouched and frozen. Only the boundary moves, so no
+   * dot anywhere is ever reassigned — which is what makes the paper look like it
+   * is arriving rather than like the image is degrading. */
+  dissolveAt?: { x: number; y: number };
+  dissolveProgress?: number;
   /* The words have to stay readable at every altitude, so the field is pushed
      away from the middle through a band across the screen — toward paper where
      the screen is light, toward solid ink where it is dark. Clearing alone
@@ -208,6 +222,34 @@ export function ascentSample(o: FieldOpts): Sample {
       level = level + (pole - level) * clearStrength * soft;
     }
 
+    const origin = o.dissolveAt;
+    const dp = o.dissolveProgress;
+    if (origin && dp !== undefined && dp > 0) {
+      /* Distance in screen fractions, corrected so the front is round on screen
+         rather than round in buffer space. */
+      const aspect = w / h;
+      const dxs = (u - origin.x) * aspect;
+      const dys = v - origin.y;
+      const dist = Math.sqrt(dxs * dxs + dys * dys);
+      const ang = Math.atan2(dys, dxs);
+      /* The front is not a circle. Same idea as the ink's edge: a few harmonics,
+         so what arrives has a shape rather than a radius. */
+      const wob = 1
+        + 0.16 * Math.sin(3 * ang + 1.1)
+        + 0.09 * Math.sin(5 * ang + 2.7)
+        + 0.05 * Math.sin(9 * ang + 0.4);
+      /* Just far enough to clear the furthest corner in the narrowest direction
+         the wobble produces, and no further. Oversizing it — the first attempt
+         used 1.45 — means the screen is paper a full second before the ink has
+         finished, and the two stop being one event. */
+      const reach = 0.78 * dp * wob;
+      const feather = 0.10;
+      if (dist < reach) {
+        const edge = Math.min(1, (reach - dist) / feather);
+        level = level + (1 - level) * edge;
+      }
+    }
+
     return level < 0 ? 0 : level > 1 ? 1 : level;
   };
 }
@@ -231,3 +273,14 @@ export function inkAt(a: number): number {
 export function typeIsPaper(a: number): boolean {
   return inkAt(a) > DARK_AT;
 }
+
+/* The phase the field was frozen at when the loading screen handed over.
+ *
+ * The reveal opens on the same black the loading screen ended on, which means
+ * literally the same field — same altitude, same drift phase, frozen. The phase
+ * is the only part of that which is not derivable, because it is however far the
+ * drift happened to travel during a wait of unknown length, so it is written
+ * down at the moment everything stops and read back one mount later. */
+let handoverPhase = 0;
+export function setHandoverPhase(p: number): void { handoverPhase = p; }
+export function getHandoverPhase(): number { return handoverPhase; }

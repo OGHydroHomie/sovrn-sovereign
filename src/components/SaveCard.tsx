@@ -12,6 +12,8 @@ interface Props {
   /* A text link rather than a button. On the reveal the act is the point and
      the card is a footnote to it. */
   quiet?: boolean;
+  /** What the control is called. The reveal asks for one word: share. */
+  label?: string;
 }
 
 type State = 'idle' | 'working' | 'failed';
@@ -19,7 +21,7 @@ type State = 'idle' | 'working' | 'failed';
 /* One control, one artefact. Everything on the card is the becoming, the mark,
    one line, and the domain — nothing the person typed goes near it, so this is
    safe to post without them having to think about what is on it. */
-export default function SaveCard({ becoming, loop = null, earnedAt = null, quiet = false }: Props) {
+export default function SaveCard({ becoming, loop = null, earnedAt = null, quiet = false, label = 'Save your card' }: Props) {
   const [state, setState] = useState<State>('idle');
 
   const run = async () => {
@@ -67,7 +69,7 @@ export default function SaveCard({ becoming, loop = null, earnedAt = null, quiet
           padding: '16px 24px', cursor: state === 'working' ? 'wait' : 'pointer',
         }}
       >
-        {state === 'working' ? 'Drawing it…' : 'Save your card'}
+        {state === 'working' ? 'Drawing it…' : label}
       </button>
       {state === 'failed' && (
         <p style={{ marginTop: 10, fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 13, lineHeight: 1.6, color: '#6E6A66' }}>

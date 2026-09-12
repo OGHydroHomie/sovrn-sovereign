@@ -155,6 +155,10 @@ export default function QuizPage({ onComplete, onBack }: Props) {
      alone, because "Back" sits below the question and at ground level it was
      landing in the dense ground with nothing behind it to read against. */
   const columnRef = useRef<HTMLDivElement>(null);
+  /* The decorative question number. It is positioned outside the column, so it
+     needs naming separately or the hole does not cover it and it vanishes into
+     the grain — which is what it did. */
+  const numberRef = useRef<HTMLDivElement>(null);
   const climbTimers = useRef<number[]>([]);
 
   useEffect(() => () => { climbTimers.current.forEach(clearTimeout); }, []);
@@ -334,11 +338,15 @@ export default function QuizPage({ onComplete, onBack }: Props) {
         <AscentField
           altitude={climbTo}
           onSettled={() => setClimbing(false)}
-          clearFor={columnRef}
+          clearFor={[columnRef, numberRef]}
+          progress={progressValue / 100}
         />
       )}
       {/* Progress bar — persistent across quiz + reveal so it animates 48 → 55 → 64 */}
-      <div style={{ position: 'relative', zIndex: 1, paddingTop: 24, maxWidth: 480, width: '100%', margin: '0 auto' }}>
+      {/* On the climb the field draws this itself, in its own material. Two of
+          them would be the same information twice, and the DOM one is the half
+          that looks like a control panel. */}
+      <div style={{ position: 'relative', zIndex: 1, paddingTop: 24, maxWidth: 480, width: '100%', margin: '0 auto', visibility: onClimb ? 'hidden' : 'visible' }}>
         <div style={{ height: 3, borderRadius: 999, background: '#E4E0D6', overflow: 'hidden' }}>
           <div
             ref={progressRef}
@@ -361,7 +369,7 @@ export default function QuizPage({ onComplete, onBack }: Props) {
                 color: '#1A1A1A', maxWidth: 300,
               }}
             >
-              The next four are about you.
+              The next three are about you.
             </div>
             <p style={{ marginTop: 16, fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 14, lineHeight: 1.6, color: '#6E6A66', maxWidth: 300 }}>
               Answer them in your own words. They are used exactly as you write them.
@@ -374,6 +382,7 @@ export default function QuizPage({ onComplete, onBack }: Props) {
         <div ref={columnRef} style={{ position: 'relative', maxWidth: 340, width: '100%', margin: '0 auto', paddingBottom: 40 }}>
           {/* Decorative question number */}
           <div
+            ref={numberRef}
             className="sv-label"
             aria-hidden="true"
             style={{ position: 'absolute', top: -64, right: 0, fontSize: 48, fontWeight: 700, color: 'var(--sv-ghost)' }}

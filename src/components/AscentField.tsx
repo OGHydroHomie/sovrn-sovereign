@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { dither, makeField, punch, toImageData, type Field } from '../lib/dither';
-import { ascentSample, inkAt, DARK_AT, TOP } from '../lib/ascent';
+import { ascentSample, inkAt, setHandoverPhase, DARK_AT, TOP } from '../lib/ascent';
 import { prefersReducedMotion } from '../lib/motion';
 
 interface Props {
@@ -14,7 +14,34 @@ interface Props {
      way down, and the text landed on the weak edge of the clearing where barely
      any of it applied. The result was a page of 50% dither with black type on
      top of it. */
-  clearFor?: React.RefObject<HTMLElement | null>;
+  clearFor?: Array<React.RefObject<HTMLElement | null>>;
+  /* How far through the quiz, 0 to 1. Drawn into the field rather than laid over
+     it: a hard black rule sitting on top of the grain was the one piece of the
+     screen that was obviously a user interface, and it read as a bar someone had
+     forgotten to style. Made of the same one-bit material, it belongs. */
+  progress?: number;
+  /* Drift regardless of altitude. The stars are still by design — the drift
+     fades out as the climb rises — but the loading screen sits at the stars and
+     needs something to bring to a stop. */
+  forceDrift?: boolean;
+  /* Bring the drift to a complete halt over `settleSeconds`, smoothly and
+     monotonically. No acceleration, no overshoot, no shudder: the rate decays
+     with zero slope at the end, so the last movement is imperceptible rather
+     than a click into place. */
+  settling?: boolean;
+  settleSeconds?: number;
+  /** Fires once, when the drift has actually reached zero. */
+  onStill?: () => void;
+  /* Start frozen at a given drift phase. The reveal uses this to open on exactly
+     the field the loading screen stopped on. */
+  initialPhase?: number;
+  /* Thin the whole field out to paper over `dissolveSeconds`. The reveal runs
+     this against the crystallization, so the paper arrives with the ink. */
+  dissolve?: boolean;
+  dissolveSeconds?: number;
+  /* Where the paper starts from. The same point the ink enters at, so the two
+     are one event: the ground turning to paper behind the drop as it spreads. */
+  dissolveFrom?: React.RefObject<HTMLElement | null>;
 }
 
 /* Pixel scale. The buffer is the viewport divided by this, so the dither runs
@@ -59,7 +86,11 @@ function easeInOut(t: number): number {
  * stepping between four presets — there are no presets, only the four points
  * the function is tuned at.
  */
-export default function AscentField({ altitude, onSettled, clearFor }: Props) {
+export default function AscentField({
+  altitude, onSettled, clearFor, progress: quizProgress = 0,
+  forceDrift = false, settling = false, settleSeconds = 6, onStill,
+  initialPhase, dissolve = false, dissolveSeconds = 2.2, dissolveFrom,
+}: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const settled = useRef(onSettled);
   settled.current = onSettled;
@@ -72,7 +103,7 @@ export default function AscentField({ altitude, onSettled, clearFor }: Props) {
     to: altitude,
     startedAt: 0,
     moving: false,
-    phase: 0,
+    phase: initialPhase ?? 0,
     /* The band behind the question, eased rather than switched. See ascent.ts:
        flipping it in one frame moved a quarter of the screen's ink in that
        frame, which reads as a flash in the middle of a move that is supposed to
@@ -85,6 +116,28 @@ export default function AscentField({ altitude, onSettled, clearFor }: Props) {
        at all renders over the words. */
     hole: null as null | { x0: number; y0: number; x1: number; y1: number },
   });
+  const quizProgressRef = useRef(quizProgress);
+  quizProgressRef.current = quizProgress;
+  const still = useRef(onStill);
+  still.current = onStill;
+  /* 1 while drifting, 0 when stopped. Held in a ref so the deceleration is
+     something the tick does rather than something React re-renders. */
+  const settle = useRef({ on: false, gain: 1, at: 0, told: false, seconds: settleSeconds });
+  settle.current.seconds = settleSeconds;
+  const out = useRef({ on: false, at: 0, v: 0, seconds: dissolveSeconds, x: 0.5, y: 0.55 });
+  out.current.seconds = dissolveSeconds;
+
+  useEffect(() => {
+    const o = out.current;
+    if (dissolve && !o.on) { o.on = true; o.at = performance.now(); }
+    if (!dissolve && o.on) { o.on = false; o.v = 0; }
+  }, [dissolve]);
+
+  useEffect(() => {
+    const st = settle.current;
+    if (settling && !st.on) { st.on = true; st.at = performance.now(); st.told = false; }
+    if (!settling && st.on) { st.on = false; st.gain = 1; st.told = false; }
+  }, [settling]);
 
   /* Start a move whenever the target changes. The tick reads this; it does not
      restart the timer, so a target that changes mid-move simply re-aims. */
@@ -159,24 +212,32 @@ export default function AscentField({ altitude, onSettled, clearFor }: Props) {
       /* Follow the question. Reading a rect per draw is five reads a second at
          rest, which is nothing, and it means the clearing tracks a growing
          textarea and a rotated phone without being told about either. */
-      const el = clearFor?.current;
-      if (el) {
-        const rect = el.getBoundingClientRect();
+      /* The union of everything that has to stay readable. The question number
+         is positioned outside the column it belongs to, so it was the one piece
+         of type the hole did not cover and it disappeared into the grain. */
+      const rects = (clearFor ?? [])
+        .map((ref) => ref.current?.getBoundingClientRect())
+        .filter((b): b is DOMRect => !!b && b.width > 0 && b.height > 0);
+      if (rects.length) {
         const vh = window.innerHeight || 1;
         const vw = window.innerWidth || 1;
+        const left = Math.min(...rects.map((b) => b.left));
+        const right = Math.max(...rects.map((b) => b.right));
+        const topPx = Math.min(...rects.map((b) => b.top));
+        const bottomPx = Math.max(...rects.map((b) => b.bottom));
         const pad = 28;                       // a little air above and below the words
-        const top = (rect.top - pad) / vh;
-        const bottom = (rect.bottom + pad) / vh;
+        const top = (topPx - pad) / vh;
+        const bottom = (bottomPx + pad) / vh;
         r.clearCentre = (top + bottom) / 2;
         /* A floor, so a one-line question still gets a band worth reading on. */
         r.clearHalf = Math.max(0.18, (bottom - top) / 2);
         /* The hole itself sits just inside the cleared band, so the thinning
            around it hides the edge. */
         r.hole = {
-          x0: (rect.left - 18) / vw,
-          y0: (rect.top - 18) / vh,
-          x1: (rect.right + 18) / vw,
-          y1: (rect.bottom + 14) / vh,
+          x0: (left - 18) / vw,
+          y0: (topPx - 18) / vh,
+          x1: (right + 18) / vw,
+          y1: (bottomPx + 14) / vh,
         };
       } else {
         r.hole = null;
@@ -188,11 +249,47 @@ export default function AscentField({ altitude, onSettled, clearFor }: Props) {
 
       /* The drift belongs to the depths. It fades out as the climb rises, which
          is why the stars are still. Frozen entirely under reduced motion. */
-      if (!reduced) r.phase += dt * 0.55 * Math.max(0, 1 - r.a / TOP);
+      const st = settle.current;
+      if (st.on) {
+        const k = Math.min(1, (now - st.at) / (st.seconds * 1000));
+        /* (1-k)^2: the rate falls away and arrives at exactly zero with zero
+           slope, so it stops rather than halting. */
+        st.gain = (1 - k) * (1 - k);
+        if (k >= 1 && !st.told) {
+          st.told = true;
+          st.gain = 0;
+          /* Write down where the drift stopped, so whatever mounts next can open
+             on this exact frame rather than on something that merely resembles
+             it. */
+          setHandoverPhase(r.phase);
+          still.current?.();
+        }
+      }
+      const driftBase = forceDrift ? 0.42 : 0.55 * Math.max(0, 1 - r.a / TOP);
+      if (!reduced) r.phase += dt * driftBase * st.gain;
+
+      const o = out.current;
+      if (o.on) {
+        const k = Math.min(1, (now - o.at) / (o.seconds * 1000));
+        /* The same curve the ink spreads on, so the two are locked together and
+           the paper is always a little ahead of the drop — arriving underneath
+           it rather than chasing it. */
+        const P = 1.7, c = Math.pow(2, P - 1);
+        o.v = k < 0.5 ? c * Math.pow(k, P) : 1 - c * Math.pow(1 - k, P);
+        const src = dissolveFrom?.current;
+        if (src) {
+          const b = src.getBoundingClientRect();
+          /* The ink's own seed: halfway across the card, three fifths down it. */
+          o.x = (b.left + b.width * 0.5) / (window.innerWidth || 1);
+          o.y = (b.top + b.height * 0.6) / (window.innerHeight || 1);
+        }
+      }
 
       dither(field, ascentSample({
         w: field.w, h: field.h, phase: r.phase, still: reduced, pole: r.pole,
         clearCentre: r.clearCentre, clearHalf: r.clearHalf,
+        dissolveAt: out.current.on ? { x: out.current.x, y: out.current.y } : undefined,
+        dissolveProgress: out.current.on ? out.current.v : undefined,
         /* During a move the arriving altitude is the target, and the boundary
            between it and the one being left sweeps down the screen. */
         a: r.moving ? r.to : r.a,
@@ -206,6 +303,18 @@ export default function AscentField({ altitude, onSettled, clearFor }: Props) {
           x0: r.hole.x0 * field.w, y0: r.hole.y0 * field.h,
           x1: r.hole.x1 * field.w, y1: r.hole.y1 * field.h,
         }, r.pole > 0.5 ? 255 : 0, 3, holeStrength);
+      }
+
+      /* The progress rule, in the field's own material: one buffer row, set to
+         whichever end of the scale the surrounding field is not. */
+      const prog = Math.max(0, Math.min(1, quizProgressRef.current));
+      if (prog > 0) {
+        const inset = Math.round(field.w * 0.045);
+        const width = Math.round((field.w - inset * 2) * prog);
+        if (width > 0) {
+          punch(field, { x0: inset, y0: 1, x1: inset + width, y1: 2 },
+            r.pole > 0.5 ? 0 : 255, 0);
+        }
       }
 
       toImageData(field, image, [0xFB, 0xFA, 0xF7]);

@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import gsap from 'gsap';
 import { EASE, T, prefersReducedMotion } from '../lib/motion';
-import { jsPDF } from 'jspdf';
 import type { QuizData } from '../types';
 import { trackEvent } from '../utils/storage';
 import type { LedgerEntry } from '../lib/ledger';
@@ -9,6 +8,8 @@ import { parseBlueprint, teaser } from '../lib/blueprint';
 import RevealCard from '../components/RevealCard';
 import ArchetypeMark from '../components/ArchetypeMark';
 import Crystallization from '../components/Crystallization';
+import AscentField from '../components/AscentField';
+import { getHandoverPhase, TOP } from '../lib/ascent';
 import SaveCard from '../components/SaveCard';
 import SurfaceNav, { NavLink } from '../components/SurfaceNav';
 import TargetAdmission from '../components/TargetAdmission';
@@ -40,12 +41,17 @@ interface Props {
 /* The card on the reveal. Named once because the crystallization and the
    finished mark both render into it and a difference between them would show up
    as the picture jumping at the end of the sequence. */
-const MARK_SIZE = 'clamp(220px, 58vw, 280px)';
+/* 15% up on the first cut: at 280px the card read as an illustration beside
+   the name rather than as the thing the name belongs to. */
+const MARK_SIZE = 'clamp(253px, 67vw, 322px)';
 
-const QUIET_LINK: React.CSSProperties = {
-  background: 'none', border: 'none', padding: '8px 2px', cursor: 'pointer',
-  fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 14, color: '#6E6A66',
-  textDecoration: 'underline', textUnderlineOffset: 3,
+/* The forward route, and the only filled control on the page after a commit. */
+const LEDGER_LINK: React.CSSProperties = {
+  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+  minHeight: 48, minWidth: 240, padding: '15px 26px',
+  background: '#000000', color: '#FBFAF7', textDecoration: 'none', borderRadius: 2,
+  fontFamily: 'var(--sv-font)', fontWeight: 700, fontSize: 12,
+  textTransform: 'uppercase', letterSpacing: '0.12em',
 };
 
 /* Prose block on paper. */
@@ -102,6 +108,7 @@ export default function BlueprintPage({
      filled paths with no strokes, so there is no outline for a stroke-dash draw
      to travel along. Claiming otherwise would just be a fade with extra steps. */
   const headerRef = useRef<HTMLDivElement>(null);
+  const navRef = useRef<HTMLDivElement>(null);
   const markRef = useRef<HTMLDivElement>(null);
   const nameRef = useRef<HTMLHeadingElement>(null);
   const progressRef = useRef<HTMLParagraphElement>(null);
@@ -126,6 +133,11 @@ export default function BlueprintPage({
         tl.to(nameRef.current,
           { scale: 1, duration: T.crystal.nameStamp, ease: EASE.in },
           T.crystal.nameAt);
+
+        if (navRef.current) {
+          tl.fromTo(navRef.current, { opacity: 0 },
+            { opacity: 1, duration: T.crystal.loop, ease: EASE.in }, T.crystal.nameAt);
+        }
 
         /* "In progress" belongs with the loop line, not with the stamp. Both are
            qualifications of the name and the name is given its own second before
@@ -167,6 +179,9 @@ export default function BlueprintPage({
     ? { enterAt: T.crystal.cardsAt, stagger: T.crystal.cardsStagger }
     : {};
 
+  /* An act exists. The share control and the route onward both wait for it. */
+  const committed = Boolean(dayOne) || (readOnly && Boolean(chosen));
+
   const choose = async (which: 'hard' | 'next') => {
     if (saving || dayOne || readOnly || !onChooseAct) return;
     setSaving(which);
@@ -174,61 +189,6 @@ export default function BlueprintPage({
     setSaving(null);
   };
 
-  const handleDownload = () => {
-    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    const margin = 20;
-    const contentWidth = pageWidth - margin * 2;
-    let y = 26;
-
-    const black: [number, number, number] = [0, 0, 0];
-    const ink: [number, number, number] = [26, 26, 26];
-    const muted: [number, number, number] = [110, 106, 102];
-
-    const fill = () => { doc.setFillColor(251, 250, 247); doc.rect(0, 0, pageWidth, pageHeight, 'F'); };
-    fill();
-    const checkPage = (needed: number) => { if (y + needed > 272) { doc.addPage(); fill(); y = 26; } };
-
-    // jsPDF ships only courier/helvetica/times; helvetica is the sans of the three.
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9); doc.setTextColor(...muted);
-    doc.text('SOVRN', pageWidth / 2, y, { align: 'center' }); y += 14;
-    doc.setFontSize(22); doc.setTextColor(...black);
-    doc.text(bp.becoming || 'BLUEPRINT', pageWidth / 2, y, { align: 'center' }); y += 9;
-    if (bp.loop) {
-      doc.setFontSize(11); doc.setTextColor(...muted);
-      doc.text(`Right now you're the ${bp.loop}.`, pageWidth / 2, y, { align: 'center' }); y += 12;
-    }
-
-    const section = (title: string, body: string) => {
-      if (!body) return;
-      checkPage(20); y += 6;
-      doc.setFontSize(10); doc.setTextColor(...black);
-      doc.text(title, margin, y); y += 8;
-      doc.setFontSize(10); doc.setTextColor(...ink);
-      for (const line of body.split('\n')) {
-        if (!line.trim()) { y += 3; continue; }
-        const wrapped = doc.splitTextToSize(line, contentWidth);
-        checkPage(wrapped.length * 5 + 2);
-        doc.text(wrapped, margin, y); y += wrapped.length * 5 + 2;
-      }
-    };
-
-    section('WHO YOU ARE', bp.whoYouAre);
-    section('THE PATTERN', bp.thePattern);
-    section('ONE ACT', [
-      bp.hardOne ? `THE HARD ONE - ${bp.hardOne}` : '',
-      bp.nextOne ? `THE NEXT ONE - ${bp.nextOne}` : '',
-      '',
-      bp.oneActTail,
-    ].filter(Boolean).join('\n'));
-
-    checkPage(12); y += 10;
-    doc.setFontSize(8); doc.setTextColor(...muted);
-    doc.text(`No. ${blueprintNo}  -  SOVRN`, pageWidth / 2, y, { align: 'center' });
-    doc.save(`SOVRN-${(bp.becoming || 'Blueprint').replace(/\s+/g, '-')}.pdf`);
-  };
 
   const actButton = (which: 'hard' | 'next', label: string, body: string) => (
     <ActButton
@@ -278,15 +238,41 @@ export default function BlueprintPage({
   };
 
   return (
-    <div style={{ minHeight: '100svh', background: '#FBFAF7', color: '#1A1A1A', padding: '0 22px 72px' }}>
-      <div style={{ maxWidth: 560, margin: '0 auto' }}>
+    <div style={{ minHeight: '100svh', background: '#FBFAF7', color: '#1A1A1A', padding: '0 22px 72px', position: 'relative' }}>
+      {/* The ground the reveal opens on.
+
+          It is the same field the loading screen stopped on — same altitude,
+          same frozen drift phase — so the first frame of this page is pixel for
+          pixel the last frame of the one before it. There is no tonal cut to
+          hide because there is no cut.
+
+          It then thins out to paper over the same 2.2 seconds the ink takes to
+          spread, through the dither rather than through opacity: fewer and fewer
+          dots until there are none. Nothing passes through grey, and the paper
+          is not a background the reveal sits on — it arrives, with the ink, as
+          part of the same event. */}
+      {crystallize && (
+        <AscentField
+          altitude={TOP}
+          initialPhase={getHandoverPhase()}
+          dissolve
+          dissolveFrom={markRef}
+          dissolveSeconds={T.crystal.advance}
+        />
+      )}
+      <div style={{ maxWidth: 560, margin: '0 auto', position: 'relative', zIndex: 1 }}>
 
         {/* Without this the reading is a room with no door — it is the one screen
             reachable both from the reveal and from a magic link, and neither
             offered a way anywhere else. */}
-        <SurfaceNav becoming={readOnly ? bp.becoming : null} sticky>
-          <NavLink href="/ledger">Your Ledger</NavLink>
-        </SurfaceNav>
+        {/* The nav is not on screen during the sequence. Nothing else moves
+            while the ink is arriving, and the wordmark breathes — so it waits
+            and comes up with the name. */}
+        <div ref={navRef} style={crystallize ? { opacity: 0 } : undefined}>
+          <SurfaceNav becoming={readOnly ? bp.becoming : null} sticky>
+            <NavLink href="/ledger">Your Ledger</NavLink>
+          </SurfaceNav>
+        </div>
 
         {/* The name lands. Silence around it. */}
         <div ref={headerRef} style={{ paddingTop: '9vh', textAlign: 'center' }}>
@@ -379,8 +365,14 @@ export default function BlueprintPage({
               <DayOne entry={dayOne} embedded />
             ) : (
               <>
-                {readOnly ? actRecord('hard', 'THE HARD ONE', bp.hardOne) : actButton('hard', 'THE HARD ONE', bp.hardOne)}
-                {readOnly ? actRecord('next', 'THE NEXT ONE', bp.nextOne) : actButton('next', 'THE NEXT ONE', bp.nextOne)}
+                {/* Once a choice exists, only the choice is shown. Keeping the
+                    road not taken on the page invites second-guessing a decision
+                    that has already been made, and the record is a record of what
+                    happened rather than of what was on offer. */}
+                {(!chosen || chosen === 'hard')
+                  && (readOnly ? actRecord('hard', 'THE HARD ONE', bp.hardOne) : actButton('hard', 'THE HARD ONE', bp.hardOne))}
+                {(!chosen || chosen === 'next')
+                  && (readOnly ? actRecord('next', 'THE NEXT ONE', bp.nextOne) : actButton('next', 'THE NEXT ONE', bp.nextOne))}
                 {bp.oneActTail && (
                   <div style={{ marginTop: 20 }}>
                     <Body text={bp.oneActTail} />
@@ -401,10 +393,18 @@ export default function BlueprintPage({
             artifact sitting under a collapsed act was the page saying which of
             the two it thought mattered. */}
         <div style={{ marginTop: 44, textAlign: 'center' }}>
-          {(dayOne || readOnly) && (
-            <div style={{ display: 'flex', gap: 18, justifyContent: 'center', flexWrap: 'wrap' }}>
-              <button onClick={handleDownload} style={QUIET_LINK}>Download</button>
-              {bp.becoming && <SaveCard becoming={bp.becoming} loop={bp.loop} quiet />}
+          {committed && (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+              {/* The way on. The reveal ended here before — a committed act and
+                  then nothing, with the Ledger reachable only from a link in the
+                  header that reads as furniture. */}
+              {!readOnly && <a href="/ledger" style={LEDGER_LINK}>Go to your Ledger</a>}
+              {/* One control, everywhere. "Download" produced a PDF of the
+                  reading and "Save your card" produced the image people actually
+                  send; two artifacts at the same weight made the page ask a
+                  question nobody wanted, and keeping the PDF on the saved view
+                  only moved the question rather than answering it. */}
+              {bp.becoming && <SaveCard becoming={bp.becoming} loop={bp.loop} quiet label="Share your card" />}
             </div>
           )}
 

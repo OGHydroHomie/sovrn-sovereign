@@ -10,6 +10,10 @@ interface Props {
      black card, so the square has to *complete* rather than leave — it is the
      same rectangle continuing, not one object replacing another. */
   settle?: boolean;
+  /* How long the fill takes to run out once `settle` is set. The default closes
+     it off quickly; the loading screen gives it six seconds, spent coming to a
+     stop rather than finishing. */
+  settleSeconds?: number;
   /* Seconds for the square to fill from outline to solid. 0 means it is already
      solid — day 7 opens on a finished mark, not a filling one. */
   fillDuration?: number;
@@ -39,6 +43,7 @@ interface Props {
 export default function SquareReveal({
   name,
   settle = false,
+  settleSeconds = T.square.fillCatchUp,
   fillDuration = 0,
   breathe = false,
   size = 'clamp(132px, 42vw, 180px)',
@@ -97,12 +102,14 @@ export default function SquareReveal({
       gsap.to(breathEl.current, { scale: 1, duration: reduced ? 0 : 0.2, ease: EASE.in });
       gsap.to(fillEl.current, {
         height: '100%',
-        duration: reduced ? 0 : T.square.fillCatchUp,
-        ease: EASE.in,
+        duration: reduced ? 0 : settleSeconds,
+        /* Linear. An eased fill over six seconds reads as the bar hesitating,
+           and the whole point of this stretch is that nothing is hurrying. */
+        ease: EASE.linear,
       });
     }, root);
     return () => ctx.revert();
-  }, [settle]);
+  }, [settle, settleSeconds]);
 
   /* The arrival. */
   useEffect(() => {
@@ -146,14 +153,14 @@ export default function SquareReveal({
           aria-hidden="true"
           style={{
             width: '100%', height: '100%', position: 'relative', overflow: 'hidden',
-            border: '2px solid #000000', background: '#FBFAF7', boxSizing: 'border-box',
+            border: '2px solid var(--sv-black)', background: 'var(--sv-paper)', boxSizing: 'border-box',
           }}
         >
           {/* Fills from the bottom. Outline and cream interior at zero, solid
               black at one. */}
           <div
             ref={fillEl}
-            style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 0, background: '#000000' }}
+            style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 0, background: 'var(--sv-black)' }}
           />
         </div>
       </div>
@@ -167,7 +174,7 @@ export default function SquareReveal({
             width: '90vw', maxWidth: 560, opacity: 0,
             fontFamily: 'var(--sv-font)', fontWeight: 300,
             fontSize: nameSize, lineHeight: 1.04,
-            letterSpacing: '0.01em', color: '#000000', textTransform: 'uppercase',
+            letterSpacing: '0.01em', color: 'var(--sv-black)', textTransform: 'uppercase',
             textAlign: 'center',
           }}
         >

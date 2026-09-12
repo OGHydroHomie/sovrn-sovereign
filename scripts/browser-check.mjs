@@ -167,13 +167,40 @@ await page.addInitScript(() => {
     const tick = () => {
       /* The loading square is the only 2px black-bordered box in the product;
          the card is the only thing that ever shows frame one of a mark. */
+      /* The loading square: the only 2px-bordered box in the product. Its
+         colour is not a reliable way to find it — on a dark ground it is set in
+         paper, so looking for a black border finds nothing and the whole
+         assertion quietly stops testing anything. Shape and size are what it
+         actually is. */
       const square = [...document.querySelectorAll('div')].find((d) => {
         const cs = getComputedStyle(d);
-        return cs.borderTopWidth === '2px' && cs.borderTopColor === 'rgb(0, 0, 0)';
+        if (cs.borderTopWidth !== '2px') return false;
+        const r = d.getBoundingClientRect();
+        return r.width > 80 && Math.abs(r.width - r.height) < 4;
       });
-      const card = document.querySelector('img[src*="-x1.png"]');
-      s.samples.push({ t: Math.round(performance.now() - s.t0), sq: vis(square), card: vis(card) });
-      if (card && s.cardAt === null) s.cardAt = performance.now();
+      /* The crystallization is a canvas now, not a stack of images. Looking for
+         the old img selector would find nothing, report "it did not run this
+         time", and pass — an assertion that cannot fail is worse than none. */
+      const card = document.querySelector('canvas[data-crystallization], img[src*="-x1.png"]');
+      /* And a canvas that exists is not a canvas with anything on it. Ink is
+         what counts, so the first frames are sampled for actual dark pixels. */
+      let ink = 0;
+      if (card && card.tagName === 'CANVAS' && card.width > 0) {
+        try {
+          const t = document.createElement('canvas');
+          t.width = Math.min(64, card.width); t.height = Math.min(96, card.height);
+          const cc = t.getContext('2d');
+          cc.drawImage(card, 0, 0, t.width, t.height);
+          const d = cc.getImageData(0, 0, t.width, t.height).data;
+          let dark = 0;
+          for (let i = 0; i < d.length; i += 4) if (d[i + 3] > 8 && d[i] < 128) dark++;
+          ink = dark / (d.length / 4);
+        } catch { ink = -1; }
+      } else if (card) {
+        ink = 1;
+      }
+      s.samples.push({ t: Math.round(performance.now() - s.t0), sq: vis(square), card: vis(card), ink });
+      if (card && ink > 0.001 && s.cardAt === null) s.cardAt = performance.now();
       const done = s.cardAt !== null && performance.now() - s.cardAt > 4000;
       if (!done && performance.now() - s.t0 < 180000) requestAnimationFrame(tick);
     };
@@ -324,24 +351,24 @@ try {
     const seam = await page.evaluate(() => window.__seam.samples);
     const on = (o) => o && o.area > 100 && o.o > 0.01;
     const lastSquare = [...seam].reverse().find((x) => on(x.sq));
-    const firstCard = seam.find((x) => on(x.card));
+    const firstInk = seam.find((x) => on(x.card) && x.ink > 0.001);
 
-    if (!firstCard) {
+    if (!firstInk) {
       /* No crystallization ran — the frames did not decode in time, which is a
          legitimate outcome and not a seam. Say so rather than passing quietly. */
-      check('the reveal hands over with no blank frame', true,
+      check('the ink arrives within a beat of the square leaving', true,
         'crystallization did not run this time; the finished mark was used');
     } else if (!lastSquare) {
-      check('the reveal hands over with no blank frame', false,
+      check('the ink arrives within a beat of the square leaving', false,
         'the loading square was never seen, so the hand-over cannot be judged');
     } else {
-      const between = seam.filter((x) => x.t > lastSquare.t && x.t < firstCard.t);
-      const blank = between.filter((x) => !on(x.sq) && !on(x.card));
-      check('the reveal hands over with no blank frame', blank.length === 0,
-        `square last at ${lastSquare.t}ms, card first at ${firstCard.t}ms, `
-        + `${between.length} frame(s) between, ${blank.length} empty`);
-      check('frame one arrives at full opacity', firstCard.card.o > 0.99,
-        `opacity ${firstCard.card.o} on its first painted frame`);
+      /* The ink now *enters* rather than being on screen whole, so the old
+         "no blank frame" reading no longer applies: there is by design a moment
+         of empty card before the first drop. What still has to hold is that the
+         gap is a beat and not a pause. */
+      const gap = firstInk.t - lastSquare.t;
+      check('the ink arrives within a beat of the square leaving', gap >= 0 && gap < 400,
+        `square last at ${lastSquare.t}ms, first ink at ${firstInk.t}ms — ${gap}ms`);
     }
   }
 

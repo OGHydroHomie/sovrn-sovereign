@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 import { useRef } from 'react';
-import { useFadeTo } from '../components/Fade';
 import SquareReveal from '../components/SquareReveal';
+import AscentField from '../components/AscentField';
+import { TOP } from '../lib/ascent';
 import { T, prefersReducedMotion } from '../lib/motion';
 import { markFrameUrls, preloadFrames } from '../lib/marks';
 
@@ -38,7 +39,7 @@ const SIZE = 'clamp(132px, 42vw, 180px)';
    spinner — a spinner says "the machine is busy," and this moment is supposed to
    say "something is about to be said about you." */
 export default function LoadingPage({ error = null, onRetry, archetype = null, onRevealed }: Props) {
-  const captionRef = useRef<HTMLParagraphElement>(null);
+  const squareRef = useRef<HTMLDivElement>(null);
   const reduceMotion = prefersReducedMotion();
   const done = Boolean(archetype);
 
@@ -57,8 +58,13 @@ export default function LoadingPage({ error = null, onRetry, archetype = null, o
     if (!done || !onRevealed) return;
     let live = true;
 
+    /* The settle, then the beat. Six seconds of everything slowing to a stop,
+       then a full second of a finished square on a frozen field with nothing
+       happening at all. The stillness is the charge — the crystallization lands
+       on a screen where nothing has moved for a second, which is why it reads as
+       an arrival rather than as the next thing in a queue. */
     const settled = new Promise<void>((resolve) => {
-      setTimeout(resolve, (reduceMotion ? 0 : T.square.fillCatchUp) * 1000);
+      setTimeout(resolve, (reduceMotion ? 0 : T.square.settle + T.square.settleHold) * 1000);
     });
     const urls = markFrameUrls(archetype);
     const frames = reduceMotion || !urls
@@ -72,15 +78,20 @@ export default function LoadingPage({ error = null, onRetry, archetype = null, o
     return () => { live = false; };
   }, [done, onRevealed, reduceMotion, archetype]);
 
-  /* The caption fades up while the square fills, and out again the moment the
-     name takes its place. */
-  useFadeTo(captionRef, !done, done ? 0.4 : 1.2);
+  /* The caption is gone. "This takes about twenty seconds" was the square's own
+     job written out in words: the square fills over exactly that, and a sentence
+     restating it made the wait feel supervised. */
 
   return (
     <div
+      /* The field here is the stars: 96% ink. The square and anything else on
+         this screen have to be set in paper, the same way the last question was.
+         The error state keeps the plain ground — a failure is not a view. */
+      data-tone={!error ? 'paper' : undefined}
       style={{
         minHeight: '100svh',
         background: '#FBFAF7',
+        position: 'relative',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -89,6 +100,12 @@ export default function LoadingPage({ error = null, onRetry, archetype = null, o
         textAlign: 'center',
       }}
     >
+      {/* The field the quiz ended on, carried through. Question eight is the
+          stars, and dropping to bare paper for the wait threw away the one
+          moment the climb had been building toward. It drifts here — the stars
+          are still on the climb itself — and then it stops. */}
+      {!error && <AscentField altitude={TOP} clearFor={[squareRef]} forceDrift settling={done} settleSeconds={T.square.settle} />}
+
       {error ? (
         <>
           <p
@@ -138,24 +155,17 @@ export default function LoadingPage({ error = null, onRetry, archetype = null, o
           {/* The square no longer dissolves into the name — it completes, and
               the reveal picks the same rectangle up as the first frame of the
               crystallization. `name` is left unset on purpose. */}
-          <SquareReveal name={null} settle={done} fillDuration={T.square.fill} breathe size={SIZE} />
+          <div ref={squareRef} style={{ position: 'relative', zIndex: 1 }}>
+            <SquareReveal
+              name={null}
+              settle={done}
+              settleSeconds={T.square.settle}
+              fillDuration={T.square.fill}
+              breathe
+              size={SIZE}
+            />
+          </div>
 
-          <p
-            ref={captionRef}
-            style={{
-              opacity: 0,
-              marginTop: 34,
-              fontFamily: 'var(--sv-font)',
-              fontWeight: 300,
-              fontSize: 14,
-              lineHeight: 1.5,
-              letterSpacing: '0.01em',
-              color: '#6E6A66',
-              maxWidth: 320,
-            }}
-          >
-            This takes about twenty seconds.
-          </p>
         </>
       )}
     </div>

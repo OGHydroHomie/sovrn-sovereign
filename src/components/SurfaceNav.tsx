@@ -1,5 +1,6 @@
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import Wordmark from './Wordmark';
+import { getBlueprint } from '../utils/storage';
 
 interface Props {
   /** Shown between the mark and the link. Omitted when there is no reading yet. */
@@ -20,6 +21,11 @@ const LINK: React.CSSProperties = {
    Left is home, right is the other view, and the becoming sits between them so
    the header still says whose page this is once the name has scrolled away. */
 export default function SurfaceNav({ becoming, children, sticky = false }: Props) {
+  /* Read after mount rather than during render: localStorage is not available
+     until the browser is, and the nav renders on every surface. */
+  const [hasBlueprint, setHasBlueprint] = useState(false);
+  useEffect(() => { setHasBlueprint(Boolean(getBlueprint())); }, []);
+
   return (
     <div
       style={{
@@ -31,12 +37,18 @@ export default function SurfaceNav({ becoming, children, sticky = false }: Props
         borderBottom: '1px solid #E8E6E1',
       }}
     >
-      <a
-        href="/"
-        style={{ textDecoration: 'none', flex: 'none', lineHeight: 1 }}
-      >
-        <Wordmark />
-      </a>
+      {/* The wordmark stops being a link once there is a blueprint. It pointed
+          at the hero, and the hero's only offer is "begin your blueprint" — so a
+          returning person tapping the thing at the top of every screen was sent
+          to be asked for something they had already given. There is nothing for
+          them at the front door, so the door is not a door. */}
+      {hasBlueprint ? (
+        <span style={{ flex: 'none', lineHeight: 1 }}><Wordmark /></span>
+      ) : (
+        <a href="/" style={{ textDecoration: 'none', flex: 'none', lineHeight: 1 }}>
+          <Wordmark />
+        </a>
+      )}
 
       {becoming && (
         <span

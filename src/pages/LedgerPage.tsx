@@ -213,6 +213,12 @@ export default function LedgerPage() {
       becoming={profile?.becoming}
       nav={<NavLink href="/blueprint">Your Blueprint</NavLink>}
     >
+      {/* Above the fold, and directly after the commit that got them here. It
+          sat under the entries before, which meant the one moment it had a claim
+          on — a person who has just done the thing and has a reason to come back
+          tomorrow — was three scrolls away from ever being seen. */}
+      {entries.length > 0 && <InstallPrompt />}
+
       {cycle && (
         <div style={{ marginBottom: 26, borderBottom: '1px solid #E4E0D6', paddingBottom: 20 }}>
           <p className="sv-label" style={{ fontSize: 11, letterSpacing: '0.14em', color: '#6E6A66' }}>
@@ -365,7 +371,6 @@ export default function LedgerPage() {
       {entries.length > 0 && !entries.some((e) => e.day_number > 1) && <NextMorning />}
 
       {/* Once there is a record worth coming back to. */}
-      {entries.length > 0 && <InstallPrompt />}
 
       {/* Earned, not advertised. Three days both committed and completed, or it
           does not exist — offering it to someone on day one would make it a

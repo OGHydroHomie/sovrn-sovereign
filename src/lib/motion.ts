@@ -23,6 +23,14 @@ export const EASE = {
 export const T = {
   /* 1 — the loading square */
   square: {
+    /* The settle. Once the reading has landed, the field takes six seconds to
+       come to a complete stop while the square runs its fill out, and then the
+       page holds still for a beat longer than is comfortable before it hands
+       over. What reads as expensive is fewer things moving, more slowly, with
+       better timing — so this stretch has exactly two things moving, and then
+       one, and then none. */
+    settle: 6.0,
+    settleHold: 1.1,
     breatheCycle: 4.0,     // 1.0 -> 1.03 -> 1.0
     breatheScale: 1.03,
     fill: 20.0,            // outline to solid, the length of a generation
@@ -81,24 +89,26 @@ export const T = {
      arriving and then being looked at. Nothing overlaps — every beat has the
      screen to itself.
 
-       0.0 -> 1.6   x1 crystallizes through to x6
-       1.6 -> 2.6   hold, resolved, no text
-       2.6          the name stamps in
-       3.4          the loop line fades under it
-       4.0          the three sections rise
+       0.0 -> 2.2   ink enters at a point and spreads, x1 resolving to x6 behind it
+       2.2 -> 3.2   hold, resolved, no text
+       3.2          the name stamps in
+       4.0          the loop line fades under it
+       4.6          the three sections rise
 
      The advance is eased rather than linear, so the early frames pass quickly
      and the last ones settle — the picture resolves fast and then finishes
      slowly, which is how the eye expects a thing coming into focus to behave. */
   crystal: {
-    advance: 1.6,
-    hold: 1.0,           // 1.6 -> 2.6, on a finished card, in silence
-    nameAt: 2.6,
+    /* 2.2, not 1.6. The ink has to look like it is finding the shape rather than
+       being switched on, and a spread that fast reads as a wipe. */
+    advance: 2.2,
+    hold: 1.0,           // 2.2 -> 3.2, on a finished card, in silence
+    nameAt: 3.2,
     nameStamp: 0.18,     // scale only; the opacity is a hard cut
     nameScaleFrom: 1.04,
-    loopAt: 3.4,
+    loopAt: 4.0,
     loop: 0.4,
-    cardsAt: 4.0,
+    cardsAt: 4.6,
     cardsStagger: 0.12,
     /* Reduced motion: no crystallization at all. The final frame cross-fades in
        and every later beat keeps its place in the sequence, so the reveal still
