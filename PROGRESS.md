@@ -383,3 +383,46 @@ delete it. Two orphans were removed by hand through the same sequence
 cascade — and cleanup now runs in a `finally`, because an assertion failing is
 the normal case for a test and must not be the case that leaks data. **Open:**
 nothing.
+
+---
+
+**2026-09-11 — Build B: the crystallization reveal.** Seventy-eight frames, six
+per mark, near-chaos to resolved, with x6 byte-identical to the base mark so the
+last frame and the settled picture are the same file rather than two that have to
+be kept in step. The reveal opens on frame one at full card size and crystallizes
+over 1.6s, holds a full second on a finished picture with nothing else on screen,
+stamps the name at 2.6s, brings the loop line at 3.4s and rises the three
+sections at 4.0s. The advance is **one eased tween, not five cross-fades** — a
+single `power2.out` value walks 0→5 and every frame reads its opacity off it, so
+the ease governs the advance rather than each hand-off, and no two adjacent
+frames are ever both half-transparent, which on a 1-bit image reads as a flicker.
+Measured on production with one real generation: 1495 / 2612 / 3414 / 4013ms
+against 1600 / 2600 / 3400 / 4000, the hold sixty frames long with the name
+showing in none of them, and the per-frame advance running 115 / 134 / 166 / 250 /
+817ms — fast, then settling. **The hand-over holds.** The square was last painted
+at 51742ms at opacity 1.000 and the card first painted at 51763ms, also at 1.000,
+with zero rendered frames in between: there is no frame of empty paper between
+the two screens. It is honestly a cut and not a morph — the black rectangle goes
+from 180×180 at (125,283) to 249×374 at (90,125) in that one frame — but the
+ground never breaks. Failure was tested four ways (one frame missing, all
+missing, the last missing, and never responding) and every one falls back to the
+finished mark alone after at most a 6s cutoff, so a slow network never holds the
+reading hostage; reduced motion fetches exactly one file and cross-fades it in
+over 400ms. **What broke:** three things. The build uncovered a bug that was
+already live — `autoFocus` on the target textarea made the browser scroll it into
+view the moment the reveal mounted, putting the mark and the name above the top
+of the screen, so the entire reveal had been opening scrolled past its own
+subject; my first filmstrip came back as blank cream pages, which is the only
+reason I found it. The focus is taken with `preventScroll` now and the reveal
+scrolls to top like every other transition. The first production run was wasted
+because my sampler's window was a flat 45 seconds and the generation took 52 —
+it recorded 2700 frames of a motionless square and reported that the reveal never
+happened; it is bounded by the sequence now, not by a guess. And my own analysis
+script read `lastSquare.o` where the data was at `lastSquare.sq.o`, which printed
+"opacity undefined" on the two assertions that mattered most and made a passing
+hand-over look like a failure. **Open:** thirty-four empty anonymous accounts
+were created in one hour by test loads — every Playwright context mints one — and
+they carry no email, no blueprint, no ledger and no cycle. I did not delete them:
+anonymous signups are not in the audit log, so nothing distinguishes mine from a
+real visitor who opened the site and left, and dropping a live session to tidy up
+my own litter is not a trade I get to make unasked.
