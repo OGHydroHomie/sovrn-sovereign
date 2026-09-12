@@ -350,3 +350,36 @@ checked the removed URL with a `curl` that had no cache-buster and read a stale
 200 from the edge — the exact failure the script's cache-buster exists to
 prevent, in a hand-rolled check beside it. Production was correct the whole time.
 **Open:** nothing.
+
+---
+
+**2026-09-11 — The processed marks, verified through a browser.** The thirteen
+replacement marks are in and confirmed from production, not from disk: every one
+is 1080×1620, 1-bit, 4.9–24.7 KB, and the thirteen together are **163 KB over the
+wire on `/about` — down from 8.5 MB**, a fortieth of the weight. `MARK_ASPECT`
+moved from `896/1216` to `1080/1620`; the old value was 0.7368 against a true
+0.6667, close enough to look plausible and wrong enough to letterbox every mark
+on the site. A headless pass over production `/about` decoded each rendered image
+and found exactly **2 tones — [0, 255]** in all thirteen, rendering at 0.6667
+undistorted. The full loop check then passed 41/41 against a real account,
+including three new assertions that decode the exported card and locate the mark
+inside it: the mark box holds 149,743 ink pixels, the gutters either side are
+clean, and the ink's aspect on the card matches the source file's to three
+decimals. The axis-constraining was left alone, as instructed — reveal sets
+width, Ledger header sets height, card holds height at 480. **What broke:** three
+things, all mine. The deploy check sat timing out against `/marks/.DS_Store`, a
+file macOS writes into any folder opened in Finder and Vite copies wholesale out
+of `public/` — `.gitignore` kept it out of the repository but could not keep it
+out of the build, and Vercel will not serve a dotfile, so the check was demanding
+a 404 forever; dotfiles are skipped now. The loop check itself was stale in two
+places: it clicked every panel header blindly, which *closed* the ONE ACT panel
+that now opens by default, and it went looking for the card control up on the
+fresh reveal when that control is deliberately withheld until an act is
+committed. Worst of the three: cleanup lived at the end of the happy path, so
+when the card assertion failed it never ran, and the run left a live account
+carrying a real email address in the database with no session anywhere that could
+delete it. Two orphans were removed by hand through the same sequence
+`/api/delete` uses — `emails` first, since it is the one table that does not
+cascade — and cleanup now runs in a `finally`, because an assertion failing is
+the normal case for a test and must not be the case that leaks data. **Open:**
+nothing.

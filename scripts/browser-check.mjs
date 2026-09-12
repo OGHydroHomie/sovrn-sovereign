@@ -133,13 +133,38 @@ try {
   const name = (await page.locator('h1').first().innerText()).trim();
   check('archetype name is on the reveal', /^THE [A-Z ]+$/.test(name), JSON.stringify(name));
 
-  const markBox = await page.locator('img[alt=""], div').filter({ hasText: /^$/ }).first().boundingBox().catch(() => null);
-  check('archetype mark occupies space', !!markBox && markBox.width > 100, markBox ? `${Math.round(markBox.width)}px wide` : 'not found');
+  /* The mark is a 1080x1620 raster drawn into a box the component sizes from
+     MARK_ASPECT. When that constant is wrong the image still loads and still
+     occupies space — it just letterboxes inside a box of the wrong shape. So
+     check the rendered box against the file's own dimensions, not against a
+     minimum width. */
+  const mark = await page.locator('img[src*="/marks/"]').first().evaluate((el) => {
+    const r = el.getBoundingClientRect();
+    return {
+      natural: [el.naturalWidth, el.naturalHeight],
+      renderedRatio: r.width / r.height,
+      naturalRatio: el.naturalWidth / el.naturalHeight,
+      width: r.width,
+    };
+  }).catch(() => null);
+  check('archetype mark occupies space', !!mark && mark.width > 100, mark ? `${Math.round(mark.width)}px wide` : 'not found');
+  check(
+    'archetype mark is drawn at the file\'s own aspect',
+    !!mark && Math.abs(mark.renderedRatio - mark.naturalRatio) < 0.005,
+    mark ? `rendered ${mark.renderedRatio.toFixed(4)} vs file ${mark.naturalRatio.toFixed(4)} (${mark.natural.join('x')})` : 'no mark'
+  );
 
   // ── The three panels. This is the bug that shipped. ───────────────────────
+  /* ONE ACT opens by default — the act is meant to be the loudest thing on the
+     reveal, not a drawer you have to find. So clicking every header blindly
+     closes the one panel that matters. Drive each panel to open by reading
+     aria-expanded rather than assuming the starting state. */
   for (const header of ['WHO YOU ARE', 'THE PATTERN', 'ONE ACT']) {
     const button = page.getByRole('button', { name: new RegExp(header, 'i') }).first();
-    await button.click();
+    const startsOpen = (await button.getAttribute('aria-expanded')) === 'true';
+    check(`${header}: ${header === 'ONE ACT' ? 'opens by default' : 'starts closed'}`,
+      startsOpen === (header === 'ONE ACT'), `aria-expanded=${startsOpen}`);
+    if (!startsOpen) await button.click();
     await page.waitForTimeout(900);
 
     const panelId = await button.getAttribute('aria-controls');
@@ -164,21 +189,6 @@ try {
   }
   await shot('04-expanded');
 
-  // ── The card ──────────────────────────────────────────────────────────────
-  const [download] = await Promise.all([
-    page.waitForEvent('download', { timeout: 30000 }),
-    page.getByRole('button', { name: /save your card/i }).first().click(),
-  ]);
-  const path = await download.path();
-  const bytes = new Uint8Array(await readFile(path));
-  const isPng = bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47;
-  const width = new DataView(bytes.buffer).getUint32(16);
-  const height = new DataView(bytes.buffer).getUint32(20);
-
-  check('card downloads as a PNG', isPng);
-  check('card is exactly 1080x1350', width === 1080 && height === 1350, `${width}x${height}`);
-  check('card is not blank', bytes.length > BLANK_CARD_BYTES * 1.4, `${Math.round(bytes.length / 1024)}KB vs ${Math.round(BLANK_CARD_BYTES / 1024)}KB blank`);
-  if (SHOTS) await writeFile(`${SHOTS}/05-card.png`, bytes);
   // ── The target. Named, narrowed, bounded, before any act exists. ─────────
   const naming = page.getByText(/what have you been putting off/i).first();
   await naming.waitFor({ state: 'visible', timeout: 20000 });
@@ -224,8 +234,93 @@ try {
   check('committing writes the first act of the cycle',
     /what actually happened/i.test(await page.locator('body').innerText()));
 
+  /* The card controls live below the acts as quiet text links and only exist
+     once an act is committed — the reveal is not allowed to offer a souvenir
+     before it has asked for anything. So the card is checked here, after the
+     commit, not up on the fresh reveal where it does not yet exist. */
+  // ── The card ──────────────────────────────────────────────────────────────
+  const [download] = await Promise.all([
+    page.waitForEvent('download', { timeout: 30000 }),
+    page.getByRole('button', { name: /save your card/i }).first().click(),
+  ]);
+  const path = await download.path();
+  const bytes = new Uint8Array(await readFile(path));
+  const isPng = bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47;
+  const width = new DataView(bytes.buffer).getUint32(16);
+  const height = new DataView(bytes.buffer).getUint32(20);
+
+  check('card downloads as a PNG', isPng);
+  check('card is exactly 1080x1350', width === 1080 && height === 1350, `${width}x${height}`);
+  check('card is not blank', bytes.length > BLANK_CARD_BYTES * 1.4, `${Math.round(bytes.length / 1024)}KB vs ${Math.round(BLANK_CARD_BYTES / 1024)}KB blank`);
+
+  /* Non-blank only proves the type drew. Decode the card and look at the band
+     the mark occupies — x 380..700, y 320..800 for a 480-tall mark held at
+     MARK_ASPECT — to prove the mark itself is in there, at the file's own shape
+     and inside its box. Node has no PNG decoder, so the page does it. */
+  const markRegion = await page.evaluate(async ({ b64, srcUrl }) => {
+    const load = (src) => new Promise((res, rej) => {
+      const i = new Image(); i.crossOrigin = 'anonymous';
+      i.onload = () => res(i); i.onerror = rej; i.src = src;
+    });
+    const inkBox = (img, x0, y0, w, h) => {
+      const c = document.createElement('canvas');
+      c.width = img.naturalWidth; c.height = img.naturalHeight;
+      const cx = c.getContext('2d', { willReadFrequently: true });
+      cx.drawImage(img, 0, 0);
+      const d = cx.getImageData(x0, y0, w, h).data;
+      let minX = w, minY = h, maxX = -1, maxY = -1, n = 0;
+      for (let i = 0; i < d.length; i += 4) {
+        if (d[i] > 128) continue;                      // not ink
+        const px = (i / 4) % w, py = Math.floor((i / 4) / w);
+        if (px < minX) minX = px; if (px > maxX) maxX = px;
+        if (py < minY) minY = py; if (py > maxY) maxY = py;
+        n++;
+      }
+      return n ? { w: maxX - minX + 1, h: maxY - minY + 1, n, minX, minY, maxX, maxY } : null;
+    };
+
+    const card = await load('data:image/png;base64,' + b64);
+    const src = await load(srcUrl);
+    return {
+      inCard: inkBox(card, 380, 320, 320, 480),
+      // Anything in the 40px gutters either side means the mark drew too wide.
+      leftGutter: inkBox(card, 340, 320, 40, 480),
+      rightGutter: inkBox(card, 700, 320, 40, 480),
+      inSource: inkBox(src, 0, 0, src.naturalWidth, src.naturalHeight),
+      srcSize: [src.naturalWidth, src.naturalHeight],
+    };
+  }, { b64: Buffer.from(bytes).toString('base64'), srcUrl: new URL(await page.locator('img[src*="/marks/"]').first().getAttribute('src'), page.url()).href });
+
+  check('card contains the mark', !!markRegion.inCard && markRegion.inCard.n > 2000,
+    markRegion.inCard ? `${markRegion.inCard.n} ink pixels in the mark box` : 'mark box is empty');
+  check('mark does not overflow its box on the card',
+    !markRegion.leftGutter && !markRegion.rightGutter,
+    markRegion.leftGutter || markRegion.rightGutter ? 'ink found in the gutter' : 'gutters clean');
+  if (markRegion.inCard && markRegion.inSource) {
+    /* The mark's own ink, scaled from 1080x1620 into a 320x480 box, keeps its
+       proportions. If MARK_ASPECT disagrees with the file the ink squashes. */
+    const cardRatio = markRegion.inCard.w / markRegion.inCard.h;
+    const srcRatio = markRegion.inSource.w / markRegion.inSource.h;
+    check('mark is undistorted on the card', Math.abs(cardRatio - srcRatio) < 0.03,
+      `card ink ${cardRatio.toFixed(3)} vs source ink ${srcRatio.toFixed(3)} (source ${markRegion.srcSize.join('x')})`);
+  }
+  if (SHOTS) await writeFile(`${SHOTS}/05-card.png`, bytes);
+
   await page.goto(`${URL_}/ledger`, { waitUntil: 'networkidle' });
   await page.waitForTimeout(2500);
+  /* The Ledger header sizes the mark off its height rather than its width, so
+     it exercises the other branch of ArchetypeMark. Same test: the box the
+     component computes has to match the shape of the file inside it. */
+  const navMark = await page.locator('img[src*="/marks/"]').first().evaluate((el) => {
+    const r = el.getBoundingClientRect();
+    return { rendered: r.width / r.height, natural: el.naturalWidth / el.naturalHeight, h: r.height };
+  }).catch(() => null);
+  check('the Ledger header carries the mark', !!navMark && navMark.h > 8,
+    navMark ? `${Math.round(navMark.h)}px tall` : 'not found');
+  check('the Ledger header mark keeps the file\'s aspect',
+    !!navMark && Math.abs(navMark.rendered - navMark.natural) < 0.02,
+    navMark ? `rendered ${navMark.rendered.toFixed(4)} vs file ${navMark.natural.toFixed(4)}` : 'no mark');
+
   const ledger = await page.locator('body').innerText();
   check('the Ledger shows the cycle above the act', /cycle 1 ·/i.test(ledger));
   check('the boundary persists across a reload unchanged',
@@ -259,18 +354,33 @@ try {
   check('no score, grade or percentage on the record', !/\b\d+%|score|grade|streak\b/i.test(closing));
   await shot('06-cycle-closed');
 
-  // ── Clean up after itself, through the product's own path ────────────────
-  if (!KEEP) {
-    await page.goto(`${URL_}/delete`, { waitUntil: 'networkidle' });
-    await page.getByRole('button', { name: /^delete my data$/i }).first().click();
-    await page.getByRole('button', { name: /yes, delete everything/i }).first().click();
-    await page.getByText(/your data has been deleted/i).waitFor({ timeout: 30000 });
-    check('the run deletes its own account', true);
-  }
 } catch (err) {
   check('ran to completion', false, String(err).split('\n')[0].slice(0, 160));
   await shot('99-failure');
 } finally {
+  /* Cleanup runs whether or not the run passed. It used to sit at the end of
+     the happy path, so the first failure after question eight left a real
+     account — carrying a real email address — alive in the database with no
+     session left anywhere that could delete it. An assertion failing is the
+     normal case for a test; it must not be the case that leaks data. */
+  if (!KEEP) {
+    try {
+      await page.goto(`${URL_}/delete`, { waitUntil: 'networkidle' });
+      const start = page.getByRole('button', { name: /^delete my data$/i }).first();
+      if (await start.isVisible().catch(() => false)) {
+        await start.click();
+        await page.getByRole('button', { name: /yes, delete everything/i }).first().click();
+        await page.getByText(/your data has been deleted/i).waitFor({ timeout: 30000 });
+        check('the run deletes its own account', true);
+      } else {
+        // No session reached /delete — nothing was created, or it is already gone.
+        check('the run deletes its own account', true, 'nothing to delete');
+      }
+    } catch (err) {
+      check('the run deletes its own account', false,
+        `CLEAN UP BY HAND — ${String(err).split('\n')[0].slice(0, 120)}`);
+    }
+  }
   await browser.close();
 }
 
