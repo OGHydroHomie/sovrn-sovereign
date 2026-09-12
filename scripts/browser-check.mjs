@@ -562,6 +562,12 @@ try {
     null, { timeout: 25000, polling: 500 },
   ).catch(() => {});
   const afterCommit = /what actually happened/i.test(await page.locator('body').innerText());
+  /* The field the dictation was built for: the one people shorten when they are
+     tired. It is also the only single-line field carrying a mic, so this is the
+     only place the middle-aligned variant is exercised at all. */
+  const filingMic = await page.locator('button[aria-pressed]').count();
+  check('the filing field offers dictation', filingMic >= 1,
+    `${filingMic} mic control(s) beside "what actually happened"`);
   check('committing writes the first act of the cycle', afterCommit,
     afterCommit ? '' : `still showing: ${JSON.stringify(
       (await page.locator('button').evaluateAll((els) => els

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { admitTarget, openCycle, type Admission } from '../lib/cycle';
+import Dictate from './Dictate';
 
 interface Props {
   onOpened: () => void | Promise<void>;
@@ -75,13 +76,16 @@ export default function TargetAdmission({ onOpened }: Props) {
       {step === 'name' && (
         <>
           <p style={LABEL}>What have you been putting off?</p>
-          <textarea
-            ref={focusRef}
-            value={target}
-            rows={3}
-            onChange={(e) => setTarget(e.target.value)}
-            style={FIELD}
-          />
+          <div style={{ position: 'relative' }}>
+            <textarea
+              ref={focusRef}
+              value={target}
+              rows={3}
+              onChange={(e) => setTarget(e.target.value)}
+              style={{ ...FIELD, paddingRight: 46 }}
+            />
+            <Dictate value={target} onChange={setTarget} label="Say it instead" />
+          </div>
           <div style={{ marginTop: 18, fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 14, lineHeight: 2, color: '#6E6A66' }}>
             <div>Send the proposal I keep polishing.</div>
             <div>Tell my business partner the arrangement isn&rsquo;t working.</div>
@@ -100,13 +104,16 @@ export default function TargetAdmission({ onOpened }: Props) {
       {step === 'cost' && (
         <>
           <p style={LABEL}>What does it cost you that this hasn&rsquo;t happened?</p>
-          <textarea
-            ref={focusRef}
-            value={cost}
-            rows={4}
-            onChange={(e) => setCost(e.target.value)}
-            style={FIELD}
-          />
+          <div style={{ position: 'relative' }}>
+            <textarea
+              ref={focusRef}
+              value={cost}
+              rows={4}
+              onChange={(e) => setCost(e.target.value)}
+              style={{ ...FIELD, paddingRight: 46 }}
+            />
+            <Dictate value={cost} onChange={setCost} label="Say it instead" />
+          </div>
           <button
             onClick={() => void submitCost()}
             disabled={!cost.trim() || busy}

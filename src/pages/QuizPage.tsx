@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import gsap from 'gsap';
 import Fade from '../components/Fade';
 import AscentField, { CLIMB_MS } from '../components/AscentField';
+import Dictate from '../components/Dictate';
 import { typeIsPaper, HERO_STARS, TOP } from '../lib/ascent';
 import { EASE, prefersReducedMotion } from '../lib/motion';
 import type { QuizData } from '../types';
@@ -615,17 +616,26 @@ export default function QuizPage({ onComplete, onBack }: Props) {
                     <p className="sv-serif" style={{ marginBottom: 12, fontSize: 13, color: 'var(--sv-mute)', lineHeight: 1.5 }}>
                       {q.helper}
                     </p>
-                    <textarea
-                      autoFocus
-                      value={step === 4 ? data.deepestFear : step === 5 ? data.desiredReality : data.repeatingPattern}
-                      onChange={(e) =>
-                        update(
-                          step === 4 ? 'deepestFear' : step === 5 ? 'desiredReality' : 'repeatingPattern',
-                          e.target.value
-                        )
-                      }
-                      className="sv-textarea"
-                    />
+                    {(() => {
+                      const key = step === 4 ? 'deepestFear' : step === 5 ? 'desiredReality' : 'repeatingPattern';
+                      const val = step === 4 ? data.deepestFear : step === 5 ? data.desiredReality : data.repeatingPattern;
+                      return (
+                        <div style={{ position: 'relative' }}>
+                          <textarea
+                            autoFocus
+                            value={val}
+                            onChange={(e) => update(key, e.target.value)}
+                            className="sv-textarea"
+                            style={{ paddingRight: 46 }}
+                          />
+                          <Dictate
+                            value={val}
+                            onChange={(next) => update(key, next)}
+                            label="Say it instead"
+                          />
+                        </div>
+                      );
+                    })()}
                   </>
                 )}
 

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { fileEntry, undoFiling, type LedgerEntry } from '../lib/ledger';
 import FilingUndo from './FilingUndo';
 import { checkCrossing } from '../lib/cycle';
+import Dictate from './Dictate';
 
 interface Props {
   entry: LedgerEntry;
@@ -131,19 +132,25 @@ export default function FileDay({ entry, onChanged, onCrossed, heading }: Props)
       >
         {heading ?? 'What actually happened?'}
       </label>
-      <input
-        id={fieldId}
-        type="text"
-        value={text}
-        required
-        onChange={(e) => setText(e.target.value)}
-        style={{
-          marginTop: 10, width: '100%', minHeight: 48, boxSizing: 'border-box',
-          background: 'transparent', color: '#1A1A1A',
-          border: '1px solid #E4E0D6', borderRadius: 2,
-          fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 16, padding: '12px 14px',
-        }}
-      />
+      {/* The field this was built for. It is the one people shorten when they are
+          tired, and the one where a short answer costs the most. */}
+      <div style={{ position: 'relative', marginTop: 10 }}>
+        <input
+          id={fieldId}
+          type="text"
+          value={text}
+          required
+          onChange={(e) => setText(e.target.value)}
+          style={{
+            width: '100%', minHeight: 48, boxSizing: 'border-box',
+            background: 'transparent', color: '#1A1A1A',
+            border: '1px solid #E4E0D6', borderRadius: 2,
+            fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 16,
+            padding: '12px 46px 12px 14px',
+          }}
+        />
+        <Dictate value={text} onChange={setText} align="middle" label="Say what happened" />
+      </div>
 
       {/* Two ways to file, the same size and the same weight. One of them is not
           the failure option, and the field is required for both. */}
