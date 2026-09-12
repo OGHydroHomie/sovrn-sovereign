@@ -18,6 +18,10 @@
  *   node scripts/browser-check.mjs --url https://www.sovrn.online \
  *                                   --email you+bc@gmail.com
  *
+ * To clear a killed run's account without starting another:
+ *
+ *   node scripts/browser-check.mjs --url https://www.sovrn.online --cleanup-only
+ *
  * This performs a REAL generation against whatever URL it is given: it spends
  * model tokens, writes a row, and — because question eight captures an address —
  * causes the app to send a real confirmation email.
@@ -27,12 +31,30 @@
  * domain, because .invalid does not resolve. Give it a real inbox you own; a
  * plus-tag is ideal.
  *
- * The account it creates deletes itself through the product's own /delete flow
- * at the end, which leaves no residue and exercises that path as a side effect.
- * Pass --keep to leave it behind.
+ * The account it creates deletes itself through the product's own /delete flow,
+ * which leaves no residue and exercises that path as a side effect. Pass --keep
+ * to leave it behind.
+ *
+ * That deletion runs at BOTH ends. At the end, in a finally, so a failed
+ * assertion still cleans up. And at the start, against whatever the previous run
+ * recorded, because a finally is not reached when the process is killed, the
+ * machine sleeps, or a timeout kills the harness from outside — and every run
+ * that does not clean up leaves a real account in the database. Fifty-nine empty
+ * anonymous accounts had accumulated before this existed. Cleanup that only runs
+ * on the way out is not cleanup; it is cleanup on the happy path with extra
+ * steps.
  */
 import { chromium } from 'playwright';
 import { readFile, writeFile } from 'node:fs/promises';
+
+import { unlink } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
+
+/* Where a run records the account it just created, so the next run can delete it
+   even if this one never reaches its own finally. Kept beside the script and out
+   of git — it holds a live session token. */
+const STATE = join(dirname(fileURLToPath(import.meta.url)), '.browser-check-session.json');
 
 const arg = (n, d) => { const i = process.argv.indexOf(`--${n}`); return i === -1 ? d : process.argv[i + 1]; };
 const URL_ = (arg('url', 'https://www.sovrn.online')).replace(/\/$/, '');
@@ -40,8 +62,16 @@ const HEADED = process.argv.includes('--headed');
 const SHOTS = arg('shots', '');
 const EMAIL = arg('email', '');
 const KEEP = process.argv.includes('--keep');
+/* Clear the previous run's account and stop, without starting a new one. The
+   sweep is otherwise only reachable by beginning another run, which creates
+   another account to clean up — a cleanup you cannot run on its own is a
+   cleanup that never finishes. */
+const CLEANUP_ONLY = process.argv.includes('--cleanup-only');
 
-if (!EMAIL || EMAIL.endsWith('.invalid') || EMAIL.endsWith('.test') || EMAIL.endsWith('.example')) {
+/* --cleanup-only never reaches question eight, so it never sends anything and
+   has no use for an address. */
+if (!CLEANUP_ONLY
+    && (!EMAIL || EMAIL.endsWith('.invalid') || EMAIL.endsWith('.test') || EMAIL.endsWith('.example'))) {
   console.error(
     'browser-check: --email is required and must be a real, deliverable address.\n'
     + '  Question eight captures it and the app sends a confirmation, so an\n'
@@ -62,6 +92,48 @@ const check = (name, ok, detail = '') => {
   console.log(`  ${ok ? 'ok  ' : 'FAIL'}  ${name}${detail ? '  — ' + detail : ''}`);
 };
 
+/* Drive the product's own delete flow on a page that holds the session. */
+async function deleteVia(p) {
+  await p.goto(`${URL_}/delete`, { waitUntil: 'networkidle', timeout: 60000 });
+  const start = p.getByRole('button', { name: /^delete my data$/i }).first();
+  if (!(await start.isVisible().catch(() => false))) return 'nothing to delete';
+  await start.click();
+  await p.getByRole('button', { name: /yes, delete everything/i }).first().click();
+  await p.getByText(/your data has been deleted/i).waitFor({ timeout: 30000 });
+  return 'deleted';
+}
+
+/* The same flow, in a throwaway context seeded with a session from disk — which
+   is how a previous run's account is reached from a browser that never had it.
+   Seeding happens in an init script so the entries are in localStorage before
+   any app code reads them. */
+async function deleteRecorded(browser, session) {
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  await ctx.addInitScript((entries) => {
+    try {
+      for (const [k, v] of entries) localStorage.setItem(k, v);
+    } catch { /* about:blank and friends have no usable storage */ }
+  }, session.storage);
+  try {
+    return await deleteVia(await ctx.newPage());
+  } finally {
+    await ctx.close();
+  }
+}
+
+/* Record the account this run is using, the moment it exists. */
+async function rememberSession(page) {
+  const storage = await page.evaluate(() =>
+    Object.keys(localStorage)
+      .filter((k) => k.startsWith('sovrn_'))
+      .map((k) => [k, localStorage.getItem(k)]));
+  if (!storage.length) return false;
+  await writeFile(STATE, JSON.stringify({ url: URL_, at: new Date().toISOString(), storage }));
+  return true;
+}
+
+const forget = () => unlink(STATE).catch(() => undefined);
+
 const browser = await chromium.launch({ headless: !HEADED });
 const context = await browser.newContext({
   viewport: { width: 390, height: 844 },      // iPhone-ish, where the bug was found
@@ -72,6 +144,34 @@ const page = await context.newPage();
 page.on('pageerror', (e) => check('no uncaught page errors', false, e.message.slice(0, 120)));
 
 console.log(`browser-check: ${URL_}\n`);
+
+/* Before anything else: whatever the last run left behind. */
+if (!KEEP) {
+  let prior = null;
+  try { prior = JSON.parse(await readFile(STATE, 'utf8')); } catch { /* none, which is the normal case */ }
+  if (prior && prior.url !== URL_) {
+    check('previous run left nothing behind', false,
+      `a session for ${prior.url} is on disk — run against that URL to clear it`);
+  } else if (prior) {
+    try {
+      const outcome = await deleteRecorded(browser, prior);
+      await forget();
+      check('previous run left nothing behind', true, `${outcome} (recorded ${prior.at})`);
+    } catch (err) {
+      check('previous run left nothing behind', false,
+        `could not delete the account from ${prior.at} — ${String(err).split('\n')[0].slice(0, 90)}`);
+    }
+  } else if (CLEANUP_ONLY) {
+    check('previous run left nothing behind', true, 'no session on disk');
+  }
+}
+
+if (CLEANUP_ONLY) {
+  await browser.close();
+  const bad = results.filter((r) => !r.ok);
+  console.log(`\n${results.length - bad.length}/${results.length} passed`);
+  process.exit(bad.length ? 1 : 0);
+}
 const shot = async (name) => { if (SHOTS) await page.screenshot({ path: `${SHOTS}/${name}.png`, fullPage: true }); };
 
 try {
@@ -79,6 +179,16 @@ try {
   await page.goto(URL_, { waitUntil: 'networkidle', timeout: 60000 });
   const heroHeading = await page.locator('h1').first().innerText();
   check('hero renders a heading', heroHeading.trim().length > 0, JSON.stringify(heroHeading.trim().slice(0, 44)));
+
+  /* The app mints its anonymous identity on mount, so the account exists here —
+     before a single question is answered. Record it now rather than after the
+     quiz: a crash on question three creates exactly the same row as a crash on
+     question eight, and only one of those was ever being cleaned up. */
+  if (!KEEP) {
+    const remembered = await rememberSession(page);
+    check('this run recorded its account for the next one', remembered,
+      remembered ? 'written to scripts/.browser-check-session.json' : 'no session in localStorage yet');
+  }
   await shot('01-hero');
 
   await page.getByRole('button', { name: /begin your blueprint/i }).first().click();
@@ -127,7 +237,20 @@ try {
   const revealed = page.getByRole('button', { name: /who you are/i }).first();
   await revealed.waitFor({ state: 'visible', timeout: 180000 });
   check('reveal renders after generation', true);
-  await page.waitForTimeout(3000);   // let the header timeline finish
+  /* Wait for the reveal to finish arriving, rather than for a number of
+     seconds. The crystallization sequence holds the three sections back until
+     4.0s, and a flat 3000ms here clicked a card while it was still rising and
+     then measured it at 0.15 opacity — a harness racing the product and
+     reporting the product as broken. Waiting on the thing itself survives the
+     next timing change too. */
+  await page.waitForFunction(() => {
+    const roots = [...document.querySelectorAll('button')]
+      .filter((b) => /WHO YOU ARE|THE PATTERN|ONE ACT/.test(b.textContent ?? ''))
+      .map((b) => b.parentElement)
+      .filter(Boolean);
+    return roots.length === 3 && roots.every((el) => Number(getComputedStyle(el).opacity) > 0.99);
+  }, null, { timeout: 20000, polling: 'raf' }).catch(() => {});
+  await page.waitForTimeout(300);   // and a beat past the last easing frame
   await shot('03-reveal');
 
   const name = (await page.locator('h1').first().innerText()).trim();
@@ -365,20 +488,23 @@ try {
      normal case for a test; it must not be the case that leaks data. */
   if (!KEEP) {
     try {
-      await page.goto(`${URL_}/delete`, { waitUntil: 'networkidle' });
-      const start = page.getByRole('button', { name: /^delete my data$/i }).first();
-      if (await start.isVisible().catch(() => false)) {
-        await start.click();
-        await page.getByRole('button', { name: /yes, delete everything/i }).first().click();
-        await page.getByText(/your data has been deleted/i).waitFor({ timeout: 30000 });
-        check('the run deletes its own account', true);
-      } else {
-        // No session reached /delete — nothing was created, or it is already gone.
-        check('the run deletes its own account', true, 'nothing to delete');
+      /* The live page still holds the session, so it deletes through exactly
+         the path a person would use. If that page is unusable — a crash, a
+         navigation that never settled — fall back to the copy on disk. */
+      let outcome;
+      try {
+        outcome = await deleteVia(page);
+      } catch {
+        const prior = JSON.parse(await readFile(STATE, 'utf8'));
+        outcome = `${await deleteRecorded(browser, prior)} (via the recorded session)`;
       }
+      await forget();
+      check('the run deletes its own account', true, outcome);
     } catch (err) {
+      /* The record stays on disk on purpose. The next run will find it and
+         finish the job, which is the whole reason it is written down. */
       check('the run deletes its own account', false,
-        `CLEAN UP BY HAND — ${String(err).split('\n')[0].slice(0, 120)}`);
+        `left for the next run to clear — ${String(err).split('\n')[0].slice(0, 100)}`);
     }
   }
   await browser.close();

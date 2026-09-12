@@ -426,3 +426,36 @@ they carry no email, no blueprint, no ledger and no cycle. I did not delete them
 anonymous signups are not in the audit log, so nothing distinguishes mine from a
 real visitor who opened the site and left, and dropping a live session to tidy up
 my own litter is not a trade I get to make unasked.
+
+---
+
+**2026-09-12 — Clearing the litter, and making cleanup survive a kill.** Fifty-nine
+empty anonymous accounts were deleted: anonymous, older than an hour, with no
+email row, no blueprint, no ledger entry, no cycle and nothing in any of the
+eleven columns on the profile row that can hold something a person wrote. The
+database went from 112 accounts to 53 with all 13 blueprints, all 19 ledger rows
+and zero orphans in any table. Then the thing that produced them was fixed. The
+browser check now writes the account it is using to `scripts/.browser-check-session.json`
+the moment the app mints it — on the hero, before question one — and the **next**
+run deletes that account through the product's own `/delete` flow before it does
+anything else. A `--cleanup-only` flag runs just that sweep and exits, because a
+cleanup only reachable by starting another run creates another account to clean
+up and never terminates. Proven end to end: a run killed with `kill -9` mid-quiz
+left account `3e885d15`, and the next run's first line was "previous run left
+nothing behind — deleted"; the account, its email row and its profile row were
+all gone. **What broke:** three of my own. My first cleanup predicate deleted
+nothing at all and claimed 76 accounts "held something", because `email_change`
+is `''` rather than NULL and `becoming_history` defaults to `'[]'::jsonb` — I was
+testing for NULL on two columns that carry defaults, and had I trusted the zero I
+would have concluded the database was already clean. The closing cleanup I first
+wrote called the delete helper with a fresh context holding no session, which
+would have reported "nothing to delete" and left the account alive — the exact
+failure it was written to prevent, and it passes its own assertion while doing
+it. And the full check then failed on `WHO YOU ARE: panel is visible — effective
+opacity 0.15`: the harness waited a flat 3000ms after the reveal, but the
+crystallization holds the sections back until 4.0s, so it clicked a card while it
+was still rising and reported the product as broken. It waits on the sections
+reaching full opacity now, not on a number of seconds. 42/42 after that. **Open:**
+one empty anonymous account from 02:07 was deliberately left — it is younger than
+an hour, so it may be someone mid-flow rather than my litter, and the sweep's age
+guard exists precisely to not take that guess.

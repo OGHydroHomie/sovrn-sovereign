@@ -25,3 +25,7 @@ dist-ssr
 
 # Local Claude Code settings
 .claude/settings.local.json
+
+# A live session token, written by scripts/browser-check.mjs so the next run can
+# delete an account this one failed to clean up. Never committed.
+scripts/.browser-check-session.json
