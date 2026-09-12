@@ -499,3 +499,47 @@ throwaway production check I wrote to screenshot the climb failed its own
 cleanup, leaving one empty anonymous account; I removed it by hand and verified
 13 blueprints, 19 ledger rows and zero orphans intact. One-off scripts should use
 the check's own recorded-session cleanup rather than hand-rolling it.
+
+---
+
+**2026-09-12 — Twelve changes from a run-through; the paper arrives with the
+ink.** Deployed at `ce2d09a`, 45/45 on production. The loading screen now carries
+the field the quiz ended on and, once the reading lands, spends six seconds
+coming to a complete stop — measured by hashing the canvas rather than asserted:
+it stops changing at all at 6.2s, then holds a full second of nothing having
+moved. The crystallization enters instead of sharpening: ink at a point spreading
+behind a mask of six nested blobs, one per frame, each trailing the one outside
+it, so the leading edge is still the noise of x1 while the centre has resolved to
+x6. And the hand-over no longer inverts — the reveal opens on the *same frozen
+field*, same altitude and same drift phase, written down at the moment everything
+stops and read back one mount later, with the paper arriving as a front
+travelling out from the same point the ink does. The other ten: three questions
+not four; the progress rule drawn into the field instead of laid over it; the
+question number inside the hole; the loading caption gone; one control
+everywhere, SHARE YOUR CARD, which dropped the PDF and with it `jspdf` — **the
+bundle went 1,040 kB to 659 kB, gzip 330 to 205**; the unchosen act disappears;
+a route onward to the Ledger; the install prompt above the fold; the card 15%
+larger; the wordmark inert once a blueprint exists. **What broke:** the blob was
+sized off its profile's *minimum* radius, overshooting by nearly double and
+filling the card a second early; the spread easing was two curves that did not
+meet at the midpoint, 0.55 against 0.50, so the ink jumped five percent of its
+reach in one frame; and the paper first arrived as a uniform lift toward white,
+which walks every pixel on screen through the middle of the scale together — a
+full-screen halftone churning at the redraw rate, which is static, and the exact
+opposite of the stillness the screen before it had just spent six seconds
+earning. It is a front now, so only the boundary moves and no dot is ever
+reassigned. The field also kept drawing after it had dissolved, and because the
+front is computed against the viewport's proportions, a resize re-ran it and
+brought the dark back on a finished page; it retires itself now. **The harness
+broke five times, all mine:** the mark assertions and the card's source lookup
+still expected an `<img>` where the reveal now paints a canvas; the share control
+had been renamed; the commit assertion waited a flat 4000ms for a write that
+takes three round trips; and the filing waited 25s for a model call. That is the
+fourth and fifth fixed timeout in that file to accuse the product of being
+broken. Every one of them now waits on the product's own state and, when it does
+fail, prints what is actually on screen. **Also:** one deploy verification passed
+falsely because I built before committing, so `build-info.json` still carried the
+previous sha and matched the old deployment — caught by comparing the deployed
+commit, which is the only reason that check exists. **Open:** the loading
+square still pops out of existence at the hand-over — the tone and the position
+are now continuous, but a cream block disappears in one frame.

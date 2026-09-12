@@ -613,24 +613,39 @@ try {
   await field.waitFor({ state: 'visible', timeout: 15000 });
   await field.fill('Sent the paid-pilot offer to three people this morning with the fee in it. One replied already and said no.');
   await page.getByRole('button', { name: /it's done/i }).first().click();
-  await page.waitForTimeout(25000);   // filing, then the crossing read
+
+  /* Filing runs a generated crossing read, and a model call is not something to
+     put a stopwatch on. Wait for one of the three things that can actually
+     happen — the verdict, a question, or the cycle simply staying open — rather
+     than for a number of seconds and a hope. */
+  const settledFiling = () => page.waitForFunction(() => {
+    const t = document.body.innerText;
+    return /you crossed it/i.test(t)
+      || /nothing here saw it happen/i.test(t)
+      || !!document.querySelector('input[type="text"]:not([id^="what-happened"])');
+  }, null, { timeout: 120000, polling: 1000 }).then(() => true).catch(() => false);
+
+  const filed = await settledFiling();
+  check('the filing is read within two minutes', filed,
+    filed ? '' : `still showing: ${JSON.stringify((await page.locator('body').innerText()).replace(/\s+/g, ' ').slice(0, 180))}`);
 
   /* The rubric is generated, so a filing written in advance may not satisfy it
      and the honest answer is UNCLEAR with one question. That is a real path, not
      a failure — answer it and let the verdict land. */
-  const asked = page.locator('input[type="text"]:visible').first();
+  const asked = page.locator('input[type="text"]:not([id^="what-happened"])').first();
   if (await asked.count()) {
     const q = await page.locator('body').innerText();
     check('an unclear filing is asked about, once', /\?/.test(q));
     await asked.fill('Yes — all three went out this morning, each naming the work and the fee.');
     await page.getByRole('button', { name: /^answer$/i }).click();
-    await page.waitForTimeout(25000);
+    await settledFiling();
   }
 
   await page.reload({ waitUntil: 'networkidle' });
   await page.waitForTimeout(3000);
   const closing = await page.locator('body').innerText();
-  check('a filing that meets the boundary closes the cycle', /you crossed it/i.test(closing));
+  check('a filing that meets the boundary closes the cycle', /you crossed it/i.test(closing),
+    /you crossed it/i.test(closing) ? '' : `record reads: ${JSON.stringify(closing.replace(/\s+/g, ' ').slice(0, 200))}`);
   check('the closing record carries what was named', /what you named/i.test(closing));
   check('the crossing is not described as verified',
     /nothing here saw it happen/i.test(closing) && !/verified|confirmed by/i.test(closing));
