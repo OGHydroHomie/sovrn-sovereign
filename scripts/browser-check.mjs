@@ -240,6 +240,29 @@ if (CLEANUP_ONLY) {
 }
 const shot = async (name) => { if (SHOTS) await page.screenshot({ path: `${SHOTS}/${name}.png`, fullPage: true }); };
 
+/* Mean luminance of what is actually on screen. The whole path from the door to
+   the reveal is meant to be dark, and the only way to know is to look at the
+   pixels — every in-page proxy for "is this page dark" reads a style rather than
+   a screen. */
+const screenLuma = async () => {
+  const png = await page.screenshot();
+  /* Decode just enough of the PNG to average it: Playwright hands back 8-bit
+     RGBA, and sharp is not a dependency of this repo. */
+  const bmp = await page.evaluate(async (b64) => {
+    const img = new Image();
+    await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = 'data:image/png;base64,' + b64; });
+    const c = document.createElement('canvas');
+    c.width = 60; c.height = Math.max(1, Math.round(60 * img.naturalHeight / img.naturalWidth));
+    const cx = c.getContext('2d');
+    cx.drawImage(img, 0, 0, c.width, c.height);
+    const d = cx.getImageData(0, 0, c.width, c.height).data;
+    let s = 0;
+    for (let i = 0; i < d.length; i += 4) s += 0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2];
+    return s / (d.length / 4);
+  }, png.toString('base64'));
+  return Math.round(bmp * 10) / 10;
+};
+
 try {
   // ── Hero ──────────────────────────────────────────────────────────────────
   await page.goto(URL_, { waitUntil: 'networkidle', timeout: 60000 });
@@ -274,11 +297,13 @@ try {
        word. What identifies it is the disclosure it exists to make, and that it
        is dark: paper does not appear anywhere before the reveal. */
     const t = await page.locator('body').innerText();
-    const ground = await page.evaluate(() => getComputedStyle(document.body).backgroundColor
-      || getComputedStyle(document.querySelector('div')).backgroundColor);
     check('threshold stands between hero and question one',
       /three questions about the life you want/i.test(t) && /i create my fate/i.test(t));
-    check('nothing is on paper before the reveal', !/rgb\(251, 250, 247\)/.test(ground), ground);
+    /* Measured off the rendered screen, not off document.body — the body's own
+       background is cream for the whole app and the pages paint over it, so
+       reading it says nothing about what anybody sees. */
+    const lum = await screenLuma();
+    check('nothing is on paper before the reveal', lum < 60, `mean screen luminance ${lum}`);
     await page.getByRole('button', { name: /i create my fate/i }).click();
   }
 
@@ -307,9 +332,25 @@ try {
 
   for (let step = 0; step < answers.length; step++) {
     const before = await headingNow();
-    const field = page.locator('input:visible, textarea:visible').first();
-    await field.waitFor({ state: 'visible', timeout: 20000 });
-    await field.fill(answers[step]);
+
+    /* The date and the time are several fields each now — the native pickers
+       could not be made dark, so they are plain numeric parts. Typing an ISO
+       string into a two-digit day box leaves the question unanswerable and the
+       Next button disabled, which is what this did before it knew. */
+    if (step === 1) {
+      const [y, m, d] = answers[1].split('-');
+      await page.locator('#dob-day').fill(String(Number(d)));
+      await page.locator('#dob-month').fill(String(Number(m)));
+      await page.locator('#dob-year').fill(y);
+    } else if (step === 2) {
+      const [hh, mm] = answers[2].split(':');
+      await page.locator('#tob-hour').fill(hh);
+      await page.locator('#tob-minute').fill(mm);
+    } else {
+      const field = page.locator('input:visible, textarea:visible').first();
+      await field.waitFor({ state: 'visible', timeout: 20000 });
+      await field.fill(answers[step]);
+    }
 
     // Q4 is an autocomplete; Q8 has the consent box.
     if (step === 3) {

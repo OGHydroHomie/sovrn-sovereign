@@ -543,3 +543,40 @@ previous sha and matched the old deployment — caught by comparing the deployed
 commit, which is the only reason that check exists. **Open:** the loading
 square still pops out of existence at the hand-over — the tone and the position
 are now continuous, but a cream block disappears in one frame.
+
+---
+
+**2026-09-12 — Dark from the door to the reveal.** The whole path a stranger walks
+is now one unbroken descent, and paper appears exactly once. The hero is the
+artwork, SOVRN above the doorway and one word — `ascend` — beneath it, with no
+sentence: the line that was there had been the threshold's heading word for word.
+Going through is a push *into* the door, 1.6s, and the threshold is dark on the
+same generated starfield the door opens into. Questions one to four now carry
+that field too; the descent into the depths happens at question five as the climb
+was designed. **Whole-screen luminance across the path went from 10.6 / 21.6 /
+245.5 / 17.4 to 8.6 / 8.0 / 9.4 / 9.8 / 11.2.** The native date and time pickers
+were the last things that could not be made dark — a browser's own control brings
+its own palette — so they are numeric parts now: day, month, year, hour, minute.
+The parts are the source of truth while someone types and the ISO strings are
+derived, so a half-typed year cannot make a birth date in the year 1 and the 31st
+of February is refused. "I don't know my birth time" became a control rather than
+a footnote; the intercepted generate payload confirms it degrades by design —
+`birthTimeUnknown: true`, `Houses verified: NO`, which routes the prompt to its
+own branch. Contrast was measured against what is actually behind each element by
+sampling the canvas under its box: 27 of 27 pass, worst 8.53:1 against a 4.5 bar,
+dropdown rows 18.75:1. 48/48 on production at `f556d1a`. **What broke:** two
+measurements of mine and four harness assumptions. I sized the door's blob off
+its profile's *minimum* radius, so at the brief's 3.2× the frame cut the figure
+at mid-torso; the geometry caps at 1.86 and it runs at 1.8. I assumed the
+generated field could meet the artwork's stars at the quiz's own setting — the
+painted stars are 0.18% of pixels lit and the quiz's fourth altitude is 1.82%,
+ten times apart, so the density is a parameter now and the hero runs at the
+artwork's number. Then the browser check: it asked the hero for an `h1` that no
+longer existed and waited thirty seconds for it — which was also a real gap,
+since a landing page with no heading cannot be announced, so SOVRN is the heading
+now; it entered through a button that is gone; it typed an ISO date into a
+two-digit day box and then blamed the product when Next stayed disabled; and my
+"nothing is on paper" assertion read `document.body`'s background, which is cream
+for the whole app while every page paints over it — it measures the rendered
+screen now. **Open:** the disabled Next button sits at about 4.2:1, under the
+4.5 bar but inside the inactive-control exemption, and it was the same on paper.
