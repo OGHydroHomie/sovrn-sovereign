@@ -18,6 +18,15 @@ import { advanceTrial, detectTrial, type Entry, type Figure } from './_trials.js
  * counted, and never shown back to them as anything at all.
  */
 
+/* This endpoint can make a model call — `boundaryNeedsTheWorld`, once per
+   cycle — and it had no cap, so it ran on Vercel's default. Every failure here
+   is swallowed by design: the catch returns `{ trial: null }`, because a day
+   with no trial is the normal day and erroring in front of somebody over it
+   would be worse than staying quiet. That makes an unset timeout the most
+   invisible failure in the product — the Sun would simply never arrive, on a
+   deployment reporting nothing wrong at all. */
+export const config = { maxDuration: 60 };
+
 const QUEST_NOTE: Record<Figure, string> = {
   devil: 'One act that ends the thing you keep saying yes to and not doing.',
   hermit: 'One act done where the people you left can see it.',

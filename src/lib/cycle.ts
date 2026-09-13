@@ -30,22 +30,48 @@ export interface CrossingResult {
   closed: boolean;
 }
 
+/* Which actions may simply be tried again.
+ *
+ * `admit` stores nothing at all — it narrows a target and hands the wording
+ * back, and the person has to accept it before anything is written. Asking
+ * twice costs three model calls and changes no state. Everything else here
+ * writes: `open` inserts a cycle, `cross` closes one, `retire` closes one. A
+ * retry on any of those after a response that was merely *lost* would act
+ * twice, so they get one attempt and the person gets a button. */
+const IDEMPOTENT = new Set(['admit']);
+
 async function call<T>(body: Record<string, unknown>): Promise<T | null> {
   const { data } = await supabase.auth.getSession();
   const token = data.session?.access_token;
   if (!token) return null;
-  try {
-    const res = await fetch('/api/cycle', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify(body),
-    });
-    if (!res.ok) { console.warn('cycle request failed:', res.status); return null; }
-    return (await res.json()) as T;
-  } catch (err) {
-    console.warn('cycle request failed:', err);
-    return null;
+
+  /* One retry, and only on a failure that says nothing about the request — a
+     dropped connection or the server falling over. A 4xx is an answer and
+     asking again would just get the same one.
+
+     This exists because the narrowing dead-ended people on a blip. It is three
+     model calls and about eight seconds of somebody's attention, and the whole
+     of the failure was a line of small text asking them to do it again. It also
+     cost four harness runs that read the dead end as the generator being slow;
+     it was never slow. */
+  const attempts = IDEMPOTENT.has(String(body.action)) ? 2 : 1;
+
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    try {
+      const res = await fetch('/api/cycle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(body),
+      });
+      if (res.ok) return (await res.json()) as T;
+      console.warn('cycle request failed:', res.status);
+      if (res.status < 500) return null;
+    } catch (err) {
+      console.warn('cycle request failed:', err);
+    }
+    if (attempt + 1 < attempts) await new Promise((r) => setTimeout(r, 600));
   }
+  return null;
 }
 
 /** Narrow a target and write its boundary. Stores nothing — they have to agree. */

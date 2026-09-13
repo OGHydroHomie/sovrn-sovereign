@@ -4,6 +4,11 @@ import Anthropic from '@anthropic-ai/sdk';
 import { stripAct } from './_strip.js';
 import { safetyCheck } from './_safety.js';
 
+/* The safety filter is a model call, and this had no cap. A stripped act that
+   times out here is never published and nobody is told — the commit succeeds,
+   the wall just never shows it. */
+export const config = { maxDuration: 60 };
+
 /**
  * Write the public version of one act.
  *

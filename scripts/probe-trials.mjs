@@ -10,7 +10,7 @@
  * waiting three days for them.
  */
 import { mkdir, writeFile } from 'node:fs/promises';
-import { probe } from './lib/probe.mjs';
+import { probe, settles } from './lib/probe.mjs';
 import { fakeDb } from './lib/fake-postgrest.mjs';
 import { bundled, SERVERLESS } from './lib/bundle.mjs';
 
@@ -220,14 +220,19 @@ await probe({ url: URL_, name: 'trials' }, async ({ page, url }) => {
     'I am forty-one and I keep saying next year. My kids will remember me as someone who talked about it.');
   await page.getByRole('button', { name: /set the target/i }).click();
   const admitted = page.getByRole('button', { name: /that's it/i });
-  await admitted.waitFor({ state: 'visible', timeout: 120000 });
+  /* Either the narrowing lands or the page says it didn't. Measured, the
+     narrowing is 5–12s on production; 120s here is room, not an expectation. */
+  await settles(page, { ok: admitted, bad: page.getByText(/didn.t go through/i), what: 'the narrowing', timeout: 120000 });
   await admitted.click();
   await page.waitForTimeout(2500);
 
   const oneAct = page.getByRole('button', { name: /one act/i }).first();
   if ((await oneAct.getAttribute('aria-expanded')) !== 'true') await oneAct.click();
   const commit = page.getByRole('button', { name: /the hard one/i }).first();
-  await commit.waitFor({ state: 'visible', timeout: 45000 });
+  /* Opening a cycle is a database insert and a re-read, with no model call in
+     it at all — so this was never the slow step it was reported as. When it
+     fails it is the same "didn't go through" as the narrowing. */
+  await settles(page, { ok: commit, bad: page.getByText(/didn.t go through/i), what: 'opening the cycle', timeout: 45000 });
   await commit.click();
   await page.waitForFunction(() => /what actually happened/i.test(document.body.innerText),
     null, { timeout: 25000, polling: 500 });

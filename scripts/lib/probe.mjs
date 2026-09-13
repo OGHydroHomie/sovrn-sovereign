@@ -88,6 +88,59 @@ export async function sweepPrevious(browser, url, name) {
 }
 
 /**
+ * Wait for a step to settle — either way — and say which.
+ *
+ * Every generated step in this product has two outcomes and the harnesses only
+ * ever waited for one of them. When a call failed, the page said "That didn't go
+ * through — try again" and the check went on waiting for a button that was never
+ * coming, then died on a timeout that looked like slowness. Four times. Twice I
+ * reported the generator as slow on that evidence; it was not slow, it was a
+ * transient failure nobody was looking at.
+ *
+ * `ok` and `bad` are locators. Whichever resolves first decides, and a failure
+ * throws immediately with the page's own words plus whatever the network and the
+ * console said — so the next one of these diagnoses itself instead of costing a
+ * two-minute timeout and a guess.
+ */
+export async function settles(page, { ok, bad, what, timeout = 120000 }) {
+  const outcome = await Promise.race([
+    ok.first().waitFor({ state: 'visible', timeout }).then(() => 'ok'),
+    bad.first().waitFor({ state: 'visible', timeout }).then(() => 'bad'),
+  ]).catch(() => 'timeout');
+
+  if (outcome === 'ok') return;
+
+  /* Bounded. Reading an element that is not there carries Playwright's own
+     thirty-second default, which turned a twenty-second timeout into fifty and
+     printed nothing useful at the end of it. */
+  const said = await bad.first().innerText({ timeout: 1500 }).catch(() => '');
+  const trouble = (page.__apiLog ?? []).filter((r) => r.status >= 400 || r.failed);
+  const warned = (page.__consoleLog ?? []).filter((l) => /fail|error|warn/i.test(l));
+  throw new Error(
+    `${what}: ${outcome === 'bad' ? `the page said ${JSON.stringify(said.trim())}` : `nothing settled in ${timeout}ms`}`
+    + (trouble.length ? `\n    network: ${trouble.map((r) => `${r.status || 'FAILED'} ${r.url}`).join(', ')}` : '')
+    + (warned.length ? `\n    console: ${warned.slice(-3).join(' | ')}` : '')
+  );
+}
+
+/** Record what the product's own calls did, so a failure can name itself. */
+export function watch(page) {
+  page.__apiLog = [];
+  page.__consoleLog = [];
+  page.on('response', (res) => {
+    if (!res.url().includes('/api/')) return;
+    page.__apiLog.push({ url: new URL(res.url()).pathname, status: res.status() });
+  });
+  page.on('requestfailed', (req) => {
+    if (!req.url().includes('/api/')) return;
+    page.__apiLog.push({ url: new URL(req.url()).pathname, failed: req.failure()?.errorText ?? 'failed' });
+  });
+  page.on('console', (m) => {
+    if (m.type() === 'warning' || m.type() === 'error') page.__consoleLog.push(m.text().slice(0, 160));
+  });
+}
+
+/**
  * Run a probe against the product with the account handled at both ends.
  *
  * `fn` is given { page, context, browser, url }. Whatever it does or throws, the
@@ -110,6 +163,7 @@ export async function probe(options, fn) {
 
   const context = await browser.newContext({ viewport, deviceScaleFactor, ...contextOptions });
   const page = await context.newPage();
+  watch(page);
 
   /* The identity is minted on the first load, so the record is written as soon
      as one exists rather than when the probe happens to be finished with it. */

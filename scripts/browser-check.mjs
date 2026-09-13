@@ -47,7 +47,7 @@
 import { chromium } from 'playwright';
 import { readFile, unlink, writeFile } from 'node:fs/promises';
 import {
-  deleteRecorded, deleteVia, rememberSession as recordSession, stateFile,
+  deleteRecorded, deleteVia, rememberSession as recordSession, stateFile, settles, watch,
 } from './lib/probe.mjs';
 
 /* Where a run records the account it just created, so the next run can delete it
@@ -105,6 +105,9 @@ const context = await browser.newContext({
   acceptDownloads: true,
 });
 const page = await context.newPage();
+/* Record what the product's own calls do, so a step that fails can say so
+   instead of timing out and being read as slow. */
+watch(page);
 
 /* The hand-over between the loading screen and the reveal.
 
@@ -494,7 +497,13 @@ try {
   await page.getByRole('button', { name: /set the target/i }).click();
 
   const admitted = page.getByRole('button', { name: /that's it/i });
-  await admitted.waitFor({ state: 'visible', timeout: 120000 });
+  /* Either the narrowing lands or the page says it didn't, and the check is
+     told which. Measured on production the narrowing is 5-12s — three model
+     calls, two of them genuinely dependent — so 120s is room, not a guess. */
+  await settles(page, {
+    ok: admitted, bad: page.getByText(/didn.t go through/i),
+    what: 'the narrowing', timeout: 120000,
+  });
   const narrowing = await page.locator('body').innerText();
   check('the narrowing is shown before it is accepted', /try this instead|the target/i.test(narrowing));
   const rubricLine = (narrowing.match(/Crossed when[^\n]+/i) ?? [''])[0].trim();
@@ -515,11 +524,15 @@ try {
      button is its whole contents — label, act text and the words on it — so an
      anchored match on the last part never matches anything. */
   const commit = page.getByRole('button', { name: /the hard one/i }).first();
-  /* 45s, not 20. Opening a cycle is a generated step and it has twice been slow
-     rather than broken — no runtime error on the deployment either time, and a
-     pass on the next run. A check that cries wolf teaches you to ignore it, so
-     where it has to be a clock the clock gets room. */
-  await commit.waitFor({ state: 'visible', timeout: 45000 });
+  /* Opening a cycle is a database insert and a re-read. There is no model call
+     in it, and the acts themselves were generated with the blueprint minutes
+     ago — so this was never the slow generated step the comment here used to
+     claim it was. I raised this timeout twice on that wrong belief. When it
+     fails it fails the same way the narrowing does, and now it says so. */
+  await settles(page, {
+    ok: commit, bad: page.getByText(/didn.t go through/i),
+    what: 'opening the cycle', timeout: 45000,
+  });
   check('the acts are offered once a target exists', true);
   await commit.click();
   /* Wait for the act to be written rather than for four seconds. The commit

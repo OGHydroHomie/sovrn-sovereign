@@ -9,11 +9,12 @@
  *
  *   node scripts/verify-trials-live.mjs
  */
-import { readFile } from 'node:fs/promises';
-import { probe } from './lib/probe.mjs';
+import { mkdir, readFile } from 'node:fs/promises';
+import { probe, settles } from './lib/probe.mjs';
 
 const URL_ = process.env.SOVRN_URL ?? 'https://www.sovrn.online';
 const EMAIL = process.env.SOVRN_TEST_EMAIL ?? 'elijahpitts@gmail.com';
+const SHOTS = process.env.SHOTS ?? null;
 
 const env = Object.fromEntries((await readFile('.env.local', 'utf8')).split('\n')
   .filter((l) => l.includes('=')).map((l) => [l.slice(0, l.indexOf('=')).trim(), l.slice(l.indexOf('=') + 1).trim()]));
@@ -85,13 +86,18 @@ async function toFirstAct(page, url) {
     'I am forty-one and I keep saying next year. My kids will remember me as someone who talked about it.');
   await page.getByRole('button', { name: /set the target/i }).click();
   const admitted = page.getByRole('button', { name: /that's it/i });
-  await admitted.waitFor({ state: 'visible', timeout: 120000 });
+  /* Either the narrowing lands or the page says it didn't. Measured, the
+     narrowing is 5–12s on production; 120s here is room, not an expectation. */
+  await settles(page, { ok: admitted, bad: page.getByText(/didn.t go through/i), what: 'the narrowing', timeout: 120000 });
   await admitted.click();
   await page.waitForTimeout(2500);
   const oneAct = page.getByRole('button', { name: /one act/i }).first();
   if ((await oneAct.getAttribute('aria-expanded')) !== 'true') await oneAct.click();
   const commit = page.getByRole('button', { name: /the hard one/i }).first();
-  await commit.waitFor({ state: 'visible', timeout: 45000 });
+  /* Opening a cycle is a database insert and a re-read, with no model call in
+     it at all — so this was never the slow step it was reported as. When it
+     fails it is the same "didn't go through" as the narrowing. */
+  await settles(page, { ok: commit, bad: page.getByText(/didn.t go through/i), what: 'opening the cycle', timeout: 45000 });
   await commit.click();
   await page.waitForFunction(() => /what actually happened/i.test(document.body.innerText),
     null, { timeout: 25000, polling: 500 });
@@ -156,7 +162,7 @@ async function askProduction(page, url, token) {
   return { status: res.status(), body: await res.json() };
 }
 
-async function scenario(title, days, fileDone, expect) {
+async function scenario(title, days, fileDone, expect, ceremony = false) {
   console.log(`\n  ${title}`);
   /* --keep leaves the account alive so the row the endpoint wrote can be read
      back out of the database afterwards. It has to be deleted by hand. */
@@ -175,6 +181,29 @@ async function scenario(title, days, fileDone, expect) {
     check(`it is the ${expect}`, body.trial?.figure === expect,
       body.trial ? `${body.trial.figure} · encounter ${body.trial.encounter}` : 'no trial');
     if (body.trial) console.log(`        "${body.trial.reason}"`);
+
+    /* And the ceremony, on the deployed bundle, over the deployed Ledger. The
+       question above was asked over the wire and consumed the `fresh` flag by
+       stamping the row — so this reload is deliberately a second sight, and the
+       ceremony it runs is the recurrence. Which is itself the assertion worth
+       making here: an arrival is not replayed by a reload. */
+    if (ceremony) {
+      await page.goto(`${url}/ledger`, { waitUntil: 'networkidle' });
+      await page.locator('[data-trial]').first().waitFor({ timeout: 30000 }).catch(() => {});
+      const seen = await page.evaluate(() => {
+        const c = document.querySelector('[data-trial]');
+        const a = document.querySelector('[data-trial-arrival]');
+        return { card: Boolean(c), figure: c?.dataset.trial ?? null, replaying: Boolean(a) };
+      });
+      check('the card is on the deployed Ledger', seen.card && seen.figure === expect,
+        `data-trial="${seen.figure}"`);
+      check('and a reload does not replay the arrival', !seen.replaying,
+        seen.replaying ? 'the ceremony ran again' : 'the stamp held');
+      if (SHOTS) {
+        await mkdir(SHOTS, { recursive: true });
+        await page.screenshot({ path: `${SHOTS}/live-${expect}.png`, fullPage: true });
+      }
+    }
     console.log(`        cycle ${shaped.cycle.id}`);
     console.log(`        rubric: ${shaped.cycle.rubric}`);
     console.log(`        requires_contact was ${JSON.stringify(shaped.cycle.requires_contact)} before the call`);
@@ -195,7 +224,7 @@ const only = process.argv[2];
 const pick = (figure) => !only || only === figure;
 
 /* The Devil: committed and didn't, twice. */
-if (pick('devil')) await scenario('THE DEVIL — against real rows on production', ['miss', 'open'], false, 'devil');
+if (pick('devil')) await scenario('THE DEVIL — against real rows on production', ['miss', 'open'], false, 'devil', true);
 /* The Hermit: two mornings unanswered, and a return. */
 if (pick('hermit')) await scenario('THE HERMIT — against real rows on production', ['silent', 'silent', 'open'], true, 'hermit');
 /* The Sun: two finished acts, boundary untouched, requires_contact unset — so
