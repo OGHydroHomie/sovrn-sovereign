@@ -40,10 +40,10 @@ export interface CrossingResult {
  * twice, so they get one attempt and the person gets a button. */
 const IDEMPOTENT = new Set(['admit']);
 
-async function call<T>(body: Record<string, unknown>): Promise<T | null> {
+async function request<T>(body: Record<string, unknown>): Promise<{ status: number; data: T | null }> {
   const { data } = await supabase.auth.getSession();
   const token = data.session?.access_token;
-  if (!token) return null;
+  if (!token) return { status: 0, data: null };
 
   /* One retry, and only on a failure that says nothing about the request — a
      dropped connection or the server falling over. A 4xx is an answer and
@@ -56,6 +56,7 @@ async function call<T>(body: Record<string, unknown>): Promise<T | null> {
      it was never slow. */
   const attempts = IDEMPOTENT.has(String(body.action)) ? 2 : 1;
 
+  let status = 0;
   for (let attempt = 0; attempt < attempts; attempt++) {
     try {
       const res = await fetch('/api/cycle', {
@@ -63,23 +64,46 @@ async function call<T>(body: Record<string, unknown>): Promise<T | null> {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(body),
       });
-      if (res.ok) return (await res.json()) as T;
+      status = res.status;
+      if (res.ok) return { status, data: (await res.json()) as T };
       console.warn('cycle request failed:', res.status);
-      if (res.status < 500) return null;
+      if (res.status < 500) return { status, data: null };
     } catch (err) {
       console.warn('cycle request failed:', err);
     }
-    if (attempt + 1 < attempts) await new Promise((r) => setTimeout(r, 600));
+    /* Long enough to outlast a short upstream overload rather than land inside
+       the same one. Six hundred milliseconds did exactly that — the retry took
+       the same 500 as the first attempt. */
+    if (attempt + 1 < attempts) await new Promise((r) => setTimeout(r, 2500));
   }
-  return null;
+  return { status, data: null };
 }
+
+const call = async <T>(body: Record<string, unknown>): Promise<T | null> =>
+  (await request<T>(body)).data;
 
 /** Narrow a target and write its boundary. Stores nothing — they have to agree. */
 export const admitTarget = (target: string, cost: string) =>
   call<Admission>({ action: 'admit', target, cost });
 
-export const openCycle = (target_stated: string, target_admitted: string, rubric: string, cost: string) =>
-  call<{ cycle: Cycle }>({ action: 'open', target_stated, target_admitted, rubric, cost });
+/**
+ * Open the cycle.
+ *
+ * A 409 is the database refusing a second open cycle, and from where the person
+ * is standing that is not a failure — their cycle exists. It happens when the
+ * write landed and the response did not, and they pressed the button again.
+ * Reporting "that didn't go through" to somebody whose cycle opened fine is the
+ * worst of both: it is wrong, and the only thing they can do about it is press
+ * it a third time.
+ */
+export async function openCycle(
+  target_stated: string, target_admitted: string, rubric: string, cost: string,
+): Promise<boolean> {
+  const { status, data } = await request<{ cycle: Cycle }>({
+    action: 'open', target_stated, target_admitted, rubric, cost,
+  });
+  return Boolean(data) || status === 409;
+}
 
 export const checkCrossing = (entry_id: string, clarification?: string) =>
   call<CrossingResult>({ action: 'cross', entry_id, clarification });

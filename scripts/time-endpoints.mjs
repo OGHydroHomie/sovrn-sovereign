@@ -60,6 +60,30 @@ await probe({ url: URL_, name: 'timing' }, async ({ page, url }) => {
     return;
   }
 
+  /* admit -> open, the two steps a person actually takes, in order. `open`
+     writes a cycle, so this runs on a throwaway account the probe deletes. */
+  if (process.env.OPEN) {
+    console.log(`\n  /api/cycle  admit then open`);
+    const a = await time('admit', {
+      action: 'admit',
+      target: 'Leave my job and start a business',
+      cost: 'I am forty-one and I keep saying next year. My kids will remember me as someone who talked about it.',
+    });
+    console.log(`    admit  ${String(ms(a.dt)).padStart(8)}  HTTP ${a.status}`);
+    if (a.status !== 200) { console.log(`      ${JSON.stringify(a.out)}`); return; }
+    for (let i = 0; i < RUNS; i++) {
+      const o = await time('open', {
+        action: 'open',
+        target_stated: 'Leave my job and start a business',
+        target_admitted: a.out.admitted,
+        rubric: a.out.rubric,
+        cost: 'I am forty-one and I keep saying next year.',
+      });
+      console.log(`    open   ${String(ms(o.dt)).padStart(8)}  HTTP ${o.status}  ${JSON.stringify(o.out).slice(0, 110)}`);
+    }
+    return;
+  }
+
   console.log(`\n  /api/cycle  action=admit   — the narrowing, ${RUNS} runs`);
   const admits = [];
   for (let i = 0; i < RUNS; i++) {

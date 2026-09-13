@@ -43,7 +43,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (authErr || !uid) return res.status(401).json({ error: 'Invalid or expired session' });
 
   const action = String(req.body?.action ?? '');
-  const client = new Anthropic();
+  /* More retries than the SDK's default two.
+     Nothing in `_admission` catches, so an upstream 429 or an overload escapes
+     to the outer catch and this endpoint answers 500 — and a 500 here is the
+     most expensive failure in the product. It is three model calls deep, it is
+     the gate everything else is behind, and all the person sees is a line of
+     small text asking them to do it again. Observed live: two 500s inside one
+     second, through a client-side retry, while nothing else was wrong. */
+  const client = new Anthropic({ maxRetries: 4 });
 
   try {
     /* ── Narrow a target and write its boundary. Nothing is stored: the person
