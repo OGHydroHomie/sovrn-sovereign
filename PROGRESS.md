@@ -791,11 +791,19 @@ failure on a parallel fetch and reverted it with a comment saying so — the
 failures were Vite swapping modules mid-run after I edited the page, and the
 comment was corrected rather than left to mislead.
 
-Open. The arrival is preceded by the Ledger's own paper loading state, so the
-first beat of a sequence that opens on a dark field can be a flash of cream. The
-fix would be a dark loading state for everyone to serve the rare first arrival,
-which is the wrong trade, and moving the trial call earlier changed nothing
-visible. Left as is and named. Two accounts with real data survived crashed
+The paper. The arrival is preceded by the Ledger's own loading state, which is
+cream, and on a real connection that is two and a half seconds — not a flash, a
+hard cut into a sequence whose first beat is a dark field. Filming it on the
+deployment is what showed the size of it; locally it was under a second. The
+overlay fades the ground out now rather than appearing on top of it, which is
+the reveal's move in reverse: there the paper arrives with the ink, here it
+leaves as the field is already slowing. The cover overlaps the stop instead of
+preceding it — gating the settle on it finishing cost a re-render and pushed
+every beat past its mark — so it costs the sequence nothing and the numbers are
+unchanged. Making the loading state dark for everyone, to serve the rare first
+arrival, would have been the wrong trade.
+
+Open. Two accounts with real data survived crashed
 verification runs and were removed by hand: the structural cleanup only sweeps
 *empty* orphans, so a probe that dies mid-run after committing an act still
 leaves a record behind. Production is at 21 accounts. The unbinding is Part 3 and
