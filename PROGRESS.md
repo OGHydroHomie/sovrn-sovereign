@@ -883,3 +883,51 @@ runs without its one moving part. The unbinding probe demonstrates the sequence
 against a stand-in frame synthesised in the browser, which proves the mechanism
 and says nothing about the art. Parts 4 and 5 — the Mirror and the Map — are
 untouched.
+
+## Trials, Part 4 — the Mirror
+
+For every day without a trial, which is most days. It quotes what somebody wrote
+when they filed and counts how those sentences account for the week. Shipped and
+verified on production: `/api/mirror` answers 405 to a GET, 401 with no token and
+with a bad one, and returns a real Mirror for a real account reading real
+filings out of the real database.
+
+The rules are the whole feature, so none of them are left to a prompt. The model
+never writes a sentence anyone reads — it returns a quotable fragment and one
+label from a closed set of five, and every word on the page is assembled from
+fixed strings and counts. There is no free-text channel from the model to the
+reader, which is what makes "it never advises" structural rather than hoped for.
+Every quote is then checked as a literal substring of its filing and dropped if
+it is not there, never corrected: typos, lowercase and missing full stops all
+reach the screen exactly as typed. 15/15 quotes verified across five histories,
+0 flagged by the grounding gates, all passing the safety filter.
+
+"One of those is true." only fires where the two accounts are genuinely in
+tension — one putting the cause in the person, one in the world. Two
+circumstantial accounts are not a fork: the kids really were ill and the day
+really did get away, and asserting one of them is false is a verdict the record
+cannot support. Every pairing is tested directly against the pure function
+rather than left to whichever combinations a fixture happens to produce, and
+both branches were confirmed on the deployment.
+
+What broke. The first fixture was four filed misses in one cycle and produced no
+Mirror — because four filed misses *is* the Devil, and a trial was on screen
+instead. Correct behaviour, and a consequence worth naming: inside a cycle where
+somebody has missed twice the Mirror never appears. Its real audience is misses
+spread across cycles, a figure already freed or rejected, and self-description
+on days that were not misses. Separately, the component was splitting an
+assembled paragraph back apart on blank lines to find out what its own sentences
+were — the one surface that must never decide how to present a sentence it did
+not write was parsing prose. It takes the parts now. And three unpunctuated
+quotes set inline ran together into one line with quotation marks scattered
+through it; the fix is one quote per line, because the alternative was adding
+the punctuation, which is a paraphrase wearing quotation marks.
+
+Also: a harness fixture that mixed messy spelling with filings that account for
+nothing — "nope", "i just didnt" — failed intermittently, because whether a
+shrug is an account is a real judgement the model can make either way. Those are
+two different tests and are two tests now; the borderline one asserts the rule
+(a valid Mirror or nothing, never one built from two filings) rather than the
+outcome.
+
+Open. Part 5, the Map, is untouched. The trial cards still have no `-freed` art.

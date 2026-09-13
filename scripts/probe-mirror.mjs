@@ -31,12 +31,22 @@ const client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
    closed cycle and a new one is just a person who keeps talking about
    themselves the same way, which is what the Mirror is for. The seven-day
    window does not care where the cycle boundary is. */
-const OLD = [
+/* EXTERNAL=1 swaps in a week where every account points outward. The closing
+   line must not appear: two circumstances are not a fork, and saying one of
+   them is false is a verdict the record cannot support. */
+const OLD = process.env.EXTERNAL ? [
+  { kind: 'miss', text: 'ran out of time, work blew up in the afternoon' },
+  { kind: 'miss', text: 'kids were ill so nothing happened today' },
+  { kind: 'miss', text: 'no time today. the day got away from me.' },
+] : [
   { kind: 'miss', text: 'I got scared. Opened the doc and closed it again.' },
   { kind: 'miss', text: 'chickened out at the last minute, again' },
   { kind: 'miss', text: "Honestly it was too big for one afternoon, I didn't know where to start." },
 ];
-const NOW = [
+const NOW = process.env.EXTERNAL ? [
+  { kind: 'miss', text: 'he cancelled on me so there was nothing to send' },
+  { kind: 'open' },
+] : [
   { kind: 'miss', text: "I wasn't ready. Need more time with it first." },
   { kind: 'open' },
 ];
@@ -103,6 +113,14 @@ await probe({ url: URL_, name: 'mirror' }, async ({ page, url }) => {
 
   check('it is one observation, not a list',
     (text.match(/times you|Once you|Twice you/g) ?? []).length <= 2);
+
+  const hasClose = await page.locator('[data-mirror-close]').count() > 0;
+  if (process.env.EXTERNAL) {
+    check('two circumstances get no closing line', !hasClose,
+      hasClose ? 'it asserted one of them is false' : 'the counts, and nothing else');
+  } else {
+    check('you against the act gets the closing line', hasClose);
+  }
 
   /* Above the act, never instead of it. */
   const geometry = await page.evaluate(() => {
