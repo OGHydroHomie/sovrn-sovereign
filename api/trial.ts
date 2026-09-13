@@ -118,12 +118,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         await admin.from('cycles').update({ requires_contact: requiresContact }).eq('id', cycle.id);
       }
 
+      /* `used` goes in rather than being checked on the way out. A trial's
+         evidence does not expire — two filed misses are in the record for good —
+         so asking for "the trial" and discarding it when the Devil is spent
+         returns the Devil again tomorrow, and every day after, while the Hermit
+         and the Sun sit behind it unreachable for the rest of the cycle. */
       const found = detectTrial(entries, cycle?.id ?? null, timezone, {
         requiresContact,
         crossed: Boolean(cycle?.crossed_at),
+        exclude: used,
       });
 
-      if (found && !used.has(found.figure)) {
+      if (found) {
         const { data: made, error } = await admin.from('trials').insert({
           user_id: uid, cycle_id: cycle?.id ?? null, figure: found.figure,
           reason: found.reason, last_day: today.day_number, encounter: 1,

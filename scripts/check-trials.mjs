@@ -219,6 +219,25 @@ console.log('\n  THE OTHER TWO, on their own histories');
   await w.done();
 }
 
+console.log('\n  A CYCLE THAT HAS ALREADY MET A FIGURE');
+{
+  /* The Devil's evidence never leaves the record, so once the cycle is done with
+     him the detector has to fall through rather than keep offering him. Without
+     this, one Devil per cycle makes the other two unreachable in it for good. */
+  const spentDevil = { requiresContact: null, crossed: false, exclude: new Set(['devil']) };
+  is('a spent Devil does not keep arriving',
+    detectTrial([fixture(1, 'miss'), fixture(2, 'miss'), fixture(3, 'open')], 'c1', 'UTC', spentDevil)?.figure, undefined);
+  is('and the Hermit behind him can now be seen',
+    detectTrial([fixture(1, 'miss'), fixture(2, 'miss'), fixture(3, 'silent'), fixture(4, 'silent'), fixture(5, 'open')],
+      'c1', 'UTC', spentDevil)?.figure, 'hermit');
+  is('and so can the Sun',
+    detectTrial([fixture(1, 'miss'), fixture(2, 'miss'), fixture(3, 'done'), fixture(4, 'done'), fixture(5, 'open')],
+      'c1', 'UTC', { requiresContact: true, crossed: false, exclude: new Set(['devil']) })?.figure, 'sun');
+  is('a cycle done with all three offers nothing',
+    detectTrial([fixture(1, 'miss'), fixture(2, 'miss'), fixture(3, 'open')], 'c1', 'UTC',
+      { requiresContact: true, crossed: false, exclude: new Set(['devil', 'hermit', 'sun']) })?.figure, undefined);
+}
+
 console.log('\n  THE ORDINARY DAY, and the closed door');
 {
   const w = await world([day(1, 'done'), day(2, 'open')]);

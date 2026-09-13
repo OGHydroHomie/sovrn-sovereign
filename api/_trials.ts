@@ -74,14 +74,26 @@ export function detectTrial(
   entries: Entry[],
   cycleId: string | null,
   timezone: string | null,
-  opts: { requiresContact: boolean | null; crossed: boolean }
+  opts: {
+    requiresContact: boolean | null;
+    crossed: boolean;
+    /* Figures this cycle is already done with. They are skipped rather than
+       returned-and-discarded, because the evidence for a trial does not expire:
+       two filed misses stay in the record forever, so a caller that asked for
+       "the trial" and threw it away because the Devil was spent would get the
+       Devil again every day, and the Hermit and the Sun would be unreachable
+       for the rest of the cycle. Found by working through what a second week
+       actually looks like, not by a test. */
+    exclude?: Set<Figure>;
+  }
 ): TrialTrigger | null {
   const inCycle = cycleId ? entries.filter((e) => e.cycle_id === cycleId) : entries;
+  const spent = opts.exclude ?? new Set<Figure>();
 
   /* ── The Devil ────────────────────────────────────────────────────────────
      Committed and didn't, twice, on acts pointing at the same target. */
   const misses = inCycle.filter(isMiss);
-  if (misses.length >= 2) {
+  if (!spent.has('devil') && misses.length >= 2) {
     const [a, b] = misses.slice(-2);
     const ta = clock(a.committed_at, timezone);
     const tb = clock(b.committed_at, timezone);
@@ -112,7 +124,7 @@ export function detectTrial(
     run = isSilent(e) ? run + 1 : 0;
     if (run > longestGap) longestGap = run;
   }
-  if (longestGap >= 2) {
+  if (!spent.has('hermit') && longestGap >= 2) {
     return {
       figure: 'hermit',
       reason: `${count(longestGap)} mornings arrived and went unanswered. You came back.`
@@ -123,7 +135,7 @@ export function detectTrial(
   /* ── The Sun ──────────────────────────────────────────────────────────────
      Finished acts while the boundary still needs contact with the world. */
   const finished = inCycle.filter((e) => e.completed_at).length;
-  if (opts.requiresContact === true && !opts.crossed && finished >= 2) {
+  if (!spent.has('sun') && opts.requiresContact === true && !opts.crossed && finished >= 2) {
     return {
       figure: 'sun',
       reason: `${count(finished)} acts finished, and the boundary you set is still uncrossed.`
