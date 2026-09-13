@@ -709,3 +709,44 @@ and the rows are not. The Sun's one model call, `boundaryNeedsTheWorld`, was
 never fired against Anthropic; both its branches were tested with
 `requires_contact` pre-set. The 21 mark files for the three figures are in the
 repo and nothing references them yet; that is the arrival build.
+
+## Trials, Part 1 — verified on production
+
+Deployed and confirmed against the live deployment, not a local copy.
+`/api/trial` answers: 405 to a GET, 401 with no token, 401 with a token that is
+not one, 200 with a real session. All three triggers fire against real rows —
+three real accounts, three real quizzes, three real generated blueprints and a
+real committed act each, with the days behind them written through PostgREST
+using the account's own JWT under RLS, the same path the commit flow itself
+writes on. The Devil: "You said yes at 9:17pm, and again at 7:17pm, and neither
+one happened. Twice." The Hermit: "Two mornings arrived and went unanswered. You
+came back." The Sun: "Two acts finished, and the boundary you set is still
+uncrossed." `boundaryNeedsTheWorld` ran for the first time — `requires_contact`
+was null before the request and true after it, stored by the deployed function
+from the model's answer about a boundary reading "sent to one named person who
+could buy it". The trial row, its reason and the encounter stamp on day 3 were
+all read back out of the database independently of the browser. verify-deploy
+reports every file matching dist/.
+
+What broke. A spent figure blocked the two behind it: the endpoint asked the
+detector for "the trial", got the Devil, saw the cycle was already done with him
+and stopped — and since two filed misses never leave the record, that repeats
+every day forever with the Hermit and the Sun unreachable behind him for the
+rest of the cycle. The used set now goes into the detector rather than being
+checked on the way out. Found by working out what a second week looks like; every
+test until then had used a fresh cycle. Also: the live fixture wrote a completed
+day with no `what_happened` and production refused it on the `filing_requires_text`
+check constraint — a real invariant the in-memory fixture did not know about, and
+an argument for the live pass existing at all. And `probe-session` waited thirty
+seconds for supabase's default `sb-<ref>-auth-token` on a page that was signed in;
+the client is configured with its own storageKey, `sovrn_auth`. Lastly I pushed
+the first commit to `legacy`, an abandoned August repo, rather than `origin` —
+rejected as non-fast-forward, which is the only reason I noticed.
+
+Open. The orphan sweep cleared 20 empty anonymous accounts and twelve of them
+were created inside the five-minute window where Part 1's probes were running,
+so a single probe run is leaving more than one account behind: `probe()` records
+the identity minted on first load and deletes that one, and anything minted later
+in the run is not recorded and not cleaned. The structural fix from last time
+only covers the first account. Accounts now stand at 18, with 22 entries, 11
+cycles and no trials.
