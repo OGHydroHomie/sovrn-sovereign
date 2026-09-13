@@ -2,7 +2,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { listEntries, isFiled, type LedgerEntry } from '../lib/ledger';
 import FileDay from '../components/FileDay';
-import InstallPrompt from '../components/InstallPrompt';
+import InstallScreen from '../components/InstallScreen';
+import { shouldOfferInstall } from '../lib/install';
 import PaperPage from '../components/PaperPage';
 import NextMorning from '../components/NextMorning';
 import { signalVillain, villainUnlocked } from '../lib/villain';
@@ -43,6 +44,11 @@ export default function LedgerPage() {
   /* null until they tap. Then 'ok' or 'failed' — the placeholder must not claim
      they were counted if the write did not land. */
   const [villain, setVillain] = useState<'ok' | 'failed' | null>(null);
+  /* The second and last asking. Days after the first are written by the 6am
+     cron with their act already committed — there is no second commit gesture
+     anywhere in the product — so the second occasion is the morning a second day
+     exists, which is also the morning the promise it makes has been kept. */
+  const [offerInstall, setOfferInstall] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [cycle, setCycle] = useState<Cycle | null>(null);
   const [cycles, setCycles] = useState<Cycle[]>([]);
@@ -57,6 +63,8 @@ export default function LedgerPage() {
     setProfile(me);
     setCycle(open);
     setCycles(all);
+    /* A second day exists, and the first asking was refused. */
+    if (rows.some((e) => e.day_number > 1) && shouldOfferInstall(2)) setOfferInstall(true);
     setNaming(false);
     setRetiring(false);
     setState('ready');
@@ -207,18 +215,16 @@ export default function LedgerPage() {
   ) : undefined;
 
   return (
+    <>
+    {offerInstall && (
+      <InstallScreen occasion={2} becoming={profile?.becoming} onClose={() => setOfferInstall(false)} />
+    )}
     <PaperPage
       title="Your Ledger"
       standfirst={becomingLine}
       becoming={profile?.becoming}
       nav={<NavLink href="/blueprint">Your Blueprint</NavLink>}
     >
-      {/* Above the fold, and directly after the commit that got them here. It
-          sat under the entries before, which meant the one moment it had a claim
-          on — a person who has just done the thing and has a reason to come back
-          tomorrow — was three scrolls away from ever being seen. */}
-      {entries.length > 0 && <InstallPrompt />}
-
       {cycle && (
         <div style={{ marginBottom: 26, borderBottom: '1px solid #E4E0D6', paddingBottom: 20 }}>
           <p className="sv-label" style={{ fontSize: 11, letterSpacing: '0.14em', color: '#6E6A66' }}>
@@ -410,5 +416,6 @@ export default function LedgerPage() {
         </div>
       )}
     </PaperPage>
+    </>
   );
 }

@@ -45,16 +45,20 @@
  * steps.
  */
 import { chromium } from 'playwright';
-import { readFile, writeFile } from 'node:fs/promises';
-
-import { unlink } from 'node:fs/promises';
-import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
+import { readFile, unlink, writeFile } from 'node:fs/promises';
+import {
+  deleteRecorded, deleteVia, rememberSession as recordSession, stateFile,
+} from './lib/probe.mjs';
 
 /* Where a run records the account it just created, so the next run can delete it
    even if this one never reaches its own finally. Kept beside the script and out
-   of git — it holds a live session token. */
-const STATE = join(dirname(fileURLToPath(import.meta.url)), '.browser-check-session.json');
+   of git — it holds a live session token.
+
+   The machinery is shared with every throwaway probe now, in scripts/lib/probe.mjs.
+   It lived only here, so every one-off script written beside it had none, and
+   three separate batches of orphaned anonymous accounts had to be swept out of
+   production by hand — the last one a hundred and twenty-seven rows. */
+const STATE = stateFile('browser-check');
 
 const arg = (n, d) => { const i = process.argv.indexOf(`--${n}`); return i === -1 ? d : process.argv[i + 1]; };
 const URL_ = (arg('url', 'https://www.sovrn.online')).replace(/\/$/, '');
@@ -91,46 +95,6 @@ const check = (name, ok, detail = '') => {
   results.push({ name, ok, detail });
   console.log(`  ${ok ? 'ok  ' : 'FAIL'}  ${name}${detail ? '  — ' + detail : ''}`);
 };
-
-/* Drive the product's own delete flow on a page that holds the session. */
-async function deleteVia(p) {
-  await p.goto(`${URL_}/delete`, { waitUntil: 'networkidle', timeout: 60000 });
-  const start = p.getByRole('button', { name: /^delete my data$/i }).first();
-  if (!(await start.isVisible().catch(() => false))) return 'nothing to delete';
-  await start.click();
-  await p.getByRole('button', { name: /yes, delete everything/i }).first().click();
-  await p.getByText(/your data has been deleted/i).waitFor({ timeout: 30000 });
-  return 'deleted';
-}
-
-/* The same flow, in a throwaway context seeded with a session from disk — which
-   is how a previous run's account is reached from a browser that never had it.
-   Seeding happens in an init script so the entries are in localStorage before
-   any app code reads them. */
-async function deleteRecorded(browser, session) {
-  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
-  await ctx.addInitScript((entries) => {
-    try {
-      for (const [k, v] of entries) localStorage.setItem(k, v);
-    } catch { /* about:blank and friends have no usable storage */ }
-  }, session.storage);
-  try {
-    return await deleteVia(await ctx.newPage());
-  } finally {
-    await ctx.close();
-  }
-}
-
-/* Record the account this run is using, the moment it exists. */
-async function rememberSession(page) {
-  const storage = await page.evaluate(() =>
-    Object.keys(localStorage)
-      .filter((k) => k.startsWith('sovrn_'))
-      .map((k) => [k, localStorage.getItem(k)]));
-  if (!storage.length) return false;
-  await writeFile(STATE, JSON.stringify({ url: URL_, at: new Date().toISOString(), storage }));
-  return true;
-}
 
 const forget = () => unlink(STATE).catch(() => undefined);
 
@@ -282,7 +246,7 @@ try {
      quiz: a crash on question three creates exactly the same row as a crash on
      question eight, and only one of those was ever being cleaned up. */
   if (!KEEP) {
-    const remembered = await rememberSession(page);
+    const remembered = await recordSession(page, URL_, 'browser-check');
     check('this run recorded its account for the next one', remembered,
       remembered ? 'written to scripts/.browser-check-session.json' : 'no session in localStorage yet');
   }
@@ -732,7 +696,7 @@ try {
          navigation that never settled — fall back to the copy on disk. */
       let outcome;
       try {
-        outcome = await deleteVia(page);
+        outcome = await deleteVia(page, URL_);
       } catch {
         const prior = JSON.parse(await readFile(STATE, 'utf8'));
         outcome = `${await deleteRecorded(browser, prior)} (via the recorded session)`;

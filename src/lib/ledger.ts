@@ -15,13 +15,37 @@ export interface LedgerEntry {
      day was generated. Null on day one and on anything generated before the
      column existed. */
   read_line: string | null;
+  /* The act with every identifying thing taken out, written once at commit.
+     Null when it could not be stripped without becoming meaningless. */
+  public_act: string | null;
   /* When the day was filed, either way. Stamped by a trigger, never by us. */
   filed_at: string | null;
   /* The cycle this act served. Null on entries that predate cycles. */
   cycle_id: string | null;
 }
 
-const COLUMNS = 'id, user_id, created_at, day_number, mission_text, committed_at, completed_at, what_happened, read_line, filed_at, cycle_id';
+const COLUMNS = 'id, user_id, created_at, day_number, mission_text, committed_at, completed_at, what_happened, read_line, filed_at, cycle_id, public_act';
+
+/* Ask the server for the public version of an act.
+ *
+ * Fired after the commit has already landed and never awaited by anything the
+ * person is waiting on. Committing is the moment that matters and it does not
+ * get to fail, or hang, because a model is slow — the act is theirs either way,
+ * and an act with no public version is simply an act that stays private. */
+async function publicise(entryId: string): Promise<void> {
+  try {
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    if (!token) return;
+    await fetch('/api/publicise', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ entryId }),
+    });
+  } catch {
+    /* Nothing to do and nothing to say. */
+  }
+}
 
 /**
  * Write the Day 1 mission at the moment they commit to it.
@@ -51,7 +75,11 @@ export async function createDayOneEntry(
     .select(COLUMNS)
     .single();
 
-  if (!error) return data as LedgerEntry;
+  if (!error) {
+    const entry = data as LedgerEntry;
+    void publicise(entry.id);
+    return entry;
+  }
 
   if (error.code === UNIQUE_VIOLATION) {
     return getEntryForDay(1);

@@ -1,5 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
+import Anthropic from '@anthropic-ai/sdk';
+import { stripAct } from './_strip.js';
+import { safetyCheck } from './_safety.js';
 
 export const config = {
   maxDuration: 300,
@@ -304,6 +307,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const url = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL;
   const key = process.env.SUPABASE_SECRET_KEY;
+  /* Used only for stripping acts for publication. Absent in an environment
+     without a key, which costs the run nothing but the public lines. */
+  const anthropicKey = process.env.ANTHROPIC_API_KEY;
+  const anthropic = anthropicKey ? new Anthropic({ apiKey: anthropicKey }) : null;
   if (!url || !key) return res.status(500).json({ error: 'Server configuration error' });
 
   /* Read-only config check. Reports what this build actually resolved, so a
@@ -465,9 +472,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // THE HARD ONE is the one that ships. The second option is a choice the app
     // offers; an email is one line and one act.
+    /* The public version, written with the act rather than after it. This is
+       already a background job on a schedule, so there is nobody waiting and no
+       reason to make a second pass over the row later.
+
+       No key, no public line, and the day still arrives. Stripping is the one
+       part of this job that is allowed to be missing. */
+    let publicAct: string | null = null;
+    if (anthropic) {
+      const stripped = await stripAct(anthropic, day.hard);
+      publicAct = stripped.line && await safetyCheck(anthropic, stripped.line, 'public_act')
+        ? stripped.line
+        : null;
+    }
+
     const { error: insErr } = await admin.from('ledger_entries').insert({
       user_id: uid, day_number: nextDay, mission_text: day.hard,
       committed_at: new Date().toISOString(),
+      public_act: publicAct,
       // The read is the app noticing what they did. It used to exist only in
       // this email and was thrown away afterwards; it now travels with the day
       // so the Ledger can lead with it.

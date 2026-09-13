@@ -7,6 +7,8 @@ import LoadingPage from './pages/LoadingPage';
 import BlueprintPage from './pages/BlueprintPage';
 import { markFrameUrls, preloadFrames } from './lib/marks';
 import { prefersReducedMotion } from './lib/motion';
+import InstallScreen from './components/InstallScreen';
+import { shouldOfferInstall } from './lib/install';
 import type { AppPage, QuizData } from './types';
 import { generateBlueprint } from './utils/api';
 import { saveBlueprint, getBlueprint, getQuizData, trackEvent } from './utils/storage';
@@ -67,6 +69,8 @@ export default function App() {
      picture comes into focus once, and replaying it on every visit would turn
      the one moment the product spends on ceremony into a transition. */
   const [crystallize, setCrystallize] = useState(false);
+  /* The keeping screen, after the first act and nowhere else in this file. */
+  const [offerInstall, setOfferInstall] = useState(false);
   const blueprintRef = useRef('');
   /* Mirrors quizData for callbacks that must not re-create on every answer. */
   const quizRef = useRef<QuizData | null>(null);
@@ -215,6 +219,17 @@ export default function App() {
     setPage('threshold');
   }, []);
 
+  /* After the first act is committed — and after the commit has finished
+     happening. The spark traces the border, the card inverts for a frame and a
+     half, and it settles; putting a full screen over the top of that would
+     cut the one piece of feedback the commit has. */
+  useEffect(() => {
+    if (!dayOne || offerInstall) return;
+    if (!shouldOfferInstall(1)) return;
+    const t = setTimeout(() => setOfferInstall(true), 950);
+    return () => clearTimeout(t);
+  }, [dayOne, offerInstall]);
+
   const handleQuizComplete = (data: QuizData) => handleGenerate(data);
 
   /* Stable identity: LoadingPage holds this in a timer, and a new function on
@@ -232,6 +247,14 @@ export default function App() {
     <div className="min-h-screen" style={{ backgroundColor: '#FBFAF7', position: 'relative' }}>
 
 
+
+      {offerInstall && (
+        <InstallScreen
+          occasion={1}
+          becoming={parseBlueprint(blueprint).becoming}
+          onClose={() => setOfferInstall(false)}
+        />
+      )}
 
       <div style={{ position: 'relative', zIndex: 1 }}>
         {/* Going through the door.
