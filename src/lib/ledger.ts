@@ -32,6 +32,29 @@ const COLUMNS = 'id, user_id, created_at, day_number, mission_text, committed_at
  * person is waiting on. Committing is the moment that matters and it does not
  * get to fail, or hang, because a model is slow — the act is theirs either way,
  * and an act with no public version is simply an act that stays private. */
+/* The same key the wall renders per row: a hash of the entry id, kept in this
+   browser only. It lets a person find their own lines on a page that knows
+   nothing about them, and it is meaningless to anyone who does not already hold
+   the id it came from. */
+export function wallKey(id: string): string {
+  let h1 = 0x811c9dc5, h2 = 0x01000193;
+  for (let i = 0; i < id.length; i++) {
+    h1 = Math.imul(h1 ^ id.charCodeAt(i), 16777619) >>> 0;
+    h2 = Math.imul(h2 + id.charCodeAt(i) * (i + 1), 2246822519) >>> 0;
+  }
+  return (h1.toString(36) + h2.toString(36)).slice(0, 10);
+}
+
+function rememberForWall(id: string): void {
+  try {
+    const held = JSON.parse(localStorage.getItem('sovrn_wall_mine') ?? '[]') as string[];
+    const key = wallKey(id);
+    if (held.includes(key)) return;
+    held.push(key);
+    localStorage.setItem('sovrn_wall_mine', JSON.stringify(held.slice(-200)));
+  } catch { /* private mode; the wall simply marks nothing */ }
+}
+
 async function publicise(entryId: string): Promise<void> {
   try {
     const { data } = await supabase.auth.getSession();
@@ -77,6 +100,7 @@ export async function createDayOneEntry(
 
   if (!error) {
     const entry = data as LedgerEntry;
+    rememberForWall(entry.id);
     void publicise(entry.id);
     return entry;
   }
@@ -210,5 +234,10 @@ export async function listEntries(): Promise<LedgerEntry[]> {
     console.warn('Ledger list failed:', error.message);
     return [];
   }
-  return (data as LedgerEntry[]) ?? [];
+  const rows = (data as LedgerEntry[]) ?? [];
+  /* Every day after the first is written by the 6am job, so this is the only
+     moment the browser meets those rows. Without it the wall could mark day one
+     and nothing else. */
+  for (const row of rows) rememberForWall(row.id);
+  return rows;
 }
