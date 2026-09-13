@@ -4,6 +4,8 @@ import { listEntries, isFiled, type LedgerEntry } from '../lib/ledger';
 import FileDay from '../components/FileDay';
 import InstallScreen from '../components/InstallScreen';
 import { shouldOfferInstall } from '../lib/install';
+import TrialCard, { type Trial } from '../components/TrialCard';
+import { getTrial, rejectTrial } from '../lib/trial';
 import PaperPage from '../components/PaperPage';
 import NextMorning from '../components/NextMorning';
 import { signalVillain, villainUnlocked } from '../lib/villain';
@@ -49,6 +51,9 @@ export default function LedgerPage() {
      anywhere in the product — so the second occasion is the morning a second day
      exists, which is also the morning the promise it makes has been kept. */
   const [offerInstall, setOfferInstall] = useState(false);
+  /* The condition wrapping today, if the record supports one. Most days it is
+     null, which is the normal day and not a lesser one. */
+  const [trial, setTrial] = useState<Trial | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [cycle, setCycle] = useState<Cycle | null>(null);
   const [cycles, setCycles] = useState<Cycle[]>([]);
@@ -65,6 +70,9 @@ export default function LedgerPage() {
     setCycles(all);
     /* A second day exists, and the first asking was refused. */
     if (rows.some((e) => e.day_number > 1) && shouldOfferInstall(2)) setOfferInstall(true);
+    /* Asked for after the ledger is in hand, because a trial only exists to
+       wrap an act and there is nothing to wrap before the day is known. */
+    if (rows.length) setTrial(await getTrial());
     setNaming(false);
     setRetiring(false);
     setState('ready');
@@ -326,6 +334,13 @@ export default function LedgerPage() {
           >
             {current.read_line}
           </p>
+        )}
+        {/* Above the act, never instead of it. */}
+        {trial && (
+          <TrialCard
+            trial={trial}
+            onReject={() => { setTrial(null); void rejectTrial(); }}
+          />
         )}
         <div style={{ borderTop: '1px solid #E4E0D6', paddingTop: 22 }}>
           <p className="sv-label" style={{ fontSize: 11, color: '#6E6A66', letterSpacing: '0.14em' }}>

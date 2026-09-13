@@ -515,7 +515,11 @@ try {
      button is its whole contents — label, act text and the words on it — so an
      anchored match on the last part never matches anything. */
   const commit = page.getByRole('button', { name: /the hard one/i }).first();
-  await commit.waitFor({ state: 'visible', timeout: 20000 });
+  /* 45s, not 20. Opening a cycle is a generated step and it has twice been slow
+     rather than broken — no runtime error on the deployment either time, and a
+     pass on the next run. A check that cries wolf teaches you to ignore it, so
+     where it has to be a clock the clock gets room. */
+  await commit.waitFor({ state: 'visible', timeout: 45000 });
   check('the acts are offered once a target exists', true);
   await commit.click();
   /* Wait for the act to be written rather than for four seconds. The commit

@@ -660,3 +660,52 @@ the public web. Left in place pending a decision rather than deleted. **Open:**
 those 21 files; and the acts step in the browser check timed out once at 20s and
 passed on the next run, which is the second time that generated step has been
 slow rather than broken.
+
+## Trials, Part 1 — the mechanic
+
+Shipped the trigger detection, the state machine and the act wrapping; the card
+is a placeholder box and the arrival ceremony is deliberately absent. Three
+figures fire from evidence only: the Devil on two filed misses inside one cycle,
+the Hermit on two or more unanswered mornings followed by a return, the Sun on
+two finished acts while the boundary still needs contact with the world. State
+lives in a new `trials` table with a partial unique index for one active trial
+per person and a second index that stops a figure recurring inside a cycle it has
+already been freed or rejected in. Every encounter is stamped onto the
+`ledger_entries` row it wrapped. The evaluation runs on arrival at the Ledger
+rather than at 6am, because a return is only visible when somebody returns.
+`this isn't it` marks the row and stores nothing else — no count, no reason.
+
+What broke. The Hermit could never fire on a real history: the rule only counted
+a run of silent days once it had *ended*, and today's own entry is unanswered
+too, so every genuine history ended in an open run that closed nothing. It passed
+twenty-two trigger tests because all of the fixtures ended on a filed day. Found
+only when the endpoint was driven against histories shaped the way production
+makes them. The rule is now "silence is the days before today, and today is the
+return". Second: the card was written in the field's palette, `#FBFAF7` on
+transparent, which is correct on every dark surface in the product and renders as
+nothing on the Ledger's paper — present in the DOM, three text assertions
+passing, three hundred blank pixels on screen. Only the screenshot caught it. The
+probe now reads contrast against the actually-painted background. Also two
+self-inflicted fixture faults worth naming: the fake database was deep-copied so
+mutations never reached the handler, and rows were replaced rather than updated,
+which wiped the trial stamps the test then reported as never written.
+
+New harnesses, both in the repo rather than as throwaway dotfiles:
+`scripts/check-trials.mjs` (53 assertions — triggers called directly, endpoint
+driven through the real supabase-js client) and `scripts/probe-trials.mjs` (14
+assertions in a browser, real account, real generated act, geometry and contrast
+measured rather than assumed). `scripts/lib/bundle.mjs` bundles `api/*.ts` the
+way the deployment does so a harness always imports the real module;
+`scripts/lib/fake-postgrest.mjs` is enough of the wire protocol for the real
+client to talk to it. Also raised the acts-step wait in the browser check from
+20s to 45s — opening a cycle is a generated step and has twice been slow rather
+than broken.
+
+Open. Nothing here has touched production: `tsc -b` passes across both projects
+and the migration is applied, but `/api/trial` has never answered a request on
+Vercel. The database behind the endpoint in both harnesses is a fixture — the
+secret key is not on this machine — so the handler, client and queries are real
+and the rows are not. The Sun's one model call, `boundaryNeedsTheWorld`, was
+never fired against Anthropic; both its branches were tested with
+`requires_contact` pre-set. The 21 mark files for the three figures are in the
+repo and nothing references them yet; that is the arrival build.
