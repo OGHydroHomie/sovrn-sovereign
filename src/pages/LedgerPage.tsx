@@ -6,6 +6,7 @@ import InstallScreen from '../components/InstallScreen';
 import { shouldOfferInstall } from '../lib/install';
 import TrialCard, { type Trial } from '../components/TrialCard';
 import TrialArrival from '../components/TrialArrival';
+import TrialUnbinding, { type Unbound } from '../components/TrialUnbinding';
 import { getTrial, rejectTrial } from '../lib/trial';
 import PaperPage from '../components/PaperPage';
 import NextMorning from '../components/NextMorning';
@@ -60,6 +61,10 @@ export default function LedgerPage() {
      exactly where it was underneath — the trial is not the ceremony, and a
      reload must not replay one. */
   const [arriving, setArriving] = useState<Trial | null>(null);
+  /* Once per figure, ever. The server sends this in exactly one response and
+     stamps it seen as it goes, so there is nothing here to guard against a
+     reload — if it arrives, it has never been shown. */
+  const [unbinding, setUnbinding] = useState<Unbound | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [cycle, setCycle] = useState<Cycle | null>(null);
   const [cycles, setCycles] = useState<Cycle[]>([]);
@@ -82,11 +87,12 @@ export default function LedgerPage() {
        the same rule — but it buys nothing anyone can see, so it stays where it
        reads correctly. */
     if (rows.length) {
-      const t = await getTrial();
+      const { trial: t, unbinding: freed } = await getTrial();
       setTrial(t);
       /* `fresh` is decided on the server, against the stamp on today's row, so
          it survives a reload and cannot be replayed by one. */
       if (t?.fresh) setArriving(t);
+      if (freed) setUnbinding(freed);
     }
     setNaming(false);
     setRetiring(false);
@@ -244,14 +250,20 @@ export default function LedgerPage() {
         is the ground lightening onto something already there rather than a
         second load. Ahead of the install offer, which can wait — this is the
         one moment in the product that happens to them. */}
-    {arriving && current && (
+    {/* The unbinding comes first if both are somehow due on the same open: one
+        figure ends before another begins, and they must never be on screen
+        together. In practice a freeing response never carries a trial. */}
+    {unbinding && (
+      <TrialUnbinding unbound={unbinding} onDone={() => setUnbinding(null)} />
+    )}
+    {arriving && current && !unbinding && (
       <TrialArrival
         trial={arriving}
         act={current.mission_text}
         onDone={() => setArriving(null)}
       />
     )}
-    {offerInstall && !arriving && (
+    {offerInstall && !arriving && !unbinding && (
       <InstallScreen occasion={2} becoming={profile?.becoming} onClose={() => setOfferInstall(false)} />
     )}
     <PaperPage

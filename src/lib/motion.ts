@@ -163,6 +163,46 @@ export const T = {
     reducedFade: 0.4,
   },
 
+  /* 2d — the unbinding.
+
+     The only purely rewarding moment in the product, and it happens once per
+     figure, ever. Nothing bounces and nothing celebrates; the weight comes from
+     the stillness around it, which is why more than half of these four seconds
+     is a card doing nothing.
+
+       0.0 -> 0.6   the card, still, as it has been
+       0.6 -> 1.8   the binding falls
+       1.8 -> 2.6   the figure settles — one slow pulse, the only time a card moves
+       2.6 -> 3.4   hold
+       3.4         one line: THE DEVIL · freed · September 12
+       4.2         beneath it, the act that earned it, in their words
+
+     The card's own beats are in milliseconds because it runs on its own clock
+     off a rAF rather than through GSAP; the page's beats are in seconds because
+     they go on a timeline. */
+  unbind: {
+    stillMs: 600,
+    fallMs: 1200,
+    pulseMs: 800,
+    /* How far the ink recedes at the deepest point of the breath, as a
+       fraction of its alpha. It has to go down: the art is one-bit and its ink
+       is already fully opaque, so there is no headroom upward. Small on purpose
+       — this is the only time a card moves at all, and an early version
+       re-thresholded the pixels instead and turned the figure into eight
+       hundred milliseconds of noise. */
+    pulseDepth: 0.13,
+
+    holdAt: 2.6,
+    lineAt: 3.4,
+    line: 0.5,
+    actAt: 4.2,
+    act: 0.6,
+    actRiseFrom: 12,       // px
+    handoverAt: 6.4,
+    handover: 0.8,
+    reducedFade: 0.4,
+  },
+
   /* 3 — the three cards */
   cards: {
     firstAt: 1.7,          // after the header has settled

@@ -14,6 +14,8 @@ import { fakeDb } from './lib/fake-postgrest.mjs';
 const { detectTrial, advanceTrial } = await bundled('api/_trials.ts');
 const { default: handler } = await bundled('api/trial.ts', { external: SERVERLESS });
 
+const NAME_OF = { devil: 'THE DEVIL', hermit: 'THE HERMIT', sun: 'THE SUN' };
+
 let n = 0, bad = 0;
 const is = (label, got, want) => {
   n++; const ok = JSON.stringify(got) === JSON.stringify(want);
@@ -104,7 +106,13 @@ async function world(entries, cycle = {}) {
                closed_at: null, opened_at: T(1, 0), crossed_at: null, requires_contact: null, ...cycle }],
     users: [{ id: UID, timezone: 'Europe/London' }],
     trials: [],
-  }, { trials: ['user_id','cycle_id','figure','state','encounter','reason','quest','last_day','freed_at','freed_by_entry'] });
+  }, { trials: ['user_id','cycle_id','figure','state','encounter','reason','quest','last_day','freed_at','freed_by_entry','freed_seen_at'] },
+   /* The two indexes the product actually relies on, in production:
+      one active trial per person, and one shot per figure per cycle. */
+   { trials: [
+       { on: ['user_id'], where: (r) => r.state === 'active' },
+       { on: ['user_id', 'cycle_id', 'figure'] },
+     ] });
   const url = await store.listen();
   process.env.SUPABASE_URL = url;
   process.env.SUPABASE_SECRET_KEY = 'service-role-fixture';
@@ -175,10 +183,62 @@ console.log('\n  FREEING — crossing ends it, at any encounter');
   file(w, 3, 'done'); w.rows.push(day(4, 'open'));
   const after = await w.call();
   is('the trial is gone', after.trial, null);
-  is('and says which figure was freed', after.freed?.figure, 'devil');
+  /* Renamed from `freed` to `unbinding` when the payload grew into a whole
+     ceremony — the date and the act that earned it travel with it now. */
+  is('and says which figure was freed', after.unbinding?.figure, 'devil');
   is('the row records it', w.store.db.trials.map((t) => [t.state, t.freed_by_entry]), [['freed', 'entry-3']]);
   const next = await w.call();
   is('a freed figure does not return inside the cycle', next.trial, null);
+  await w.done();
+}
+
+console.log('\n  THE UNBINDING — once per figure, ever');
+{
+  const entries = [day(1, 'miss'), day(2, 'miss'), day(3, 'open')];
+  const w = await world(entries);
+  await w.call();
+  file(w, 3, 'done');
+  /* Their words, as they would be on a real filed day. */
+  w.rows.find((e) => e.day_number === 3).what_happened = 'Sent it without reading it again.';
+  w.rows.push(day(4, 'open'));
+
+  const freed = await w.call();
+  is('the ceremony arrives with the freeing', freed.unbinding?.figure, 'devil');
+  is('it names their day, in their timezone', typeof freed.unbinding?.date, 'string');
+  console.log(`      "${NAME_OF.devil} · freed · ${freed.unbinding?.date}"`);
+  is('and carries the act in their words', freed.unbinding?.act, 'Sent it without reading it again.');
+  is('no trial comes with it', freed.trial, null);
+  is('the row is stamped seen as it is sent', typeof w.store.db.trials[0].freed_seen_at, 'string');
+
+  const again = await w.call();
+  is('opening the page again does not replay it', again.unbinding, undefined);
+  is('and the figure stays freed', w.store.db.trials[0].state, 'freed');
+  await w.done();
+}
+
+console.log('\n  WHAT A FREED FIGURE CARRIES');
+{
+  /* A second cycle, and the Devil again — this time with a precedent. */
+  const entries = [day(1, 'miss'), day(2, 'miss'), day(3, 'open')];
+  const w = await world(entries);
+  await w.call();
+  file(w, 3, 'done');
+  w.rows.find((e) => e.day_number === 3).what_happened = 'Sent it without reading it again.';
+  w.rows.push(day(4, 'open'));
+  await w.call();                       // freed
+
+  /* New cycle, same conditions. */
+  const NEXT = 'cycle-two';
+  w.store.db.cycles[0].closed_at = T(4, 23);
+  w.store.db.cycles.push({ ...w.store.db.cycles[0], id: NEXT, closed_at: null, requires_contact: null });
+  for (const d of [5, 6, 7]) {
+    w.rows.push({ ...day(d, d === 7 ? 'open' : 'miss'), cycle_id: NEXT });
+  }
+  const back = await w.call();
+  is('the Devil can return in a later cycle', back.trial?.figure, 'devil');
+  is('carrying what freed it last time', back.trial?.precedent?.act, 'Sent it without reading it again.');
+  is('with the day it happened', typeof back.trial?.precedent?.date, 'string');
+  console.log(`      Last time: "${back.trial?.precedent?.act}" That worked, on ${back.trial?.precedent?.date}.`);
   await w.done();
 }
 

@@ -27,6 +27,24 @@ import { advanceTrial, detectTrial, type Entry, type Figure } from './_trials.js
    deployment reporting nothing wrong at all. */
 export const config = { maxDuration: 60 };
 
+/**
+ * The day something happened, where the person was standing.
+ *
+ * "THE DEVIL · freed · September 12" is a claim about their calendar, and
+ * somebody who crossed it at 11pm on the 12th in London did not do it on the
+ * 13th. Same rule as everywhere else here: never hand a reader a UTC timestamp
+ * and hope.
+ */
+function theirDay(iso: string, zone: string | null): string {
+  try {
+    return new Intl.DateTimeFormat('en-US', {
+      month: 'long', day: 'numeric', timeZone: zone || 'UTC',
+    }).format(new Date(iso));
+  } catch {
+    return '';
+  }
+}
+
 const QUEST_NOTE: Record<Figure, string> = {
   devil: 'One act that ends the thing you keep saying yes to and not doing.',
   hermit: 'One act done where the people you left can see it.',
@@ -89,12 +107,38 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const step = advanceTrial(active, entries, today);
 
       if (step.kind === 'freed') {
+        const now = new Date().toISOString();
         await admin.from('trials').update({
-          state: 'freed', freed_at: new Date().toISOString(),
-          freed_by_entry: step.entryId, updated_at: new Date().toISOString(),
+          state: 'freed', freed_at: now,
+          freed_by_entry: step.entryId, updated_at: now,
+          /* Earned and seen in the same breath, because the response carrying
+             the ceremony is the only one that will ever carry it. Stamping on a
+             later confirmation from the browser would mean a closed tab costs
+             somebody the moment entirely. */
+          freed_seen_at: now,
         }).eq('id', active.id);
-        /* Freed is freed. Nothing later revokes it. */
-        return res.status(200).json({ trial: null, freed: { figure: active.figure } });
+
+        /* The act that earned it, in their words. `what_happened` is what they
+           wrote when they filed the day; the act itself is the fallback, for a
+           day crossed without a line. */
+        const earned = entries.find((e) => e.id === step.entryId);
+        const { data: earnedRow } = await admin.from('ledger_entries')
+          .select('what_happened, mission_text, completed_at')
+          .eq('id', step.entryId).maybeSingle();
+
+        /* Freed is freed. Nothing later revokes it — a miss tomorrow does not
+           un-free something crossed today. */
+        return res.status(200).json({
+          trial: null,
+          unbinding: {
+            figure: active.figure,
+            /* Their day, in their timezone. A date rendered in UTC to somebody
+               who crossed it at 11pm names the wrong day. */
+            date: theirDay(earnedRow?.completed_at ?? now, timezone),
+            act: (earnedRow?.what_happened ?? earnedRow?.mission_text ?? '').trim() || null,
+            dayNumber: earned?.day_number ?? null,
+          },
+        });
       }
 
       if (step.kind === 'returns') {
@@ -106,6 +150,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         active = { ...active, encounter: step.encounter, last_day: today.day_number, quest };
       }
     }
+
+    /* What a freed figure carries, if this one has been freed before. Declared
+       out here because it is part of the answer, and the answer is assembled
+       below the block that works it out. */
+    let precedent: { act: string; date: string } | null = null;
 
     /* ── No trial: does the record support one ───────────────────────────── */
     if (!active) {
@@ -137,6 +186,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         crossed: Boolean(cycle?.crossed_at),
         exclude: used,
       });
+
+      /* What a freed figure carries.
+         The same figure, freed in an earlier cycle, brings its own precedent
+         back with it — not as a badge but as a record of a thing that worked,
+         in the person's own words, with the date they did it. This is the whole
+         difference between a collection and a ledger. */
+      if (found) {
+        const { data: before } = await admin.from('trials')
+          .select('freed_at, freed_by_entry')
+          .eq('user_id', uid).eq('figure', found.figure).eq('state', 'freed')
+          .not('freed_by_entry', 'is', null)
+          .order('freed_at', { ascending: false }).limit(1).maybeSingle();
+        if (before?.freed_by_entry) {
+          const { data: row } = await admin.from('ledger_entries')
+            .select('what_happened, completed_at').eq('id', before.freed_by_entry).maybeSingle();
+          const act = (row?.what_happened ?? '').trim();
+          if (act) precedent = { act, date: theirDay(row?.completed_at ?? before.freed_at, timezone) };
+        }
+      }
 
       if (found) {
         const { data: made, error } = await admin.from('trials').insert({
@@ -185,6 +253,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
            recurrence still arrives — it just arrives as recognition rather
            than as spectacle. */
         fresh,
+        /* Null unless this figure has been freed before. Figures are never
+           revoked, so this survives every later miss. */
+        precedent,
       },
     });
   } catch (err) {

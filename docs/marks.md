@@ -47,3 +47,51 @@ DESIGN_FROZEN.md applies. Black line art on cream, nothing else.
 - No external references of any kind. The card canvas is exported as a PNG, and
   a remote reference would either fail to load or taint the canvas and break the
   export outright.
+
+---
+
+# Trial cards
+
+Three so far — `the-devil`, `the-hermit`, `the-sun` — and they are not becomings.
+A becoming is who someone is and it never changes; a trial is where they are and
+it ends. They share the directory and the slug rule and nothing else.
+
+**Note on the spec above.** It describes the delivered set as SVG. It is not: the
+marks in `public/marks/` are 1-bit PNGs at 1080×1620, processed from the source
+art, and `MARK_EXT` in `src/lib/marks.ts` is `png`. The section above is kept
+because the constraints it states — no colour, no text, no external references,
+no C2PA metadata — all still hold. The format sentence does not.
+
+## Files per trial card
+
+    the-devil.png          the finished card, and frame x6 byte for byte
+    the-devil-x1.png … -x6.png    the crystallization frames, near-chaos to resolved
+    the-devil-freed.png    the same figure, unbound          ← this is what is missing
+
+The first eight exist for all three figures. The ninth does not exist for any of
+them, and until it does the unbinding runs without its one moving part: the card
+sits still and the line and the act arrive on their beats around it.
+
+## What `-freed` has to be
+
+The same picture with the binding gone. Not a new drawing of the same character —
+the same drawing, minus one thing.
+
+- **Registered to the bound frame.** Same 1080×1620, same crop, same figure in
+  exactly the same pixels. The transition measures where the two images disagree
+  and treats the topmost disagreeing row as the top of the binding, so anything
+  that moves the figure between the two frames reads as the whole picture
+  sliding rather than the chain falling.
+- **Only the binding differs.** For the Devil that is the chain and the weight it
+  is attached to; for the others it is whatever holds them. Everything above the
+  binding must be pixel-identical, because that is the region the sequence
+  deliberately never touches.
+- **Same treatment.** 1-bit, same dither, same density. A cleaner or heavier
+  freed frame makes the figure appear to change material at the moment it is
+  supposed to be unchanged.
+- **Transparent background**, as with every other mark.
+- **No inpainting smear where the binding was.** Whatever was behind it should be
+  what is there — usually nothing.
+
+Drop the file in `public/marks/` and it is picked up with no code change, the
+same way every other mark is.

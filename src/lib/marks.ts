@@ -39,6 +39,21 @@ export function markUrl(becoming: string | null | undefined): string | null {
   return slug ? `${MARK_DIR}/${slug}.${MARK_EXT}` : null;
 }
 
+/* The same figure, unbound.
+ *
+ * One extra file per trial card — `{slug}-freed.png`, identical to `{slug}.png`
+ * in every respect except that the binding is gone. The unbinding measures the
+ * difference between the two to find where the binding sits, so the pair has to
+ * be registered: same size, same crop, same treatment, the figure in exactly
+ * the same place. Anything that shifts the figure between them reads as the
+ * whole picture moving rather than the chain falling.
+ *
+ * Until the file exists the card simply stays bound and still. */
+export function markFreedUrl(becoming: string | null | undefined): string | null {
+  const slug = markSlug(becoming ?? '');
+  return slug ? `${MARK_DIR}/${slug}-freed.${MARK_EXT}` : null;
+}
+
 /* The crystallization frames: {slug}-x1 through {slug}-x6, near-chaos to
    resolved. x6 is byte-identical to {slug}.png, which is what makes the last
    frame and the settled mark the same picture rather than two that have to be

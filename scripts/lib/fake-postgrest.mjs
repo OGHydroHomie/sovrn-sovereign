@@ -14,7 +14,20 @@ import { createServer } from 'node:http';
 
 const uuid = (n) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 
-export function fakeDb(tables, columns = {}) {
+/**
+ * @param tables  seed rows per table
+ * @param columns declared columns per table, so an insert reads back with the
+ *                nulls a real row would have rather than absent keys
+ * @param unique  partial unique indexes: { table: [{ on: [...cols], where: fn }] }
+ *
+ * The indexes matter more than they look. The product leans on
+ * `trials_one_active` to guarantee one active trial per person — two tabs race,
+ * one wins, the loser reads the winner's row — and a fixture without it let two
+ * active trials exist, which then made `.maybeSingle()` return null and silently
+ * disabled the entire freeing path. The fixture was weaker than the database it
+ * was standing in for, and the test that relied on it passed anyway.
+ */
+export function fakeDb(tables, columns = {}, unique = {}) {
   let seq = 1000;
   const db = JSON.parse(JSON.stringify(tables));
   const log = [];
@@ -80,6 +93,20 @@ export function fakeDb(tables, columns = {}) {
          undefined-vs-null bugs worth catching. */
       const blank = Object.fromEntries((columns[table] ?? []).map((c) => [c, null]));
       const made = { ...blank, id: uuid(seq++), created_at: new Date().toISOString(), state: 'active', encounter: 1, ...payload };
+
+      for (const idx of unique[table] ?? []) {
+        if (idx.where && !idx.where(made)) continue;
+        const clash = db[table].some((r) =>
+          (!idx.where || idx.where(r)) && idx.on.every((c) => (r[c] ?? null) === (made[c] ?? null)));
+        if (clash) {
+          log.push(`INSERT ${table} REJECTED by unique(${idx.on.join(',')})`);
+          /* What Postgres says, through PostgREST, when a unique index refuses
+             a row. supabase-js surfaces it as an error and the callers here are
+             written to read the winning row instead. */
+          return send(409, { code: '23505', message: `duplicate key value violates unique constraint` });
+        }
+      }
+
       db[table].push(made);
       rows = [made];
       log.push(`INSERT ${table} ${JSON.stringify(payload).slice(0, 90)}`);

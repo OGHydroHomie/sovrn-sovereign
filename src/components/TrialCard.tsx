@@ -10,6 +10,9 @@ export interface Trial {
   first: boolean;
   /** This encounter has not been seen today. A recurrence still arrives. */
   fresh: boolean;
+  /* What this figure carries from the last time it was freed, if it has been.
+     Never a badge — the act that worked, in their words, and the day. */
+  precedent: { act: string; date: string } | null;
 }
 
 interface Props {
@@ -102,6 +105,24 @@ export default function TrialCard({ trial, onReject }: Props) {
               {trial.encounter === 2
                 ? 'Back a second time, smaller.'
                 : 'Back a third time. This one ends it.'}
+            </p>
+          )}
+
+          {/* The precedent. A figure that has been freed before comes back
+              carrying the thing that freed it — which is the difference between
+              a collection and a record. It is their sentence, not the
+              product's, and it is never phrased as encouragement. */}
+          {trial.precedent && (
+            <p
+              data-precedent=""
+              style={{
+                margin: '14px 0 0', paddingLeft: 12,
+                borderLeft: `2px solid ${RULE}`,
+                fontFamily: 'var(--sv-font)', fontWeight: 300,
+                fontSize: 14, lineHeight: 1.6, color: MUTED,
+              }}
+            >
+              Last time: &ldquo;{trial.precedent.act}&rdquo; That worked, on {trial.precedent.date}.
             </p>
           )}
 

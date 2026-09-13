@@ -10,7 +10,8 @@
  *   node scripts/verify-trials-live.mjs
  */
 import { mkdir, readFile } from 'node:fs/promises';
-import { probe, settles } from './lib/probe.mjs';
+import { probe } from './lib/probe.mjs';
+import { toFirstAct } from './lib/journey.mjs';
 
 const URL_ = process.env.SOVRN_URL ?? 'https://www.sovrn.online';
 const EMAIL = process.env.SOVRN_TEST_EMAIL ?? 'elijahpitts@gmail.com';
@@ -26,82 +27,6 @@ const check = (label, ok, note = '') => {
   n++; if (!ok) bad++;
   console.log(`    ${ok ? '✓' : '✗'} ${label}${note ? `  — ${note}` : ''}`);
 };
-
-/** Walk the product to a committed day one. Returns the cycle and entry. */
-async function toFirstAct(page, url) {
-  await page.goto(url, { waitUntil: 'networkidle' });
-  await page.locator('h1').first().click();
-  await page.waitForTimeout(2300);
-  await page.getByRole('button', { name: /i create my fate/i }).click();
-
-  const answers = ['Checkbot', '1990-04-05', '08:30', 'Detroit, United States',
-    'That I am not as good as people think and that they will find out.',
-    'To finish the record and tour it in small rooms without apologising for any of it.',
-    'I get to ninety percent and then I start over.',
-    EMAIL.replace('@', `+lv${Date.now()}@`)];
-  const heading = async () =>
-    (await page.locator('h2').first().innerText().catch(() => '')).replace(/\s+/g, ' ').trim();
-
-  for (let step = 0; step < answers.length; step++) {
-    const before = await heading();
-    if (step === 1) {
-      const [y, m, d] = answers[1].split('-');
-      await page.locator('#dob-day').fill(String(Number(d)));
-      await page.locator('#dob-month').fill(String(Number(m)));
-      await page.locator('#dob-year').fill(y);
-    } else if (step === 2) {
-      const [hh, mm] = answers[2].split(':');
-      await page.locator('#tob-hour').fill(hh);
-      await page.locator('#tob-minute').fill(mm);
-    } else {
-      const f = page.locator('input:visible, textarea:visible').first();
-      await f.waitFor({ state: 'visible', timeout: 20000 });
-      await f.fill(answers[step]);
-    }
-    if (step === 3) {
-      await page.waitForTimeout(1200);
-      const o = page.locator('[role="option"], li').first();
-      if (await o.count()) await o.click().catch(() => {});
-    }
-    if (step === 7) {
-      const c = page.locator('#sv-consent');
-      if (await c.count()) await c.check({ force: true });
-    }
-    await page.getByRole('button', { name: /continue|reveal|blueprint|next/i }).first().click();
-    if (step < answers.length - 1) {
-      await page.waitForFunction((was) => {
-        const h = document.querySelector('h2');
-        const now = (h?.textContent ?? '').replace(/\s+/g, ' ').trim();
-        return now !== '' && now !== was;
-      }, before, { timeout: 30000, polling: 'raf' });
-      await page.waitForTimeout(450);
-    }
-  }
-  await page.getByRole('button', { name: /who you are/i }).first().waitFor({ state: 'visible', timeout: 180000 });
-  await page.getByText(/what have you been putting off/i).first().waitFor({ state: 'visible', timeout: 20000 });
-  await page.locator('textarea').first().fill('Leave my job and start a business');
-  await page.getByRole('button', { name: /^next$/i }).click();
-  await page.getByText(/what does it cost you/i).first().waitFor({ state: 'visible', timeout: 10000 });
-  await page.locator('textarea').first().fill(
-    'I am forty-one and I keep saying next year. My kids will remember me as someone who talked about it.');
-  await page.getByRole('button', { name: /set the target/i }).click();
-  const admitted = page.getByRole('button', { name: /that's it/i });
-  /* Either the narrowing lands or the page says it didn't. Measured, the
-     narrowing is 5–12s on production; 120s here is room, not an expectation. */
-  await settles(page, { ok: admitted, bad: page.getByText(/didn.t go through/i), what: 'the narrowing', timeout: 120000 });
-  await admitted.click();
-  await page.waitForTimeout(2500);
-  const oneAct = page.getByRole('button', { name: /one act/i }).first();
-  if ((await oneAct.getAttribute('aria-expanded')) !== 'true') await oneAct.click();
-  const commit = page.getByRole('button', { name: /the hard one/i }).first();
-  /* Opening a cycle is a database insert and a re-read, with no model call in
-     it at all — so this was never the slow step it was reported as. When it
-     fails it is the same "didn't go through" as the narrowing. */
-  await settles(page, { ok: commit, bad: page.getByText(/didn.t go through/i), what: 'opening the cycle', timeout: 45000 });
-  await commit.click();
-  await page.waitForFunction(() => /what actually happened/i.test(document.body.innerText),
-    null, { timeout: 25000, polling: 500 });
-}
 
 /** File day one through the real buttons. */
 async function fileDayOne(page, done) {
@@ -168,7 +93,7 @@ async function scenario(title, days, fileDone, expect, ceremony = false) {
      back out of the database afterwards. It has to be deleted by hand. */
   const keep = process.argv.includes('--keep');
   await probe({ url: URL_, name: `live-${expect}`, keep }, async ({ page, url }) => {
-    await toFirstAct(page, url);
+    await toFirstAct(page, url, { email: EMAIL.replace('@', `+lv${Date.now()}@`) });
     await fileDayOne(page, fileDone);
     const shaped = await shape(page, days);
     const written = shaped.made.every((m) => m.status === 201 && m.id);
