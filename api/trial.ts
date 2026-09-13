@@ -149,9 +149,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (!active) return res.status(200).json({ trial: null });
 
+    /* Has this day seen this encounter yet? Read before the stamp is written,
+       because writing it is what makes the answer no. This is what decides
+       whether the browser gives the trial a ceremony or simply shows it: a
+       reload must not replay an arrival, and a second encounter is a new
+       arrival even though it is not a first one. */
+    const fresh = today.trial_id !== active.id || today.trial_encounter !== active.encounter;
+
     /* Stamp the day the trial is wrapping, so the record says which act belonged
        to which encounter after the fact. */
-    if (today.trial_id !== active.id || today.trial_encounter !== active.encounter) {
+    if (fresh) {
       await admin.from('ledger_entries')
         .update({ trial_id: active.id, trial_encounter: active.encounter })
         .eq('id', today.id);
@@ -163,10 +170,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         encounter: active.encounter,
         reason: active.reason,
         quest: active.quest,
-        /* The browser needs to know whether this is the first sight of it, so a
-           later build can give the arrival its ceremony and a recurrence its
-           recognition. */
-        first: active.encounter === 1 && today.trial_id !== active.id,
+        /* The full ceremony is for a first arrival only. */
+        first: active.encounter === 1 && fresh,
+        /* And this encounter, whichever it is, has not been seen today. A
+           recurrence still arrives — it just arrives as recognition rather
+           than as spectacle. */
+        fresh,
       },
     });
   } catch (err) {

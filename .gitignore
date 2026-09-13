@@ -29,3 +29,8 @@ dist-ssr
 # A live session token, written by scripts/browser-check.mjs so the next run can
 # delete an account this one failed to clean up. Never committed.
 scripts/.*-session.json
+
+# A bearer token for a live account, written by scripts/probe-session.mjs so a
+# deployed endpoint can be asked a real question from the shell. Same reason as
+# the rule above, with more consequence if it escapes.
+scripts/.session-token.json

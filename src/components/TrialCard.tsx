@@ -1,11 +1,15 @@
 import { useState } from 'react';
+import ArchetypeMark from './ArchetypeMark';
 
 export interface Trial {
   figure: 'devil' | 'hermit' | 'sun';
   encounter: number;
   reason: string;
   quest: string | null;
+  /** Encounter one, unseen today: the full ceremony. */
   first: boolean;
+  /** This encounter has not been seen today. A recurrence still arrives. */
+  fresh: boolean;
 }
 
 interface Props {
@@ -54,17 +58,14 @@ export default function TrialCard({ trial, onReject }: Props) {
       }}
     >
       <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
-        {/* Where the card goes. Deliberately a shape and not a smaller version
-            of the real thing — a card that arrives without its ceremony would
-            spend the one moment this is built for. */}
-        <div
-          aria-hidden="true"
-          style={{
-            flex: 'none', width: 54, aspectRatio: '1080 / 1620',
-            border: `1px solid ${RULE}`,
-            background: '#F3F0E8',
-          }}
-        />
+        {/* The real mark. It was a placeholder box for exactly as long as the
+            arrival did not exist: showing the card here first would have spent
+            the one moment the ceremony is built for. The ceremony exists now,
+            so by the time anyone sees this they have already met the figure,
+            and a box where the card should be would read as a loading state. */}
+        <div aria-hidden="true" style={{ flex: 'none', width: 54 }}>
+          <ArchetypeMark becoming={NAME[trial.figure]} size={54} />
+        </div>
 
         <div style={{ minWidth: 0 }}>
           <p

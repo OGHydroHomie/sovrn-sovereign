@@ -14,6 +14,13 @@ interface Props {
      finished mark, which is the fallback for every reason at once — a missing
      file, a slow network, reduced motion, a return visit. */
   ready: boolean;
+  /* Fired on the first frame of the spread — not on mount.
+     The gap between the two is the images being decoded into this canvas, and
+     it is real: a caller that started its own sequence when it mounted this
+     component was running four hundred milliseconds ahead of the ink, which ate
+     most of the hold the sequence is built around. Anything timed against the
+     card should be timed against this. */
+  onBegin?: () => void;
 }
 
 /* The mark arriving, as ink in water.
@@ -84,7 +91,7 @@ function spread(t: number): number {
     : 1 - k * Math.pow(1 - t, SPREAD_P);
 }
 
-export default function Crystallization({ becoming, size, ready }: Props) {
+export default function Crystallization({ becoming, size, ready, onBegin }: Props) {
   const urls = markFrameUrls(becoming);
   const slug = markSlug(becoming ?? '');
   const boxRef = useRef<HTMLDivElement>(null);
@@ -155,6 +162,7 @@ export default function Crystallization({ becoming, size, ready }: Props) {
       };
 
       const began = performance.now();
+      onBegin?.();
       const frame = () => {
         if (stopped) return;
         const t = Math.min(1, (performance.now() - began) / (T.crystal.advance * 1000));

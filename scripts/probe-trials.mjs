@@ -65,6 +65,92 @@ await store.listen().then((url) => {
 });
 
 await probe({ url: URL_, name: 'trials' }, async ({ page, url }) => {
+  /* The beats, sampled in the page at every frame.
+   *
+   * A filmstrip at 500ms cannot tell 4.2s from 5.0s, and this sequence is
+   * entirely about when things happen relative to each other. The clock starts
+   * when the overlay first exists, which is the moment the spec calls 0.0. */
+  await page.addInitScript(() => {
+    /* One record per arrival, not one for the session: encounters two and three
+       each mount their own overlay, and a sampler that latches the first one
+       cannot say anything about the rest. */
+    window.__arrivals = [];
+    window.__arrival = { t0: null, beats: {} };
+    const seen = (k, t) => { if (window.__arrival.beats[k] === undefined) window.__arrival.beats[k] = t; };
+    /* What the eye sees, not what the element declares. The act's wrapper is
+       the thing held at zero and the paragraph inside it reports opacity 1 all
+       the way through — reading that alone said the act arrived at 0ms. */
+    const shown = (el, stop) => {
+      let o = 1, n = el;
+      while (n && n !== stop.parentElement) { o *= Number(getComputedStyle(n).opacity); n = n.parentElement; }
+      return o;
+    };
+    const tick = () => {
+      const root = document.querySelector('[data-trial-arrival]');
+      if (root) {
+        if (window.__arrival.t0 === null) {
+          window.__arrival = {
+            t0: performance.now(), beats: {},
+            mode: root.dataset.ceremony,
+            encounter: root.dataset.encounter,
+            /* Reduced motion does not paint a field at all. */
+            hadField: Boolean(root.querySelector('canvas:not([data-crystallization])')),
+          };
+          window.__arrivals.push(window.__arrival);
+        }
+        const t = Math.round(performance.now() - window.__arrival.t0);
+        for (const el of root.querySelectorAll('p')) {
+          const txt = (el.textContent || '').trim();
+          if (shown(el, root) <= 0.5) continue;
+          /* The name is uppercased in CSS, so the text in the DOM is not. */
+          if (/^the (devil|hermit|sun)$/i.test(txt)) seen('name', t);
+          else if (/neither one happened|mornings arrived|acts finished/.test(txt)) seen('reason', t);
+          else if (txt.length > 40) seen('act', t);
+        }
+        /* The card's own canvas. The field is a canvas too, and it is first in
+           the document, so an unqualified query measured the starfield and
+           reported the ink as complete before the card existed. */
+        const c = root.querySelector('canvas[data-crystallization]');
+        if (c) {
+          try {
+            const g = c.getContext('2d', { willReadFrequently: true });
+            const d = g.getImageData(0, 0, c.width, c.height).data;
+            /* Mean luminance over a sparse sample. Coverage alone is the wrong
+               proxy: alpha saturates about a second before the frames stop
+               advancing, so "55% covered" called the card finished at 2.1s when
+               it was still resolving at 3.6s. What "finished" means here is that
+               the picture has stopped changing. */
+            let sum = 0, n = 0, on = 0;
+            for (let i = 0; i < d.length; i += 4 * 37) {
+              n++; sum += (d[i] + d[i + 1] + d[i + 2]) / 3 * (d[i + 3] / 255);
+              if (d[i + 3] > 10) on++;
+            }
+            const mean = sum / n;
+            /* The drop lands as a point, so 2% of the card is already several
+               frames into the spread — it reported the ink starting at 1415ms
+               when the arithmetic downstream put it at 1050. First ink is the
+               first ink there is. */
+            if (on / n > 0.002) seen('inkStarts', t);
+            const prev = window.__arrival.lastMean;
+            window.__arrival.lastMean = mean;
+            if (prev !== undefined && on / n > 0.5) {
+              if (Math.abs(mean - prev) < 0.06) {
+                window.__arrival.stillFor = (window.__arrival.stillFor ?? 0) + 1;
+                if (window.__arrival.stillFor >= 12) seen('inkFull', t - 200);
+              } else window.__arrival.stillFor = 0;
+            }
+          } catch { /* not ours to read */ }
+        }
+        if (Number(getComputedStyle(root).opacity) < 0.98) seen('handover', t);
+      } else if (window.__arrival.t0 !== null) {
+        seen('gone', Math.round(performance.now() - window.__arrival.t0));
+        window.__arrival = { t0: null, beats: {} };
+      }
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
+
   /* The endpoint, answered by the endpoint. */
   await page.route('**/api/trial', async (route) => {
     const body = JSON.parse(route.request().postData() ?? '{}');
@@ -147,16 +233,79 @@ await probe({ url: URL_, name: 'trials' }, async ({ page, url }) => {
   console.log('  … act committed');
 
   const card = page.locator('[data-trial]');
-  const openLedger = async () => {
-    await page.goto(`${url}/ledger`, { waitUntil: 'networkidle' });
+  const arrival = page.locator('[data-trial-arrival]');
+
+  /* The ceremony now runs over the Ledger on the first sight of an encounter.
+     Film it from the clock started at navigation — every strip in this project
+     is cut from the moment the thing was asked for, because guessing when a
+     sequence began is how a filmstrip gets mislabelled. */
+  const openLedger = async (film = null) => {
+    const nav = page.goto(`${url}/ledger`, { waitUntil: 'commit' });
+    const t0 = Date.now();
+    await nav;
+    if (film) {
+      await mkdir(`${SHOTS}/${film}`, { recursive: true }).catch(() => {});
+      for (let i = 0; i < 18; i++) {
+        const want = t0 + i * 500;
+        const wait = want - Date.now();
+        if (wait > 0) await page.waitForTimeout(wait);
+        await page.screenshot({
+          path: `${SHOTS}/${film}/${String(Date.now() - t0).padStart(5, '0')}ms.png`,
+        });
+      }
+    }
+    /* Wait for the trial to exist before waiting for its ceremony to end.
+       `detached` is true of an element that has not mounted yet, so asking for
+       it first resolved instantly on every navigation and the assertions then
+       read a ceremony that was still running — which is also what left an
+       account alive with an overlay sitting on top of /delete. The card and the
+       overlay are set from the same state, so the card appearing is the signal
+       that there is something to wait out. */
     await card.first().waitFor({ timeout: 20000 }).catch(() => {});
+    await arrival.first().waitFor({ state: 'detached', timeout: 20000 }).catch(() => {});
     await page.waitForTimeout(600);
   };
 
   // ── First encounter ──────────────────────────────────────────────────────
-  await openLedger();
-  check('a trial is on the Ledger', await card.count() === 1,
-    `data-trial="${await card.getAttribute('data-trial')}" encounter ${await card.getAttribute('data-encounter')}`);
+  await openLedger(SHOTS ? 'arrival' : null);
+
+  /* The sequence, measured in the page. Read before anything else is touched. */
+  {
+    /* The archived record, not the live one. The live slot is cleared the
+       moment the overlay unmounts, and openLedger now correctly waits for
+       exactly that — so reading it found an empty object and reported a
+       sequence that had just run perfectly as never having happened. */
+    const a = (await page.evaluate(() => window.__arrivals)).at(-1);
+    const b = a?.beats ?? {};
+    const order = ['inkStarts', 'inkFull', 'name', 'reason', 'act', 'handover', 'gone'];
+    console.log(`      ${order.map((k) => `${k} ${b[k] ?? '—'}ms`).join('   ')}`);
+
+    const T = { inkStarts: 1000, inkFull: 3200, name: 4200, reason: 4800, act: 5600 };
+    const late = Object.entries(T)
+      .filter(([k]) => b[k] !== undefined)
+      .map(([k, want]) => ({ k, want, got: b[k], off: b[k] - want }));
+    const worst = late.reduce((x, y) => (Math.abs(x.off) > Math.abs(y.off) ? x : y), late[0]);
+    check('every beat lands within 400ms of its mark', worst && Math.abs(worst.off) <= 400,
+      worst ? `worst is ${worst.k}: ${worst.got}ms against ${worst.want}ms (${worst.off > 0 ? '+' : ''}${worst.off})` : 'nothing measured');
+
+    /* The hold is the point of the sequence: a finished card, alone, in
+       silence. If the name arrives while the ink is still moving there is no
+       hold, only an overlap. */
+    check('the card finishes, and is alone for a beat', b.inkFull !== undefined && b.name - b.inkFull >= 700,
+      `${b.name - b.inkFull}ms of silence between the card resolving and its name`);
+    check('one thing at a time, in order',
+      b.inkStarts < b.inkFull && b.inkFull < b.name && b.name < b.reason && b.reason < b.act && b.act < b.handover);
+  }
+  /* The note only reads the element when there is one. Asking a locator that
+     matches nothing for an attribute waits thirty seconds and then throws,
+     which turns a failing assertion into a dead run with no diagnosis. */
+  {
+    const n = await card.count();
+    const note = n === 1
+      ? `data-trial="${await card.getAttribute('data-trial')}" encounter ${await card.getAttribute('data-encounter')}`
+      : `${n} cards; page reads: ${JSON.stringify((await page.locator('body').innerText()).replace(/\s+/g, ' '))}`;
+    check('a trial is on the Ledger', n === 1, note);
+  }
 
   /* The whole claim of the build: it wraps the day, it does not replace it. */
   /* Anchored on the act's own label rather than on whichever ancestor happens
@@ -234,15 +383,32 @@ await probe({ url: URL_, name: 'trials' }, async ({ page, url }) => {
 
   // ── Second ───────────────────────────────────────────────────────────────
   nextDay();
-  await openLedger();
+  await openLedger(SHOTS ? 'recurrence' : null);
+  {
+    const a = (await page.evaluate(() => window.__arrivals)).at(-1);
+    check('a recurrence arrives without the ceremony', a?.mode === 'recurrence',
+      `${a?.mode} at encounter ${a?.encounter}, gone in ${a?.beats?.gone}ms`);
+    /* Recognition, not spectacle: one beat and out, against the first
+       arrival's eight seconds. */
+    check('and it is over in a beat', (a?.beats?.gone ?? 1e9) < 3200, `${a?.beats?.gone}ms`);
+  }
   const text2 = (await card.innerText()).replace(/\s+/g, ' ');
   check('a new uncrossed day brings it back', await card.getAttribute('data-encounter') === '2');
   check('and the return is named', /Back a second time, smaller\./.test(text2));
   await shot(page, 'trial-2-second');
 
-  // ── Third ────────────────────────────────────────────────────────────────
+  // ── Third, with the motion turned down ───────────────────────────────────
+  /* Emulated rather than run in a second context, which would mean a second
+     account and a second generation to see one cross-fade. */
+  await page.emulateMedia({ reducedMotion: 'reduce' });
   nextDay();
   await openLedger();
+  {
+    const a = (await page.evaluate(() => window.__arrivals)).at(-1);
+    check('reduced motion paints no field', a?.hadField === false, `hadField=${a?.hadField}`);
+    check('and crosses the card in under a second', (a?.beats?.gone ?? 1e9) < 2000, `${a?.beats?.gone}ms`);
+  }
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
   const text3 = (await card.innerText()).replace(/\s+/g, ' ');
   check('the third encounter', await card.getAttribute('data-encounter') === '3');
   check('ends the returning', /This one ends it\./.test(text3));

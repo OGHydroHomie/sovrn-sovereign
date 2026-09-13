@@ -116,6 +116,43 @@ export const T = {
     reducedFade: 0.4,
   },
 
+  /* 2c — a trial arriving.
+
+     The first thing in this product that happens to someone rather than
+     something they did, so it is the slowest sequence here and the only one
+     that stops everything else first. The field coming to a halt is the beat
+     that makes the rest land: nothing can arrive out of a moving ground.
+
+       0.0 -> 1.0   the field comes to a complete stop
+       1.0 -> 3.2   the card crystallizes, ink entering at a point
+       3.2 -> 4.2   hold. the card alone, nothing else on screen
+       4.2          the name, stamped
+       4.8          the reason, one sentence
+       5.6          the act rises from below
+       7.2          the ground turns to paper and the Ledger is underneath
+
+     Second and third encounters skip all of it and cross-fade in over 1.6s.
+     The ceremony is for the first arrival; a recurrence should read as
+     recognition, not as spectacle. */
+  trial: {
+    still: 1.0,
+    crystalAt: 1.0,
+    hold: 1.0,
+    nameAt: 4.2,
+    nameStamp: 0.18,       // scale only; the opacity is a hard cut, as the reveal
+    nameScaleFrom: 1.04,
+    reasonAt: 4.8,
+    reason: 0.5,
+    actAt: 5.6,
+    act: 0.6,
+    actRiseFrom: 14,       // px
+    handoverAt: 7.2,
+    handover: 0.8,
+    /* A recurrence. One beat, no crystallization, everything at once. */
+    recur: 1.6,
+    reducedFade: 0.4,
+  },
+
   /* 3 — the three cards */
   cards: {
     firstAt: 1.7,          // after the header has settled

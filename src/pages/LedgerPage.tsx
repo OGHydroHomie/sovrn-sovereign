@@ -5,6 +5,7 @@ import FileDay from '../components/FileDay';
 import InstallScreen from '../components/InstallScreen';
 import { shouldOfferInstall } from '../lib/install';
 import TrialCard, { type Trial } from '../components/TrialCard';
+import TrialArrival from '../components/TrialArrival';
 import { getTrial, rejectTrial } from '../lib/trial';
 import PaperPage from '../components/PaperPage';
 import NextMorning from '../components/NextMorning';
@@ -54,6 +55,11 @@ export default function LedgerPage() {
   /* The condition wrapping today, if the record supports one. Most days it is
      null, which is the normal day and not a lesser one. */
   const [trial, setTrial] = useState<Trial | null>(null);
+  /* The arrival runs over the Ledger, once, on the first sight of an encounter.
+     Held separately from `trial` so that dismissing the ceremony leaves the card
+     exactly where it was underneath — the trial is not the ceremony, and a
+     reload must not replay one. */
+  const [arriving, setArriving] = useState<Trial | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [cycle, setCycle] = useState<Cycle | null>(null);
   const [cycles, setCycles] = useState<Cycle[]>([]);
@@ -70,9 +76,18 @@ export default function LedgerPage() {
     setCycles(all);
     /* A second day exists, and the first asking was refused. */
     if (rows.some((e) => e.day_number > 1) && shouldOfferInstall(2)) setOfferInstall(true);
-    /* Asked for after the ledger is in hand, because a trial only exists to
-       wrap an act and there is nothing to wrap before the day is known. */
-    if (rows.length) setTrial(await getTrial());
+    /* Asked for once the ledger is in hand, because a trial only exists to wrap
+       an act and there is nothing to wrap before the day is known. Moving it up
+       into the Promise.all saves a round trip and is safe — the server applies
+       the same rule — but it buys nothing anyone can see, so it stays where it
+       reads correctly. */
+    if (rows.length) {
+      const t = await getTrial();
+      setTrial(t);
+      /* `fresh` is decided on the server, against the stamp on today's row, so
+         it survives a reload and cannot be replayed by one. */
+      if (t?.fresh) setArriving(t);
+    }
     setNaming(false);
     setRetiring(false);
     setState('ready');
@@ -224,7 +239,19 @@ export default function LedgerPage() {
 
   return (
     <>
-    {offerInstall && (
+    {/* Over the Ledger, not instead of it. The page is built and sitting
+        underneath the whole time, so the hand-over at the end of the ceremony
+        is the ground lightening onto something already there rather than a
+        second load. Ahead of the install offer, which can wait — this is the
+        one moment in the product that happens to them. */}
+    {arriving && current && (
+      <TrialArrival
+        trial={arriving}
+        act={current.mission_text}
+        onDone={() => setArriving(null)}
+      />
+    )}
+    {offerInstall && !arriving && (
       <InstallScreen occasion={2} becoming={profile?.becoming} onClose={() => setOfferInstall(false)} />
     )}
     <PaperPage
