@@ -99,13 +99,9 @@ await probe({ url: URL_, name: 'trials' }, async ({ page, url }) => {
           window.__arrivals.push(window.__arrival);
         }
         const t = Math.round(performance.now() - window.__arrival.t0);
-        for (const el of root.querySelectorAll('p')) {
-          const txt = (el.textContent || '').trim();
-          if (shown(el, root) <= 0.5) continue;
-          /* The name is uppercased in CSS, so the text in the DOM is not. */
-          if (/^the (devil|hermit|sun)$/i.test(txt)) seen('name', t);
-          else if (/neither one happened|mornings arrived|acts finished/.test(txt)) seen('reason', t);
-          else if (txt.length > 40) seen('act', t);
+        /* Keyed off the elements' own labels, not off what they say. */
+        for (const el of root.querySelectorAll('[data-arrival]')) {
+          if (shown(el, root) > 0.5) seen(el.getAttribute('data-arrival'), t);
         }
         /* The card's own canvas. The field is a canvas too, and it is first in
            the document, so an unqualified query measured the starfield and

@@ -184,8 +184,14 @@ export default function TrialArrival({ trial, act, onDone }: Props) {
           )}
         </div>
 
+        {/* The three beats name themselves. Both harnesses used to find them by
+            matching the prose — length, or a phrase out of the reason — which
+            reported the act as never arriving the first time a seeded act was
+            under forty characters. What is being measured should not depend on
+            what the copy happens to say. */}
         <p
           ref={nameRef}
+          data-arrival="name"
           className="sv-label"
           style={{
             margin: '30px 0 0', fontSize: 12, fontWeight: 700, letterSpacing: '0.24em',
@@ -199,6 +205,7 @@ export default function TrialArrival({ trial, act, onDone }: Props) {
         {/* One sentence, and every part of it is a thing they could check. */}
         <p
           ref={reasonRef}
+          data-arrival="reason"
           style={{
             margin: '14px 0 0', maxWidth: 360, textAlign: 'center',
             fontFamily: 'var(--sv-font)', fontWeight: 300,
@@ -212,7 +219,7 @@ export default function TrialArrival({ trial, act, onDone }: Props) {
         {/* The act, last and quietest. A day never passes with a trial and no
             act, and ending on the act rather than on the figure is what keeps
             the card from being the point. */}
-        <div ref={actRef} style={{ marginTop: 30, maxWidth: 360, textAlign: 'center', ...HIDDEN }}>
+        <div ref={actRef} data-arrival="act" style={{ marginTop: 30, maxWidth: 360, textAlign: 'center', ...HIDDEN }}>
           {trial.encounter > 1 && (
             <p className="sv-label" style={{
               margin: '0 0 10px', fontSize: 11, letterSpacing: '0.18em',
