@@ -529,6 +529,32 @@ try {
   /* The field the dictation was built for: the one people shorten when they are
      tired. It is also the only single-line field carrying a mic, so this is the
      only place the middle-aligned variant is exercised at all. */
+  /* The act this run just committed, on the public page.
+   *
+   * The wall renders a hash of each entry id and the browser keeps the hashes of
+   * its own, so the row can be identified exactly rather than by counting rows
+   * and hoping nobody else committed in the meantime. The stripped line itself
+   * is a model call fired after the commit, so this waits for it rather than
+   * assuming it has landed. */
+  {
+    const keys = await page.evaluate(() => {
+      try { return JSON.parse(localStorage.getItem('sovrn_wall_mine') ?? '[]'); } catch { return []; }
+    });
+    if (!keys.length) {
+      check('the committed act reaches the wall', false, 'the browser recorded no wall key');
+    } else {
+      let found = false;
+      for (let tries = 0; tries < 12 && !found; tries++) {
+        await page.waitForTimeout(5000);
+        const res = await page.request.get(`${URL_}/wall?_v=${Date.now()}`);
+        const body = await res.text();
+        found = keys.some((k) => body.includes(`data-k="${k}"`));
+      }
+      check('the committed act reaches the wall', found,
+        found ? 'as a stripped line, keyed to this browser' : 'no matching row after 60s');
+    }
+  }
+
   const filingMic = await page.locator('button[aria-pressed]').count();
   check('the filing field offers dictation', filingMic >= 1,
     `${filingMic} mic control(s) beside "what actually happened"`);

@@ -611,3 +611,52 @@ cleanup. Swept 127 empty anonymous rows older than an hour plus the one probe
 account by hand; 33 accounts left, 14 blueprints and 22 ledger rows intact, zero
 orphans. The browser check cleans up after itself; my one-off probes still do
 not, and that is the third time this has come up.
+
+---
+
+**2026-09-13 — The install screen, stripping at commit, and the Wall.** Three
+builds, all deployed and verified. **Keep it:** a full screen after the first act
+on the same dark field, Chrome getting a control built on the held
+`beforeinstallprompt` and iOS getting the instruction, because it fires no event
+and can only be told. Anything that cannot install a web app never sees the
+screen at all. Asked once, once more if refused, then never. There is no second
+commit gesture in this product — only day one has one, and every day after is
+written by the 6am job with `committed_at` already set — so the second asking
+fires the morning a second day exists, which is also the morning its own promise
+has been kept. **Stripping at commit:** a public version of each act, generated
+once and stored in `ledger_entries.public_act`, with names, companies, amounts,
+places and relationship specifics removed and the verb and object kept. An act
+that cannot survive stripping stores null, appears nowhere, and costs the person
+nothing — they are not told and there is nothing to fix. A commit never waits on
+a model: the act is written first and the public line is a separate request
+nothing blocks on, so slow, unreachable and keyless all produce the same outcome.
+The model is the first gate and not the only one — what it returns is checked for
+surviving names, amounts, days, times and lines so vague they say nothing, then
+passes `_safety` like every other generated line. **The Wall:** `/wall`, served as
+HTML by a function and cached at the edge, readable with scripting switched off
+entirely, ~6 KB on the wire. Nobody is identifiable on it; a miss renders exactly
+like a crossing; the viewer's local day comes from the request's timezone header
+so the first paint is already right, falling back to UTC, with the cache varying
+on it. A person's own rows are marked to them by a hash of the entry id their own
+browser holds. Verified end to end on production: an act committed through the
+real loop appears on the wall as a stripped line keyed to that browser. 50/50.
+**What broke:** four things, three of them mine and one still open. The
+proper-noun gate matched the first word of every act, because it was anchored on
+`^` and every act opens with an imperative — it withheld ten out of ten and
+reported the reason as proper noun "Send". The install count was incremented
+rather than set, so it counted mounts instead of askings and React's development
+double-invoke took it from 1 to 3, burning the second occasion silently. The
+wall's starfield ran at full density across the whole page and the counter read
+through a screen of dots; it is confined to the margins now, with 0 star pixels
+inside any of 19 text boxes. **And the one that is not a bug but is worse:** I ran
+`git add -A` and swept two unrelated builds into one commit, so the stripping
+shipped under the install screen's message and its rationale exists nowhere in
+the history — it is in this entry instead, because rewriting pushed history to
+tidy my own mistake is not a trade worth making. The same blanket add shipped 21
+mark files for `the-devil`, `the-hermit` and `the-sun` that I had never opened.
+They are well-formed and match the house spec exactly, but those three are not
+among the thirteen becomings, so nothing can reference them and they are now on
+the public web. Left in place pending a decision rather than deleted. **Open:**
+those 21 files; and the acts step in the browser check timed out once at 20s and
+passed on the next run, which is the second time that generated step has been
+slow rather than broken.
