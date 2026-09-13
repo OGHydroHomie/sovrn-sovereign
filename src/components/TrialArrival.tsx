@@ -69,6 +69,11 @@ export default function TrialArrival({ trial, act, onDone }: Props) {
      ahead of the picture, which left the hold at 0.6s instead of 1.0s. The
      hold is the whole point of the sequence, so it is timed against the ink. */
   const [inked, setInked] = useState(false);
+  /* The cover overlaps the stop rather than preceding it. Waiting for the
+     ground to finish darkening before starting the settle cost a re-render and
+     pushed every beat past its mark; running them together costs nothing and
+     reads better anyway — the paper goes and the field is already there,
+     slowing, rather than appearing afterwards and then slowing. */
   const reduced = prefersReducedMotion();
   const ceremony = trial.first && !reduced;
 
@@ -84,6 +89,16 @@ export default function TrialArrival({ trial, act, onDone }: Props) {
   useEffect(() => {
     if (!ceremony) setStill(true);
   }, [ceremony]);
+
+  /* The cover, on its own clock, before the sequence exists. */
+  useLayoutEffect(() => {
+    if (!root.current) return;
+    if (reduced) { gsap.set(root.current, { opacity: 1 }); return; }
+    const ctx = gsap.context(() => {
+      gsap.fromTo(root.current, { opacity: 0 }, { opacity: 1, duration: T.trial.cover, ease: EASE.panel });
+    }, root);
+    return () => ctx.revert();
+  }, [reduced]);
 
   const ready = still && frames !== null;
   /* A recurrence has no spread to wait for. */
@@ -146,7 +161,7 @@ export default function TrialArrival({ trial, act, onDone }: Props) {
       data-ceremony={ceremony ? 'full' : 'recurrence'}
       style={{
         position: 'fixed', inset: 0, zIndex: 60,
-        background: '#000000', color: '#FBFAF7',
+        background: '#000000', color: '#FBFAF7', opacity: 0,
         display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center',
         padding: '32px 26px', gap: 0, overflow: 'hidden',

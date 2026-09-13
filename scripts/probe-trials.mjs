@@ -137,7 +137,12 @@ await probe({ url: URL_, name: 'trials' }, async ({ page, url }) => {
             }
           } catch { /* not ours to read */ }
         }
-        if (Number(getComputedStyle(root).opacity) < 0.98) seen('handover', t);
+        /* The overlay opens at zero and fades the paper out, so "not fully
+           opaque" is true at the start as well as at the end. The hand-over is
+           only the second of those. */
+        const o = Number(getComputedStyle(root).opacity);
+        if (o >= 0.99) window.__arrival.wasOpaque = true;
+        if (window.__arrival.wasOpaque && o < 0.98) seen('handover', t);
       } else if (window.__arrival.t0 !== null) {
         seen('gone', Math.round(performance.now() - window.__arrival.t0));
         window.__arrival = { t0: null, beats: {} };

@@ -135,6 +135,16 @@ export const T = {
      The ceremony is for the first arrival; a recurrence should read as
      recognition, not as spectacle. */
   trial: {
+    /* Before 0.0: the paper goes out.
+
+       The Ledger's own loading state is paper, and on a real connection it is
+       on screen for two and a half seconds before this mounts — so a sequence
+       whose first beat is a dark field began with a hard cut from cream to
+       black. The ground is darkened deliberately instead. It is the reveal's
+       move in reverse: there the paper arrives with the ink, and here it
+       leaves as the field is already slowing. It overlaps the stop rather than
+       preceding it, so it costs the sequence nothing. */
+    cover: 0.45,
     still: 1.0,
     crystalAt: 1.0,
     hold: 1.0,
