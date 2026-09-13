@@ -122,7 +122,9 @@ export async function toFirstAct(page, url, { email }) {
  * does not use them, and every transient failure worth having a harness for has
  * landed in exactly those three.
  *
- * `days` is a list of 'miss' | 'done' | 'silent' | 'open', earliest first.
+ * `days` is a list, earliest first. Each entry is either a kind —
+ * 'miss' | 'done' | 'silent' | 'open' — or `{ kind, text }` to supply the line
+ * the person wrote when they filed that day, which is what the Mirror reads.
  */
 export async function seedRecord(page, url, { supa, anon, days = ['miss', 'miss', 'open'] }) {
   await page.goto(url, { waitUntil: 'networkidle' });
@@ -158,7 +160,9 @@ export async function seedRecord(page, url, { supa, anon, days = ['miss', 'miss'
     if (cyc.status >= 300) return { error: `cycles ${cyc.status} ${JSON.stringify(cyc.body).slice(0, 140)}` };
 
     const made = [];
-    for (const [i, kind] of days.entries()) {
+    for (const [i, entry] of days.entries()) {
+      const kind = typeof entry === 'string' ? entry : entry.kind;
+      const text = typeof entry === 'string' ? null : entry.text;
       const at = new Date(Date.now() - (days.length - i) * 864e5 + i * 36e5).toISOString();
       /* `filing_requires_text`: a completed day has to say what happened. */
       const r = await post('ledger_entries', {
@@ -167,12 +171,85 @@ export async function seedRecord(page, url, { supa, anon, days = ['miss', 'miss'
         committed_at: at,
         filed_at: kind === 'miss' || kind === 'done' ? at : null,
         completed_at: kind === 'done' ? at : null,
-        what_happened: kind === 'done' ? 'Sent it without reading it again.'
-          : kind === 'miss' ? 'Did not get to it.' : null,
+        what_happened: text
+          ?? (kind === 'done' ? 'Sent it without reading it again.'
+            : kind === 'miss' ? 'Did not get to it.' : null),
       });
       if (r.status >= 300) return { error: `ledger_entries ${r.status} ${JSON.stringify(r.body).slice(0, 140)}` };
       made.push(`${kind}:${r.status}`);
     }
     return { uid, cycleId: cyc.body[0].id, made: made.join(' ') };
   }, { supa, anon, days });
+}
+
+/**
+ * A closed cycle and an open one, with filings in both.
+ *
+ * The Mirror needs a history that supports no trial, and inside a single cycle
+ * two filed misses is the Devil — which is correct, and which means a fixture
+ * that piles four misses into one cycle is testing the Devil rather than the
+ * Mirror. The Devil is scoped to a target; four sentences spread across a
+ * finished attempt and a new one summon nothing. The Mirror's window is seven
+ * days and does not care where the boundary falls.
+ */
+export async function seedTwoCycles(page, url, { supa, anon, closed, open }) {
+  await page.goto(url, { waitUntil: 'networkidle' });
+  return page.evaluate(async ({ supa, anon, closed, open }) => {
+    const auth = JSON.parse(localStorage.getItem('sovrn_auth') ?? 'null');
+    if (!auth?.access_token) return { error: 'no session in this browser yet' };
+    const token = auth.access_token, uid = auth.user.id;
+    const H = { apikey: anon, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
+
+    const post = async (path, body) => {
+      const res = await fetch(`${supa}/rest/v1/${path}`, {
+        method: 'POST', headers: { ...H, Prefer: 'return=representation' }, body: JSON.stringify(body),
+      });
+      return { status: res.status, body: await res.json() };
+    };
+
+    await fetch(`${supa}/rest/v1/users?id=eq.${uid}`, {
+      method: 'PATCH', headers: H, body: JSON.stringify({ timezone: 'Europe/London' }),
+    });
+
+    const cycle = async (number, rubric, closedAt) => {
+      const r = await post('cycles', {
+        user_id: uid, cycle_number: number,
+        target_stated: 'Leave my job and start a business',
+        target_admitted: 'Write a one-page paid offer and send it to three people who could hire you.',
+        rubric, cost: 'I keep saying next year.',
+        closes_at: new Date(Date.now() + 30 * 864e5).toISOString(),
+        closed_at: closedAt,
+        close_reason: closedAt ? 'retired' : null,
+      });
+      return r;
+    };
+
+    const first = await cycle(1, 'Crossed when the offer has been sent to three named people.',
+      new Date(Date.now() - 864e5).toISOString());
+    if (first.status >= 300) return { error: `cycles(1) ${first.status} ${JSON.stringify(first.body).slice(0, 140)}` };
+    const second = await cycle(2, 'Crossed when the offer has been sent to three named people.', null);
+    if (second.status >= 300) return { error: `cycles(2) ${second.status} ${JSON.stringify(second.body).slice(0, 140)}` };
+
+    const made = [];
+    let day = 0;
+    for (const [cyc, list] of [[first.body[0].id, closed], [second.body[0].id, open]]) {
+      for (const entry of list) {
+        day += 1;
+        const kind = typeof entry === 'string' ? entry : entry.kind;
+        const text = typeof entry === 'string' ? null : entry.text;
+        const at = new Date(Date.now() - (closed.length + open.length - day + 1) * 864e5).toISOString();
+        const r = await post('ledger_entries', {
+          user_id: uid, cycle_id: cyc, day_number: day,
+          mission_text: 'Send the offer to the next named person.',
+          committed_at: at,
+          filed_at: kind === 'miss' || kind === 'done' ? at : null,
+          completed_at: kind === 'done' ? at : null,
+          what_happened: text ?? (kind === 'miss' ? 'Did not get to it.' : null),
+        });
+        if (r.status >= 300) return { error: `ledger_entries ${r.status} ${JSON.stringify(r.body).slice(0, 140)}` };
+        made.push(`${kind}:${r.status}`);
+      }
+    }
+    return { uid, made: made.join(' ') };
+  }, { supa, anon, closed, open });
 }

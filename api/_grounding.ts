@@ -131,9 +131,18 @@ export interface Intake {
   deepestFear?: string;
   desiredReality?: string;
   repeatingPattern?: string;
+  /* What they wrote when they filed their days. The blueprint has none of these
+     and the Mirror is made of nothing else — for that surface the filings *are*
+     the source, and a gate asked to check a reading against an empty intake
+     would flag every quote in it as invented. */
+  filings?: string[];
 }
 
 function sourceBlock(intake: Intake): string {
+  const filings = intake.filings?.length
+    ? `\n\nWhat they wrote when they closed out their days:\n${
+        intake.filings.map((f) => `- ${f}`).join('\n')}`
+    : '';
   return `<what_they_said>
 Their name: ${intake.name || '(not given)'}
 
@@ -144,7 +153,7 @@ The life they say they are supposed to be living:
 ${intake.desiredReality || '(not given)'}
 
 The pattern they keep repeating:
-${intake.repeatingPattern || '(not given)'}
+${intake.repeatingPattern || '(not given)'}${filings}
 </what_they_said>`;
 }
 

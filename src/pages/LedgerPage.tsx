@@ -7,6 +7,8 @@ import { shouldOfferInstall } from '../lib/install';
 import TrialCard, { type Trial } from '../components/TrialCard';
 import TrialArrival from '../components/TrialArrival';
 import TrialUnbinding, { type Unbound } from '../components/TrialUnbinding';
+import MirrorCard, { type Mirror } from '../components/MirrorCard';
+import { getMirror } from '../lib/mirror';
 import { getTrial, rejectTrial } from '../lib/trial';
 import PaperPage from '../components/PaperPage';
 import NextMorning from '../components/NextMorning';
@@ -65,6 +67,10 @@ export default function LedgerPage() {
      stamps it seen as it goes, so there is nothing here to guard against a
      reload — if it arrives, it has never been shown. */
   const [unbinding, setUnbinding] = useState<Unbound | null>(null);
+  /* For the days without a trial, which is most of them. Fetched after the page
+     is already usable, because it is a model call and the act must not wait on
+     one. It fades in late or it never arrives, and either is a fine day. */
+  const [mirror, setMirror] = useState<Mirror | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [cycle, setCycle] = useState<Cycle | null>(null);
   const [cycles, setCycles] = useState<Cycle[]>([]);
@@ -93,6 +99,10 @@ export default function LedgerPage() {
          it survives a reload and cannot be replayed by one. */
       if (t?.fresh) setArriving(t);
       if (freed) setUnbinding(freed);
+      /* One or the other, never both. A trial is a named condition and the
+         Mirror is what fills the days there isn't one; showing them together
+         would be two things claiming to be the observation of the day. */
+      if (!t) void getMirror().then(setMirror);
     }
     setNaming(false);
     setRetiring(false);
@@ -375,6 +385,7 @@ export default function LedgerPage() {
           </p>
         )}
         {/* Above the act, never instead of it. */}
+        {!trial && mirror && <MirrorCard mirror={mirror} />}
         {trial && (
           <TrialCard
             trial={trial}
