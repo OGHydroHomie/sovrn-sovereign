@@ -931,3 +931,37 @@ two different tests and are two tests now; the borderline one asserts the rule
 outcome.
 
 Open. Part 5, the Map, is untouched. The trial cards still have no `-freed` art.
+
+## Birth time in twelve hours
+
+Question three took 0-23 and now takes 1-12 with AM and PM as two tappable
+states. What is stored is unchanged: the chart wants "15:04" and still gets it.
+The reason is that this is the third thing anyone is asked and a person who has
+to convert half past three in the afternoon into twenty-four-hour time leaves
+rather than doing the arithmetic.
+
+Nothing is preselected. A default meridiem records half past three in the
+morning for somebody born in the afternoon and never tells them — the only
+failure in this change that would not announce itself — so the time stays
+incomplete and Next stays shut until the toggle is answered. Midnight and noon
+are tested in both directions against the request the browser actually sends,
+because 12 AM is hour zero and 12 PM is hour twelve and that is where every
+implementation of this goes wrong. Somebody who types 18 out of habit gets 6
+with PM lit and still sends 18:45; 00 folds to 12 AM. Only on a complete
+two-digit entry, so the 1 of a 12 is never mangled on its way past. Verified on
+production: 23/23, six times through the real quiz against the real deployment.
+
+What broke, all of it in the harness. It read the body's background to find what
+was behind the field and found cream, because the dark intake is not a
+background colour — DESIGN_FROZEN keeps the ground as paper and the darkness is
+the dithered canvas drawn over it — so every control came back 1.00:1 against
+near-white type. It samples the field's own pixels now. Then it screenshotted in
+the same tick as the click and caught the frame before React committed, which
+produced a picture of neither state lit while the attribute read a moment later
+said one was. Then it waited for the attribute and still landed inside the 150ms
+colour transition, reading rgba(212,211,209,0.698) on a half-applied background
+and calling an 18.75:1 control 5.10:1 — twice, because two consecutive animation
+frames can agree on a rounded value while an ease is still a third of the way
+through. It waits for transitionend now.
+
+Open. Part 5, the Map, is untouched. The trial cards still have no `-freed` art.
