@@ -750,3 +750,53 @@ the identity minted on first load and deletes that one, and anything minted late
 in the run is not recorded and not cleaned. The structural fix from last time
 only covers the first account. Accounts now stand at 18, with 22 entries, 11
 cycles and no trials.
+
+## Trials, Part 2 — the arrival
+
+The ceremony ships. On the first sight of a trial the Ledger is covered by the
+dark field, the field comes to a complete stop, the card crystallizes out of a
+point of ink, it holds alone in silence, and then the name stamps, the reason
+follows and the act rises — one at a time, each with the screen to itself —
+before the ground lightens onto the Ledger that was underneath the whole time.
+Built out of what already existed: `AscentField`'s settle, the reveal's
+`Crystallization`, the reveal's stamp. Measured in the page at every frame
+rather than off a filmstrip, because the whole thing is about what happens
+relative to what. On the deployed bundle, against real rows: ink 1247ms, card
+resolved 3113ms, name 4280ms, reason 4980ms, act 5797ms, hand-over 7412ms, gone
+8079ms — within 200ms of the spec on every beat but the first ink, with a
+1167ms hold. A recurrence is 1.6s and cross-fades; reduced motion is 400ms and
+paints no field. The endpoint now returns `fresh` — whether this encounter has
+been seen on this day, read before the stamp is written — so a reload cannot
+replay an arrival and a second encounter still arrives without being a first one.
+The Ledger's card is the real mark now; the placeholder existed for exactly as
+long as there was no ceremony to spend.
+
+What broke. Three things the screenshots caught and the assertions did not. The
+name, reason and act were painted at full opacity for the first second, because
+the effect that hides them waits on the field and the frames — they start hidden
+now. The reason arrived with stars through it, because only the card was passed
+to the field's clearing; it clears the whole column. And the card timed its text
+against its own mount rather than against the ink, which decodes four hundred
+milliseconds later, so the hold was 0.6s instead of 1.0s — `Crystallization`
+reports when the spread actually begins and the sequence is anchored to that.
+Four more were mine, in the harness: the sampler read the starfield canvas
+instead of the card's, read a paragraph's own opacity under a hidden parent,
+tested `/^THE /` against text that CSS uppercases, and asked `waitFor('detached')`
+about an element that had not mounted yet — which is true instantly, so the
+assertions read a ceremony that was still running and left an overlay sitting on
+top of /delete. Both samplers also identified the three beats by matching prose,
+and reported the act as never arriving the first time a seeded act came in under
+forty characters; the elements carry labels now. I also blamed an intermittent
+failure on a parallel fetch and reverted it with a comment saying so — the
+failures were Vite swapping modules mid-run after I edited the page, and the
+comment was corrected rather than left to mislead.
+
+Open. The arrival is preceded by the Ledger's own paper loading state, so the
+first beat of a sequence that opens on a dark field can be a flash of cream. The
+fix would be a dark loading state for everyone to serve the rare first arrival,
+which is the wrong trade, and moving the trial call earlier changed nothing
+visible. Left as is and named. Two accounts with real data survived crashed
+verification runs and were removed by hand: the structural cleanup only sweeps
+*empty* orphans, so a probe that dies mid-run after committing an act still
+leaves a record behind. Production is at 21 accounts. The unbinding is Part 3 and
+needs one asset per card that does not exist yet — the same figure, unbound.
