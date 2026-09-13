@@ -808,3 +808,78 @@ verification runs and were removed by hand: the structural cleanup only sweeps
 *empty* orphans, so a probe that dies mid-run after committing an act still
 leaves a record behind. Production is at 21 accounts. The unbinding is Part 3 and
 needs one asset per card that does not exist yet — the same figure, unbound.
+
+## The generator was never slow
+
+Four harness runs had died waiting on the narrowing and on opening a cycle, and
+I had twice reported that as the generator being slow — once raising a timeout
+on a comment claiming a database insert was a generated step. Measured on
+production: the narrowing is 4.9s to 15.9s across fifteen calls, five sequential
+and six concurrent, none failing; its three model calls are genuinely dependent
+(the grounding check reads the admission's output) so they cannot be parallel,
+and streaming would not help because the client needs the complete structured
+answer before it can render anything. Opening a cycle has no model call in it at
+all — an insert and a re-read, with the acts generated alongside the blueprint
+minutes earlier. The checks were giving these 120s and 45s. maxDuration was
+already 300s and 60s; neither was ever close to being hit.
+
+The real mechanism: the client returns null on any failure, TargetAdmission
+renders "That didn't go through — try again", and every harness went on waiting
+for a control that was never coming. A failure and a slow call are
+indistinguishable if you only ever wait for success. `settles()` now races the
+success control against the page's own apology and throws with what the page
+said, what the network did and what the console warned — 11ms with a diagnosis
+instead of 120s with a guess, proved against a forced 503. Within an hour of
+that landing it caught three real transients that would previously have been
+four-minute timeouts: two 500s from the narrowing inside one second, and a 401
+mid-flow.
+
+Fixes underneath. `admit` stores nothing, so it retries once, and waits 2.5s
+rather than 600ms — 600ms landed inside the same overload and took the same 500.
+`_admission` catches nothing, so upstream 429s and overloads escape as 500s;
+that client now gets four retries instead of the SDK's default two. A 409 from
+`open` means the cycle is already open and is reported as success, because
+telling somebody their cycle failed to open when it opened is wrong twice over.
+And `trial` and `publicise` both made model calls with no maxDuration at all —
+trial swallows every failure by design, which made an unset timeout the most
+invisible failure in the product: the Sun would simply never arrive.
+
+## Trials, Part 3 — the unbinding
+
+Ships without its art. The card is still, the binding falls, the figure settles
+with one breath, and after the longest silence in any sequence here a single
+line — THE DEVIL · freed · September 12 — and beneath it the act that earned it
+in their own words. Where the binding sits is measured rather than declared: the
+two frames differ in exactly one place, so the topmost disagreeing row is the
+top of the binding, which needs no per-figure constant and survives the art
+being redrawn. A freed figure carries its precedent into later cycles — what
+worked last time, in their words, with the date — and figures are never revoked.
+`freed_seen_at` is stamped in the response that carries the ceremony, because
+that response is the only one that ever will.
+
+What broke. The pulse re-thresholded the pixels, and the card is 1080px drawn
+into 208, so the canvas holds anti-aliased grey — thresholding it turned the
+figure into eight hundred milliseconds of hard noise, which is the one thing
+this moment cannot afford. Rewritten to lift the ink's alpha, it then moved the
+total ink by two tenths of one percent, because one-bit art is already fully
+opaque and has no headroom upward; it recedes and returns now. Both were caught
+by looking, not by asserting — and the first assertion I wrote for the pulse
+passed while measuring nothing, because it compared a post-fall figure against
+one that still had its chain. The card reports its own phase now rather than the
+harness inferring it from pixels, which is the third time in this build that
+letting the thing under test name its own state has replaced a wrong guess.
+
+The fixture also learned the two unique indexes the product relies on. Without
+them two active trials could exist, `.maybeSingle()` returned null, and the
+entire freeing path was silently disabled — a fixture weaker than the database
+it stood in for, passing anyway. And the quiz walk now lives in one file instead
+of four; three copies had drifted apart, which is where several of this
+session's harness bugs came from.
+
+Open. The freed art does not exist for any of the three figures —
+`{slug}-freed.png`, the same figure unbound, registered pixel-for-pixel to the
+bound frame; docs/marks.md states the requirement. Until it lands the ceremony
+runs without its one moving part. The unbinding probe demonstrates the sequence
+against a stand-in frame synthesised in the browser, which proves the mechanism
+and says nothing about the art. Parts 4 and 5 — the Mirror and the Map — are
+untouched.
