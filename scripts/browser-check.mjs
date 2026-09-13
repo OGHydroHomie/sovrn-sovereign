@@ -310,9 +310,17 @@ try {
       await page.locator('#dob-month').fill(String(Number(m)));
       await page.locator('#dob-year').fill(y);
     } else if (step === 2) {
+      /* Twelve-hour now, with AM/PM as two tappable states. Nothing is
+         preselected — deliberately, because a default would quietly record the
+         wrong half of the day — so the toggle has to be tapped or the question
+         is unanswered and Next stays shut. */
       const [hh, mm] = answers[2].split(':');
-      await page.locator('#tob-hour').fill(hh);
+      const h24 = Number(hh);
+      const meridiem = h24 >= 12 ? 'pm' : 'am';
+      const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
+      await page.locator('#tob-hour').fill(String(h12));
       await page.locator('#tob-minute').fill(mm);
+      await page.locator(`#tob-${meridiem}`).click();
     } else {
       const field = page.locator('input:visible, textarea:visible').first();
       await field.waitFor({ state: 'visible', timeout: 20000 });

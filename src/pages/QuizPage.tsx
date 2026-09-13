@@ -284,7 +284,7 @@ export default function QuizPage({ onComplete, onBack }: Props) {
    * ISO strings the chart needs are derived from them. Typing "1" into the year
    * must not produce a birth date of the year 1. */
   const [dob, setDob] = useState({ day: '', month: '', year: '' });
-  const [tob, setTob] = useState({ hour: '', minute: '' });
+  const [tob, setTob] = useState({ hour: '', minute: '', meridiem: '' as '' | 'AM' | 'PM' });
 
   const setDobPart = (key: 'day' | 'month' | 'year', v: string) => {
     const next = { ...dob, [key]: v };
@@ -302,19 +302,56 @@ export default function QuizPage({ onComplete, onBack }: Props) {
       : '');
   };
 
-  const setTobPart = (key: 'hour' | 'minute', v: string) => {
-    const next = { ...tob, [key]: v };
+  /* Twelve-hour in, twenty-four-hour out.
+   *
+   * The field used to take 0-23 and this is an American product: question three
+   * is early enough that a person who has to work out what 3pm is in
+   * twenty-four-hour time simply leaves. What is stored has not changed — the
+   * chart wants "15:04" and still gets it — but nobody is asked to do the
+   * conversion themselves.
+   *
+   * Midnight and noon are the two that catch every implementation of this:
+   * 12 AM is hour zero and 12 PM is hour twelve, and neither is "12 plus or
+   * minus nothing". */
+  const to24 = (hour: string, meridiem: 'AM' | 'PM'): number => {
+    const h = Number(hour);
+    if (meridiem === 'AM') return h === 12 ? 0 : h;
+    return h === 12 ? 12 : h + 12;
+  };
+
+  const commitTob = (next: typeof tob) => {
     setTob(next);
     const h = Number(next.hour), mi = Number(next.minute);
-    const whole = next.hour !== '' && next.minute !== ''
-      && h >= 0 && h <= 23 && mi >= 0 && mi <= 59;
+    const whole = next.hour !== '' && next.minute !== '' && next.meridiem !== ''
+      && h >= 1 && h <= 12 && mi >= 0 && mi <= 59;
+    /* Unset is not AM. Defaulting the toggle would record half past three in
+       the morning for somebody born in the afternoon and never tell them, which
+       is the one failure here that does not announce itself. */
     update('birthTime', whole
-      ? `${next.hour.padStart(2, '0')}:${next.minute.padStart(2, '0')}`
+      ? `${String(to24(next.hour, next.meridiem as 'AM' | 'PM')).padStart(2, '0')}:${next.minute.padStart(2, '0')}`
       : '');
     if (whole) update('birthTimeUnknown', false);
   };
 
+  const setTobPart = (key: 'hour' | 'minute', v: string) => {
+    const next = { ...tob, [key]: v };
+
+    /* Somebody who already thinks in twenty-four-hour time types 18 and should
+       not be punished for it. Only on a complete two-digit entry, so the 1 of
+       a 12 is never mangled on its way past. */
+    if (key === 'hour' && v.length === 2) {
+      const h = Number(v);
+      if (h === 0) { next.hour = '12'; next.meridiem = 'AM'; }
+      else if (h > 12 && h <= 23) { next.hour = String(h - 12); next.meridiem = 'PM'; }
+    }
+
+    commitTob(next);
+  };
+
+  const setMeridiem = (meridiem: 'AM' | 'PM') => commitTob({ ...tob, meridiem });
+
   const skipTime = () => {
+    setTob({ hour: '', minute: '', meridiem: '' });
     update('birthTimeUnknown', true);
     update('birthTime', '');
     window.scrollTo(0, 0);
@@ -532,6 +569,44 @@ export default function QuizPage({ onComplete, onBack }: Props) {
                           />
                         </div>
                       ))}
+
+                      {/* Two states, both visible, neither preselected.
+                          A default here would be a silent twelve-hour error for
+                          half the people who use it, so the question is asked
+                          rather than assumed — and until it is answered the
+                          time is incomplete and Next stays shut. */}
+                      <div
+                        role="group"
+                        aria-label="AM or PM"
+                        style={{ flex: 'none', display: 'flex', gap: 0, paddingBottom: 1 }}
+                      >
+                        {(['AM', 'PM'] as const).map((m, i) => {
+                          const on = tob.meridiem === m;
+                          return (
+                            <button
+                              key={m}
+                              type="button"
+                              id={`tob-${m.toLowerCase()}`}
+                              aria-pressed={on}
+                              onClick={() => setMeridiem(m)}
+                              className="sv-label"
+                              style={{
+                                minWidth: 48, minHeight: 48,
+                                marginLeft: i === 0 ? 0 : -1,
+                                background: on ? 'var(--sv-ink)' : 'transparent',
+                                color: on ? 'var(--sv-paper)' : 'var(--sv-mute)',
+                                border: '1px solid var(--sv-line)',
+                                borderRadius: 0,
+                                cursor: 'pointer',
+                                fontSize: 12, fontWeight: 700, letterSpacing: '0.1em',
+                                transition: 'background 0.15s ease, color 0.15s ease',
+                              }}
+                            >
+                              {m}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                     <p className="sv-serif" style={{ marginTop: 10, fontSize: 13, color: 'var(--sv-mute)', lineHeight: 1.5 }}>
                       {q.helper}
