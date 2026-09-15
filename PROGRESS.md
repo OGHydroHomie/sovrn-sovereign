@@ -965,3 +965,56 @@ frames can agree on a rounded value while an ease is still a third of the way
 through. It waits for transitionend now.
 
 Open. Part 5, the Map, is untouched. The trial cards still have no `-freed` art.
+
+## Trials, Part 5 — the Map
+
+The last part of the trials build. Three sections and all three are the record
+rendered rather than scored: which figures have been freed, every day since the
+first cycle opened, and every cycle that has closed. Deployed and verified —
+`/api/map` answers 405 to a GET, 401 with no token and with a bad one, and
+returns a real record for a real account on production.
+
+Twenty-five positions. A freed figure is drawn in full with the day it was
+freed; the trial currently running is dimmed, in place, because a trial is not a
+prize. Everything else is a silhouette and a shackle and nothing else, and a
+locked position renders zero characters — somebody who has never met the Devil
+does not learn from this page that a Devil exists. The three that exist sit at
+scattered indexes so the grid never reads as three done and twenty-two queuing.
+The days are one square per calendar day in their timezone, filled where they
+crossed it, outlined where they committed and didn't, empty where nothing was
+filed: one ink, three weights, no colour anywhere, asserted by sampling every
+square's computed colours for hue. The cycles carry the target as they named it,
+how it closed and the date, in their own words rather than as grades.
+
+There is no count of anything in the response and nothing on the page that could
+become one: asserted against the rendered text for percentages, "n of m", any
+mention of a total or of positions remaining, and any progress element. The
+browser gets twenty-five positions because it has to draw them and is never told
+how many are filled. Reachable from the Ledger by four words that say nothing
+about what is behind them, and nothing anywhere advertises it.
+
+What broke. The grid was anchored on the first cycle's `opened_at` alone, so a
+record could contain days the map did not draw — the one thing a page whose
+claim is "this is the record" cannot do. It starts at the earlier of the first
+cycle opening and the first act committed now. Found on the deployment, where a
+live fixture produced a single square for a week of filings. Before that, four
+things the screenshot caught: the day grid auto-filled into two uneven rows with
+no reading order, and is seven across now because a week is the unit people
+already read a run of days in; a single freed figure made its own row taller
+than the rest and the grid went ragged around the one thing worth looking at;
+stars landed in the middle of the section labels, and punching a hole for the
+column fixed that and then thinning the field to hero density removed the field
+entirely, because every star it had left was inside the hole; and missed and
+empty squares could not be told apart at fourteen pixels.
+
+Two harness faults underneath the live failure: the two-cycle seeder never set
+`opened_at`, so a cycle with a week behind it looked like it opened this
+morning, and it never set `what_happened` on a completed day, so every crossing
+it seeded was refused by `filing_requires_text` — a constraint the single-cycle
+seeder already knew about and this one did not.
+
+Open. The trials build is complete across all five parts. The only thing
+outstanding is the `-freed` art: one file per trial card, the same figure
+unbound, registered pixel-for-pixel to the bound frame. `docs/marks.md` states
+the requirement. Until it lands the unbinding runs without its one moving part.
+Production stands at 16 accounts after a sweep of ten empty anonymous rows.
