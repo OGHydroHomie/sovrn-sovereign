@@ -129,7 +129,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const days: Array<{ day: string; state: DayState }> = [];
-    const opened = cycles[0]?.opened_at ?? entries[0]?.committed_at ?? null;
+    /* The earlier of the two, not simply the first cycle's.
+       A day that has an entry on it must have a square — anchoring only on the
+       cycle meant a record could contain days the grid did not draw, which is
+       the one thing a page whose whole claim is "this is the record" cannot do.
+       In practice the cycle opens first; this makes that an observation rather
+       than an assumption. */
+    const earliest = [cycles[0]?.opened_at, entries[0]?.committed_at]
+      .filter(Boolean)
+      .sort() as string[];
+    const opened = earliest[0] ?? null;
     if (opened) {
       const from = new Date(`${localDay(opened, zone)}T12:00:00Z`);
       const to = new Date(`${localDay(new Date().toISOString(), zone)}T12:00:00Z`);

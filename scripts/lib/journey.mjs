@@ -219,9 +219,13 @@ export async function seedTwoCycles(page, url, { supa, anon, closed, open }) {
       method: 'PATCH', headers: H, body: JSON.stringify({ timezone: 'Europe/London' }),
     });
 
-    const cycle = async (number, rubric, closedAt) => {
+    const cycle = async (number, rubric, closedAt, openedAt) => {
       const r = await post('cycles', {
         user_id: uid, cycle_number: number,
+        /* Explicit. It defaults to now(), which made a cycle with a week of
+           filings behind it look like it had opened this morning — and the map
+           draws its grid from the day the first cycle opened. */
+        opened_at: openedAt,
         target_stated: 'Leave my job and start a business',
         target_admitted: 'Write a one-page paid offer and send it to three people who could hire you.',
         rubric, cost: 'I keep saying next year.',
@@ -232,10 +236,13 @@ export async function seedTwoCycles(page, url, { supa, anon, closed, open }) {
       return r;
     };
 
+    const span = closed.length + open.length;
     const first = await cycle(1, 'Crossed when the offer has been sent to three named people.',
-      new Date(Date.now() - 864e5).toISOString());
+      new Date(Date.now() - open.length * 864e5).toISOString(),
+      new Date(Date.now() - span * 864e5).toISOString());
     if (first.status >= 300) return { error: `cycles(1) ${first.status} ${JSON.stringify(first.body).slice(0, 140)}` };
-    const second = await cycle(2, 'Crossed when the offer has been sent to three named people.', null);
+    const second = await cycle(2, 'Crossed when the offer has been sent to three named people.', null,
+      new Date(Date.now() - open.length * 864e5).toISOString());
     if (second.status >= 300) return { error: `cycles(2) ${second.status} ${JSON.stringify(second.body).slice(0, 140)}` };
 
     const made = [];
@@ -252,7 +259,12 @@ export async function seedTwoCycles(page, url, { supa, anon, closed, open }) {
           committed_at: at,
           filed_at: kind === 'miss' || kind === 'done' ? at : null,
           completed_at: kind === 'done' ? at : null,
-          what_happened: text ?? (kind === 'miss' ? 'Did not get to it.' : null),
+          /* `filing_requires_text`: a completed day has to say what happened.
+             This helper only filled it in for a miss, so every seeded crossing
+             was refused by the database — the same constraint the single-cycle
+             seeder already knew about and this one did not. */
+          what_happened: text ?? (kind === 'done' ? 'Sent it without reading it again.'
+            : kind === 'miss' ? 'Did not get to it.' : null),
         });
         if (r.status >= 300) return { error: `ledger_entries ${r.status} ${JSON.stringify(r.body).slice(0, 140)}` };
         made.push(`${kind}:${r.status}`);
