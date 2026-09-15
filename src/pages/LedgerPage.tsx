@@ -440,6 +440,25 @@ export default function LedgerPage() {
         </div>
       )}
 
+      {/* The way to the map, and the only one.
+          A quiet line under the record, never a destination the product points
+          anyone at: no badge, no count, no notification, nothing saying there is
+          something there to come back for. Somebody who wants to look at what
+          they have done can find it; nobody is sent. */}
+      {entries.length > 0 && (
+        <p style={{ marginTop: 34 }}>
+          <a
+            href="/map"
+            style={{
+              fontFamily: 'var(--sv-font)', fontWeight: 300, fontSize: 13,
+              color: '#6E6A66', textDecoration: 'underline', textUnderlineOffset: 3,
+            }}
+          >
+            The map
+          </a>
+        </p>
+      )}
+
       {/* Only while it is still a promise. Before the first commit there is no
           tomorrow to describe; once a second day exists the promise has been
           kept in front of them, and a card explaining what already happened is
