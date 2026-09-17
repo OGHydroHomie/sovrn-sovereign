@@ -1018,3 +1018,59 @@ outstanding is the `-freed` art: one file per trial card, the same figure
 unbound, registered pixel-for-pixel to the bound frame. `docs/marks.md` states
 the requirement. Until it lands the unbinding runs without its one moving part.
 Production stands at 16 accounts after a sweep of ten empty anonymous rows.
+
+## The marketing site, and the app at /begin
+
+The root is what a stranger sees now. Deployed and verified on production: a
+card assembling itself out of noise on loop, one sentence, one control, and
+below it the wound, what happens, a slot for the film, the thirteen, and the
+wall's own count. 32/32 against the deployment, including the loop measured in
+the page at 2200ms spread, 1483ms hold, 783ms dissolve, and the counter carrying
+"1 person committed today. 0 did it." — byte for byte what /wall itself renders.
+Every route answers 200: the app moved to /begin and everything else is
+unchanged.
+
+The hero is the crystallization the reveal already uses, running as an idle
+rather than an arrival. It is a mode on the existing component rather than a
+second one carrying its own copy of the ink maths — the drawing is identical and
+only what happens to `t` differs — and the dissolve runs the same path backwards
+at a third of the speed so a card leaves without reading as a film rewound. The
+name never appears there; it belongs to the reveal.
+
+Nothing needed redirecting, which I established before moving anything: the
+magic link and the 6am email both point at /ledger. The only thing pointing at
+the root was the wordmark, and the rule that made it stop being a link once
+there was a blueprint existed because the root was the quiz door — sending a
+returning person to "begin your blueprint" sent them to be asked for something
+they had already given. The root offers them their Ledger now, so the special
+case is gone rather than updated.
+
+The count is asked of the wall rather than computed a second time, so the front
+page and the public page cannot disagree on a day boundary and then stay wrong
+until somebody happens to look at both at once.
+
+What broke. The field is `position: fixed`, so the two I had both covered the
+viewport and the denser painted over the sparser, putting stars through the
+headline — and clearing a hole for the type cannot work on a page this tall,
+because the clearing takes the union of the refs it is given, which here is the
+whole document and therefore the whole screen. One sparse uncleared field, which
+is what the door and the threshold already run. The counter asked for /wall, a
+rewrite that returns the SPA's index.html anywhere vercel.json is not applied,
+and fell back silently on a page that was otherwise working; it asks the
+function's own path now. And `loading="lazy"` on the thirteen bought nothing
+because ArchetypeMark probes the file with `new Image()` on mount — thirteen
+files were on their way before the grid existed — so the probe itself is
+deferred behind an observer, and only on this page.
+
+Three more were mine, in the harness. I inferred the loop's phases from how much
+ink was on the canvas, and an eased spread passes 90% of its final ink about two
+thirds of the way through, so a 2.2s spread measured as 1.5s and the missing
+0.7s was credited to the hold; the card reports its phase now, which is the
+fourth time in this build that letting the thing under test name its own state
+replaced a wrong guess. I gave the hero the same `data-figure` the thirteen
+carry, so a grid of thirteen counted as fourteen. And I counted frame files
+across a forty-five second run, which counts the idle rather than the first
+screen.
+
+Open. `DEMO_VIDEO` is null and the slot holds its 16:9 shape until it isn't. The
+trial cards still have no `-freed` art.
