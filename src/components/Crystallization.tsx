@@ -34,6 +34,11 @@ interface Props {
   loop?: boolean;
   /** Fired when a loop's dissolve has finished and the next card may take over. */
   onCycle?: () => void;
+  /* How long the spread takes. Defaults to the reveal's 2.2s, which is tuned
+     for one card arriving with the screen to itself. Thirteen of them resolving
+     in a grid is a different event — at 2.2s each the row is still working when
+     the eye has moved on — so that surface asks for a shorter one. */
+  advanceSeconds?: number;
 }
 
 /* The mark arriving, as ink in water.
@@ -104,7 +109,9 @@ function spread(t: number): number {
     : 1 - k * Math.pow(1 - t, SPREAD_P);
 }
 
-export default function Crystallization({ becoming, size, ready, onBegin, loop = false, onCycle }: Props) {
+export default function Crystallization({
+  becoming, size, ready, onBegin, loop = false, onCycle, advanceSeconds,
+}: Props) {
   const urls = markFrameUrls(becoming);
   const slug = markSlug(becoming ?? '');
   const boxRef = useRef<HTMLDivElement>(null);
@@ -182,7 +189,7 @@ export default function Crystallization({ becoming, size, ready, onBegin, loop =
          figure loses coherence and goes rather than rewinding — a collapse at
          a third of the speed it arrived at does not read as a film run in
          reverse. */
-      const IN = T.crystal.advance * 1000;
+      const IN = (advanceSeconds ?? T.crystal.advance) * 1000;
       const HOLD = T.idle.hold * 1000;
       const OUT = T.idle.dissolve * 1000;
 

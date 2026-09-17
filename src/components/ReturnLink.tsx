@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { getBlueprint } from '../utils/storage';
-import { getProfile } from '../lib/blueprint';
+import { hasReading } from '../lib/reading';
 
 const LINK_BUTTON: React.CSSProperties = {
   background: 'none', border: 'none', padding: 0, cursor: 'pointer',
@@ -29,23 +28,12 @@ type State = 'checking' | 'signed-in' | 'closed' | 'open' | 'sending' | 'sent' |
 export default function ReturnLink() {
   const [state, setState] = useState<State>('checking');
 
-  /* Offer the direct link only when there is something behind it.
-
-     A session is not a Ledger. ensureUser mints an anonymous one for every
-     visitor on arrival, so "signed in" is true of someone who landed nine
-     seconds ago — and the first version of this checked exactly that, which
-     offered "Your Ledger" to a stranger and sent them to an empty page. The
-     question is whether a reading exists: in this browser, or on the row. */
+  /* Offer the direct link only when there is something behind it. The rule is
+     in lib/reading now, because the front page's header asks the same question
+     and two copies of it would eventually disagree about who is a stranger. */
   useEffect(() => {
     let live = true;
-    void (async () => {
-      const { data } = await supabase.auth.getSession();
-      if (!live) return;
-      if (!data.session) { setState('closed'); return; }
-      if (getBlueprint()?.text) { setState('signed-in'); return; }
-      const me = await getProfile();
-      if (live) setState(me?.becoming ? 'signed-in' : 'closed');
-    })();
+    void hasReading().then((yes) => { if (live) setState(yes ? 'signed-in' : 'closed'); });
     return () => { live = false; };
   }, []);
   const [email, setEmail] = useState('');

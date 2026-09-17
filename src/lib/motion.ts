@@ -215,6 +215,32 @@ export const T = {
     dissolve: 0.8,
   },
 
+  /* 2f — the front page, on scroll.
+
+     Type arrives once, as it comes into reach, and never again. A section that
+     re-animates every time it is scrolled past turns a page into a toy, and the
+     second viewing is always worse than the first.
+
+     The field thins as the page goes down. Density rather than altitude:
+     driving the altitude would take the coverage from 0.96 to 0.12 and turn a
+     dark page pale, and paper appears exactly once in this product. What
+     changes is how many points of light there are. */
+  scroll: {
+    rise: 20,              // px
+    fade: 0.62,
+    stagger: 0.08,
+    /* Where a line has to reach before it starts. 12% up from the bottom of the
+       viewport: high enough that nothing arrives while it is still off-screen,
+       low enough that it is never caught mid-fade at rest. */
+    start: 0.88,
+    /* The thirteen resolve as each enters, in the same ink, faster. */
+    cardAdvance: 0.6,
+    cardStagger: 0.08,
+    /* Points of light, dense where the reading starts and sparse where it ends. */
+    starsFrom: 0.0180,
+    starsTo: 0.0009,
+  },
+
   /* 3 — the three cards */
   cards: {
     firstAt: 1.7,          // after the header has settled

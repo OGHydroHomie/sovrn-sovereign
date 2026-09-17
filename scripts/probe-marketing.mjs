@@ -130,6 +130,21 @@ await probe({ url: URL_, name: 'marketing' }, async ({ page, url }) => {
     await page.screenshot({ path: `${SHOTS}/marketing-hero.png` });
   }
 
+  // ── The header ───────────────────────────────────────────────────────────
+  const header = page.locator('[data-site-header]');
+  check('there is a header, and it stays', await header.count() === 1);
+  check('the wordmark is on it', (await header.innerText()).toUpperCase().includes('SOVRN'),
+    (await header.innerText()).replace(/\s+/g, ' ').trim());
+  check('and on its own page it is not a link',
+    await page.locator('[data-wordmark="inert"]').count() === 1
+    && await page.locator('[data-wordmark="link"]').count() === 0);
+  check('The Wall is a route out', (await page.locator('[data-nav="wall"]').getAttribute('href')) === '/wall');
+  check('and a stranger is offered Begin',
+    (await page.locator('[data-nav="begin"]').getAttribute('href')) === '/begin'
+    && await page.locator('[data-nav="ledger"]').count() === 0);
+  const stuck = await header.evaluate((el) => getComputedStyle(el).position);
+  check('the header is persistent', stuck === 'sticky' || stuck === 'fixed', stuck);
+
   // ── Below the fold ───────────────────────────────────────────────────────
   const body = (await page.locator('body').innerText()).replace(/\s+/g, ' ');
   check('the wound is there, unheadered', /Knowing was never the problem/.test(body));
@@ -147,6 +162,22 @@ await probe({ url: URL_, name: 'marketing' }, async ({ page, url }) => {
   check('the thirteen carry a becoming and nothing else',
     captions.length === 13 && captions.every((c) => named.includes(c.replace(/\s+/g, ' ').trim())),
     captions.map((c) => c.trim()).slice(0, 2).join(' | '));
+
+  // ── The breaks ───────────────────────────────────────────────────────────
+  const breaks = await page.locator('[data-break]').count();
+  check('the sections are separated by a rule', breaks >= 5, `${breaks}`);
+  const rule = await page.locator('[data-break] > div').first().evaluate((el) => {
+    const r = el.getBoundingClientRect();
+    const parent = el.parentElement.getBoundingClientRect();
+    return { frac: r.width / parent.width, height: r.height, centred: Math.abs((r.left - parent.left) - (parent.right - r.right)) < 2 };
+  });
+  check('a hairline at 30%, centred', Math.abs(rule.frac - 0.30) < 0.02 && rule.height <= 1.5 && rule.centred,
+    `${(rule.frac * 100).toFixed(0)}% wide, ${rule.height}px, ${rule.centred ? 'centred' : 'off-centre'}`);
+  check('and nothing is drawn around a section',
+    await page.locator('[data-reveal]').evaluateAll((els) => els.every((el) => {
+      const cs = getComputedStyle(el);
+      return cs.borderTopWidth === '0px' && /rgba\(0, 0, 0, 0\)/.test(cs.backgroundColor);
+    })));
 
   const slot = page.locator('[data-video]');
   check('the video slot holds its shape while empty', await slot.getAttribute('data-video') === 'empty');
@@ -228,6 +259,43 @@ await probe({ url: URL_, name: 'marketing' }, async ({ page, url }) => {
     `${fetched.filter((f) => !/-x\d\.png$/.test(f.url)).length} after scrolling`);
 
   // ── The routes ───────────────────────────────────────────────────────────
+  // ── Scroll behaviour ─────────────────────────────────────────────────────
+  /* On a fresh load. The lazy-loading check above scrolls to the grid, and
+     the reveals are once-only — measuring "starts hidden" after something has
+     already scrolled the page measures nothing at all. */
+  await page.goto(url, { waitUntil: 'networkidle' });
+  await page.waitForTimeout(1200);
+  const before = await page.locator('[data-reveal] [data-rise]').evaluateAll(
+    (els) => els.map((el) => Number(getComputedStyle(el).opacity)));
+  check('type below the fold starts hidden', before.filter((o) => o < 0.1).length >= 8,
+    `${before.filter((o) => o < 0.1).length}/${before.length} hidden at the top`);
+
+  const density = [];
+  for (const frac of [0, 0.35, 0.7, 1]) {
+    await page.evaluate((f) => window.scrollTo(0, (document.body.scrollHeight - innerHeight) * f), frac);
+    await page.waitForTimeout(900);
+    density.push(await page.evaluate(() => {
+      const c = document.querySelector('canvas[data-ascent-field]');
+      const d = c.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, c.width, c.height).data;
+      let on = 0, count = 0;
+      for (let i = 0; i < d.length; i += 4 * 17) { count++; if (d[i] > 128) on++; }
+      return on / count;
+    }));
+  }
+  console.log(`      field: ${density.map((x) => (x * 100).toFixed(2) + '%').join(' → ')}`);
+  check('the field thins as the page goes down', density[1] > density[3] * 1.5,
+    density.map((x) => (x * 100).toFixed(2)).join(' → '));
+  check('and never turns the page to paper', density.every((x) => x < 0.25),
+    `${(Math.max(...density) * 100).toFixed(1)}% at its densest`);
+
+  const after = await page.locator('[data-reveal] [data-rise]').evaluateAll(
+    (els) => els.map((el) => Number(getComputedStyle(el).opacity)));
+  check('and every line has arrived by the bottom', after.every((o) => o > 0.95),
+    `${after.filter((o) => o > 0.95).length}/${after.length}`);
+
+  const resolved = await page.locator('[data-figure][data-resolved="yes"]').count();
+  check('the thirteen resolve as they enter', resolved === 13, `${resolved}/13`);
+
   // ── Reduced motion ───────────────────────────────────────────────────────
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto(url, { waitUntil: 'networkidle' });
@@ -236,6 +304,11 @@ await probe({ url: URL_, name: 'marketing' }, async ({ page, url }) => {
     await page.locator('[data-idle="static"]').count() === 1);
   check('and nothing is looping', await page.locator('[data-idle] canvas[data-crystallization]').count() === 0);
   check('the card is still there', await page.locator('[data-idle] img, [data-idle] div').count() > 0);
+  const still = await page.locator('[data-reveal] [data-rise]').evaluateAll(
+    (els) => els.map((el) => ({ o: Number(getComputedStyle(el).opacity), t: getComputedStyle(el).transform })));
+  check('and every line is already in its final state',
+    still.length > 0 && still.every((x) => x.o > 0.95 && (x.t === 'none' || /matrix\(1, 0, 0, 1, 0, 0\)/.test(x.t))),
+    `${still.filter((x) => x.o > 0.95).length}/${still.length} shown`);
   await page.emulateMedia({ reducedMotion: 'no-preference' });
 
   await page.goto(`${url}/begin`, { waitUntil: 'networkidle' });
