@@ -1074,3 +1074,51 @@ screen.
 
 Open. `DEMO_VIDEO` is null and the slot holds its 16:9 shape until it isn't. The
 trial cards still have no `-freed` art.
+
+## The front page: a header, breaks, and scroll
+
+Four things it did not have, all shipped and verified on production: 47/47
+against the deployment, every route answering 200, and verify-deploy reporting
+every file matching dist.
+
+The wordmark sits top left, persistent, in the app's own treatment, and on the
+page it already points at it renders as a span rather than an anchor — a link to
+where you are is a control that does nothing. Beside it, The Wall and Begin,
+where Begin becomes Your Ledger once a session has a reading behind it. That
+rule moved into `lib/reading`, because the way back in at the foot of the page
+was already asking the same question and two copies of "a session is not a
+Ledger" would eventually disagree about who counts as a stranger.
+
+Type rises twenty pixels and fades as it comes into reach, staggered by line,
+once — a section that re-animates every time it is scrolled past turns a page
+into a toy, and the second viewing is always worse than the first. The thirteen
+resolve in the same ink the hero and the reveal use, at 600ms rather than 2.2s:
+a grid is a different event from one card arriving with the screen to itself,
+and at 2.2s each the row is still working when the eye has moved on. Not a fade,
+which would be a different material for the same object. A hairline at thirty
+percent separates the sections, centred, with air either side and nothing drawn
+around anything.
+
+The field thins by density rather than by altitude. The altitudes run 0.90,
+0.45, 0.12, 0.96 coverage, so driving the field down that scale takes a dark
+page to a pale one and paper appears exactly once in this product. It also holds
+the hero at the door's own sparse density and builds as the hero leaves: "dense
+at the wound" puts the density below the fold, and at the density the reading
+wants, the stars punch straight through a headline that is one line on an
+otherwise empty screen. I shipped that for a minute and it was the first thing
+wrong in the screenshot. Measured 0.09% → 0.54% → 0.09%.
+
+What broke. Deferring the thirteen frame files bought nothing on its own,
+because Crystallization falls back to the finished mark while it waits and that
+mark fetches on mount — thirteen files came down regardless of how carefully the
+frames were held back; the cells mount only when they are near now. And every
+section revealed itself at once on first load: ScrollTrigger measures a trigger
+when it is created, and at that moment the grid has not loaded, so the document
+is far shorter than it will be and every start lands inside the first viewport.
+Refreshed once the page has finished becoming its own height. My own check for
+"type starts hidden" also measured nothing, because it ran after an earlier
+assertion had already scrolled to the grid and the reveals are once-only.
+
+Production stands at 16 accounts after sweeping three empty anonymous rows.
+Open: `DEMO_VIDEO` is still null with its slot holding 16:9, and the trial cards
+still have no `-freed` art.
