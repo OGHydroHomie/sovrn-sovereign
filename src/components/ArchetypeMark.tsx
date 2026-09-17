@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { markUrl, MARK_ASPECT } from '../lib/marks';
 
 interface Props {
@@ -12,6 +12,14 @@ interface Props {
   basis?: 'width' | 'height';
   /** Sits inline beside type rather than on its own line. */
   inline?: boolean;
+  /* Hold the fetch until the mark is near the viewport.
+   *
+   * The probe below runs on mount, which means `loading="lazy"` on the <img>
+   * buys nothing — the file is already on its way before the element is ever
+   * rendered. On the reveal that is exactly right: one mark, and it is the
+   * thing being waited for. On the front page it is thirteen of them, all below
+   * the fold, on the first byte a stranger loads. */
+  lazy?: boolean;
 }
 
 type State = 'pending' | 'ok' | 'missing';
@@ -25,11 +33,27 @@ type State = 'pending' | 'ok' | 'missing';
    The file is probed with an Image rather than rendered straight into an <img>,
    because a missing src paints a broken-image glyph for a frame before the error
    handler runs — and a broken image on the reveal is worse than no mark at all. */
-export default function ArchetypeMark({ becoming, size, basis = 'width', inline = false }: Props) {
+export default function ArchetypeMark({ becoming, size, basis = 'width', inline = false, lazy = false }: Props) {
   const src = markUrl(becoming);
   const [state, setState] = useState<State>('pending');
+  const holder = useRef<HTMLDivElement | null>(null);
+  const [near, setNear] = useState(!lazy);
+
+  /* Near enough to be worth fetching. A generous margin, because a mark that
+     starts loading as its top edge crosses the fold arrives after it is being
+     looked at. */
+  useEffect(() => {
+    if (!lazy || near || !holder.current) return;
+    if (typeof IntersectionObserver === 'undefined') { setNear(true); return; }
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) { setNear(true); io.disconnect(); }
+    }, { rootMargin: '600px' });
+    io.observe(holder.current);
+    return () => io.disconnect();
+  }, [lazy, near]);
 
   useEffect(() => {
+    if (!near) return;
     if (!src) { setState('missing'); return; }
     let live = true;
     const probe = new Image();
@@ -37,7 +61,7 @@ export default function ArchetypeMark({ becoming, size, basis = 'width', inline 
     probe.onerror = () => { if (live) setState('missing'); };
     probe.src = src;
     return () => { live = false; };
-  }, [src]);
+  }, [src, near]);
 
   /* The other axis follows the art's own proportions rather than being forced
      square, which would squash a 896x1216 mark by a third. */
@@ -64,6 +88,7 @@ export default function ArchetypeMark({ becoming, size, basis = 'width', inline 
      art's shape — it is the loading square, not a stand-in for a missing file. */
   return (
     <div
+      ref={holder}
       aria-hidden="true"
       style={{
         ...(basis === 'width' ? { width: size, height: size } : { height: size, width: size }),

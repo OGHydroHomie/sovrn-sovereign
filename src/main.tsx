@@ -9,6 +9,7 @@ import LedgerPage from './pages/LedgerPage.tsx'
 import SavedBlueprintPage from './pages/SavedBlueprintPage.tsx'
 import AboutPage from './pages/AboutPage.tsx'
 import MapPage from './pages/MapPage.tsx'
+import MarketingPage from './pages/MarketingPage.tsx'
 
 /* Standalone paper pages, routed on pathname. vercel.json already rewrites every
    non-/api path to index.html, so these URLs reach the SPA and are matched here.
@@ -31,8 +32,18 @@ function rootFor(pathname: string) {
       return <AboutPage />
     case '/map':
       return <MapPage />
-    default:
+    /* The door, the threshold and the quiz. They lived at the root until the
+       marketing site took it; every link that mattered — the magic link and the
+       6am email — points at /ledger and is unaffected. */
+    case '/begin':
       return <App />
+    case '/':
+      return <MarketingPage />
+    /* Anything else is an old or mistyped path. The front page is the honest
+       place to land: a stranger sees what this is, and somebody with a reading
+       is offered their Ledger on it. */
+    default:
+      return <MarketingPage />
   }
 }
 

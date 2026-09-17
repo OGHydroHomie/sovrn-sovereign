@@ -172,6 +172,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const people = committed === 1 ? '1 person committed today.' : `${committed.toLocaleString('en-US')} people committed today.`;
   const didLine = `${did.toLocaleString('en-US')} did it.`;
 
+  /* The same two numbers, as data, for the front page's counter.
+     One source: the marketing site says what the wall says because it asks the
+     wall, and a second query somewhere else would eventually disagree with this
+     one on a day boundary and nobody would notice for a month. Same viewer-day
+     logic, same cache, same Vary. */
+  if (req.query.format === 'json') {
+    res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=600');
+    res.setHeader('Vary', 'x-vercel-ip-timezone');
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    return res.status(200).send(JSON.stringify({ committed, did, people, did_line: didLine }));
+  }
+
   const html = `<!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8">

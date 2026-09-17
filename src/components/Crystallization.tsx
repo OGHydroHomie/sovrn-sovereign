@@ -21,6 +21,19 @@ interface Props {
      most of the hold the sequence is built around. Anything timed against the
      card should be timed against this. */
   onBegin?: () => void;
+  /* Loop mode, for the front door.
+   *
+   * The reveal shows one card once and stops — that is a thing arriving, and it
+   * arrives exactly as many times as it happens. The marketing hero shows the
+   * same mechanic as an idle: in, hold, dissolve, and tell the caller to hand
+   * over the next figure. The drawing is identical; only what happens to `t`
+   * differs, which is why this is a mode here rather than a second component
+   * carrying its own copy of the ink maths.
+   *
+   * Off by default. The reveal never sets it and its path is unchanged. */
+  loop?: boolean;
+  /** Fired when a loop's dissolve has finished and the next card may take over. */
+  onCycle?: () => void;
 }
 
 /* The mark arriving, as ink in water.
@@ -91,7 +104,7 @@ function spread(t: number): number {
     : 1 - k * Math.pow(1 - t, SPREAD_P);
 }
 
-export default function Crystallization({ becoming, size, ready, onBegin }: Props) {
+export default function Crystallization({ becoming, size, ready, onBegin, loop = false, onCycle }: Props) {
   const urls = markFrameUrls(becoming);
   const slug = markSlug(becoming ?? '');
   const boxRef = useRef<HTMLDivElement>(null);
@@ -163,9 +176,38 @@ export default function Crystallization({ becoming, size, ready, onBegin }: Prop
 
       const began = performance.now();
       onBegin?.();
+
+      /* The idle's three phases, in milliseconds from the first frame of ink.
+         The dissolve runs the same path backwards and much faster, so the
+         figure loses coherence and goes rather than rewinding — a collapse at
+         a third of the speed it arrived at does not read as a film run in
+         reverse. */
+      const IN = T.crystal.advance * 1000;
+      const HOLD = T.idle.hold * 1000;
+      const OUT = T.idle.dissolve * 1000;
+
       const frame = () => {
         if (stopped) return;
-        const t = Math.min(1, (performance.now() - began) / (T.crystal.advance * 1000));
+        const ms = performance.now() - began;
+
+        /* The card says which phase it is on. Inferring it from how much ink
+           is on the canvas cannot work: the spread is eased, so it passes 90%
+           of its final ink about two thirds of the way through, and a harness
+           reading that as "arrived" measures a 2.2s spread as 1.5s and then
+           credits the missing 0.7s to the hold. */
+        let t: number;
+        if (!loop) {
+          t = Math.min(1, ms / IN);
+        } else if (ms < IN) {
+          t = ms / IN;
+          canvas!.dataset.phase = 'spreading';
+        } else if (ms < IN + HOLD) {
+          t = 1;
+          canvas!.dataset.phase = 'holding';
+        } else {
+          t = Math.max(0, 1 - (ms - IN - HOLD) / OUT);
+          canvas!.dataset.phase = 'dissolving';
+        }
 
         ctx.clearRect(0, 0, w, h);
         /* Largest first: the outer ring is the newest ink and still frame one,
@@ -182,12 +224,22 @@ export default function Crystallization({ becoming, size, ready, onBegin }: Prop
           ctx.restore();
         }
 
-        if (t < 1) raf = requestAnimationFrame(frame);
+        if (!loop) {
+          if (t < 1) raf = requestAnimationFrame(frame);
+          return;
+        }
+        /* The caller swaps the figure; this component does not choose one. */
+        if (ms >= IN + HOLD + OUT) { onCycle?.(); return; }
+        raf = requestAnimationFrame(frame);
       };
       frame();
     }
 
     return () => { stopped = true; cancelAnimationFrame(raf); };
+    /* `loop` and the callbacks are read, not depended on: re-running this effect
+       would restart the ink mid-spread. The slug changing is what starts a new
+       card, and that is the only thing that should. */
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [run, slug]);
 
   /* The fallback, and frame six under another name. Its arrival belongs to

@@ -203,6 +203,18 @@ export const T = {
     reducedFade: 0.4,
   },
 
+  /* 2e — the front door's idle.
+
+     The same six-frame spread the reveal uses, looping: in, a hold long enough
+     to look at, and a collapse back into noise before the next figure takes
+     over. The hold is the reason to keep watching and the dissolve is
+     deliberately much shorter than the arrival — a card that leaves as slowly
+     as it came reads as a film being rewound. */
+  idle: {
+    hold: 1.5,
+    dissolve: 0.8,
+  },
+
   /* 3 — the three cards */
   cards: {
     firstAt: 1.7,          // after the header has settled
