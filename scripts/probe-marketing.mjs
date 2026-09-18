@@ -84,7 +84,7 @@ await probe({ url: URL_, name: `marketing-${W}`, viewport: { width: W, height: H
   const leftover = heroText
     .replace(/Everything else tells you who you could be\./i, '')
     .replace(/This one makes you find out\./i, '')
-    .replace(/Three questions and your birth details name who you.{1,3}re becoming .{1,3} and the loop you.{1,3}ve been running instead\./i, '')
+    .replace(/Three questions and your birth details name who you.{1,3}re becoming, and the loop you.{1,3}ve been running instead\./i, '')
     .replace(/Then it stops describing you, and starts asking\./i, '')
     .replace(/get today.{1,3}s act/i, '')
     .replace(/Three questions\. Five minutes\. Free\./i, '')
@@ -183,8 +183,10 @@ await probe({ url: URL_, name: `marketing-${W}`, viewport: { width: W, height: H
   // ── Below the fold ───────────────────────────────────────────────────────
   const body = (await page.locator('body').innerText()).replace(/\s+/g, ' ');
   check('the wound is there, unheadered', /Knowing was never the problem/.test(body));
-  check('the field is answered before we promise anything',
-    /Nothing was ever built to catch it/.test(body));
+  check('the belief that keeps him still is contradicted, not the competitors',
+    /You were told a lie/.test(body)
+    && /the getting ready became the life/i.test(body)
+    && /only the one who starts anyway/i.test(body));
   check('the mechanism is stated in full',
     /Tomorrow at six, it asks what happened/.test(body)
     && /Either answer is the input/.test(body));
@@ -203,7 +205,7 @@ await probe({ url: URL_, name: `marketing-${W}`, viewport: { width: W, height: H
     };
     return {
       wound: at(/Knowing was never the problem/),
-      kill: at(/Nothing was ever built to catch it/),
+      lie: at(/You were told a lie/),
       mechanism: at(/Either answer is the input/),
       proof: at(/Every act\. Every miss\./),
       thirteen: at(/No card is ahead of another/),
@@ -211,8 +213,8 @@ await probe({ url: URL_, name: `marketing-${W}`, viewport: { width: W, height: H
       close: at(/something will ask whether you did it/),
     };
   });
-  const seq = ['wound', 'kill', 'mechanism', 'proof', 'thirteen', 'birth', 'close'];
-  check('the page runs wound → kill → mechanism → proof → thirteen → birth → close',
+  const seq = ['wound', 'lie', 'mechanism', 'proof', 'thirteen', 'birth', 'close'];
+  check('the page runs wound → lie → mechanism → proof → thirteen → birth → close',
     seq.every((k, i) => i === 0 || order[seq[i - 1]] < order[k]),
     seq.map((k) => `${k}:${order[k] === Infinity ? 'missing' : order[k]}`).join('  '));
   const figures = await page.locator('[data-figure]').count();
@@ -231,6 +233,22 @@ await probe({ url: URL_, name: `marketing-${W}`, viewport: { width: W, height: H
   // ── The breaks ───────────────────────────────────────────────────────────
   const breaks = await page.locator('[data-break]').count();
   check('the sections are separated by a rule', breaks >= 5, `${breaks}`);
+  /* The lie is set in four groups with its line breaks intact. Reflowed into
+     prose it still reads, which is why nothing else here would catch it. */
+  const lie = await page.evaluate(() => {
+    const el = [...document.querySelectorAll('[data-reveal]')]
+      .find((n) => /You were told a lie/.test(n.innerText));
+    if (!el) return null;
+    const groups = [...el.querySelectorAll('p')];
+    return {
+      groups: groups.length,
+      lines: groups.map((g) => g.querySelectorAll('span').length),
+      tops: groups.map((g) => Math.round(g.getBoundingClientRect().top)),
+    };
+  });
+  check('the lie keeps its four groups and its breaks',
+    lie !== null && lie.groups === 4 && JSON.stringify(lie.lines) === JSON.stringify([0, 2, 2, 2]),
+    lie ? `${lie.groups} groups, lines ${lie.lines.join('/')}` : 'missing');
   const rule = await page.locator('[data-break] > div').first().evaluate((el) => {
     const r = el.getBoundingClientRect();
     const parent = el.parentElement.getBoundingClientRect();

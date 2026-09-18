@@ -46,7 +46,7 @@ const HEAD = ['Everything else tells you who you could be.', 'This one makes you
    reader has learned to skip. Then straight back out to the mechanism, so the
    claim never stands alone long enough to be compared against the field. */
 const LEAD = [
-  'Three questions and your birth details name who you’re becoming — and the loop you’ve been running instead.',
+  'Three questions and your birth details name who you’re becoming, and the loop you’ve been running instead.',
   'Then it stops describing you, and starts asking.',
 ];
 
@@ -488,33 +488,45 @@ function Below() {
 
         <Break />
 
-        {/* 2 — Why it didn't take.
-               New. The page had no account of why the reader's last four
-               attempts failed, which left every promise after it competing
-               against a memory of being disappointed by something that sounded
-               the same. No competitor is named: we do not dominate this field,
-               and naming one spends our own space buying it recognition. The
-               verdict — it was the tool, not you — arrives inside the
-               indictment rather than after it, because an attack without its
-               remedy in the same breath reads as a pitch. */}
-        <Section>
-          <p data-rise="" style={BODY}>Here&rsquo;s what every one of them did.</p>
-          <p data-rise="" style={BODY}>
-            It described you. Accurately, sometimes. You recognised yourself on the screen
-            and something loosened, and for a few days you were different.
-          </p>
-          <p data-rise="" style={BODY}>
-            Then it asked nothing. It never came back to see. It had no way of knowing
-            whether you&rsquo;d moved an inch, so it kept describing &mdash; the same
-            person, the same pattern, in slightly different words.
-          </p>
-          <p data-rise="" style={BODY}>And when you stopped, nothing noticed.</p>
-          <p data-rise="" style={BODY}>
-            That&rsquo;s not a discipline problem. Nothing was ever built to catch it.
-          </p>
-        </Section>
+        {/* 2 — The lie.
+               Replaces an attack on the competing products. This does not
+               argue with the field at all; it contradicts a belief the reader
+               already holds — that there is a readier version of him who gets
+               to start — which is the harder and better target, because the
+               competing products were never what kept him still. Waiting was.
 
-        <Break />
+               Set in four groups with the line breaks written into it. The
+               breaks are the argument: each pair is a claim and its reversal,
+               and running them as prose would bury the turn in the middle of a
+               paragraph. Lines inside a group sit on the body leading; the
+               groups get their own air. */}
+        <section data-reveal="">
+          <div style={{ display: 'grid', gap: 30 }}>
+            <p data-rise="" style={BODY}>You were told a lie.</p>
+
+            <p data-rise="" style={BODY}>
+              <span style={{ display: 'block' }}>
+                Not that you couldn&rsquo;t have the life you wanted.
+              </span>
+              <span style={{ display: 'block' }}>
+                That you had to become someone else, better, readier, further along,
+                before you&rsquo;re allowed to claim it.
+              </span>
+            </p>
+
+            <p data-rise="" style={BODY}>
+              <span style={{ display: 'block' }}>You&rsquo;ve been getting ready for years.</span>
+              <span style={{ display: 'block' }}>And the getting ready became the life.</span>
+            </p>
+
+            <p data-rise="" style={BODY}>
+              <span style={{ display: 'block' }}>
+                There was never a version of you that arrives prepared.
+              </span>
+              <span style={{ display: 'block' }}>There&rsquo;s only the one who starts anyway.</span>
+            </p>
+          </div>
+        </section>
 
         {/* 3 — The mechanism, which is the only thing here the field does not
                already have. It used to be four flat lines under the label

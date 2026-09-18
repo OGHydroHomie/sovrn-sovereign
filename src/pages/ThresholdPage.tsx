@@ -22,16 +22,30 @@ interface Props {
    email at the end. */
 export default function ThresholdPage({ onEnter, onLeave }: Props) {
   const body = useRef<HTMLDivElement>(null);
+  const epigraph = useRef<HTMLDivElement>(null);
 
   /* The content arrives on a field that is already there. The door has just
      finished opening onto it, so nothing about the ground changes — only the
-     words appear. */
+     words appear.
+
+     The epigraph goes first and is held on its own before the disclosure joins
+     it: it is not part of the disclosure and reading it in the same breath as
+     "we'll also ask for your birth time" turns it into a caption. Opacity only,
+     never display — the button beneath is in the DOM and clickable throughout,
+     so nobody who already knows this screen is made to wait for a quotation.
+     Reduced motion gets both at once. */
   useEffect(() => {
     const reduced = prefersReducedMotion();
+    if (reduced) {
+      gsap.set([epigraph.current, body.current], { opacity: 1 });
+      return;
+    }
     const ctx = gsap.context(() => {
+      gsap.fromTo(epigraph.current, { opacity: 0 },
+        { opacity: 1, duration: 0.6, ease: 'power1.inOut' });
       gsap.fromTo(body.current, { opacity: 0 },
-        { opacity: 1, duration: reduced ? 0.4 : 0.5, ease: 'power1.inOut' });
-    }, body);
+        { opacity: 1, duration: 0.5, ease: 'power1.inOut', delay: 1.4 });
+    });
     return () => ctx.revert();
   }, []);
 
@@ -61,13 +75,53 @@ export default function ThresholdPage({ onEnter, onLeave }: Props) {
       {/* The same sky the door opened onto, at the same density. */}
       <AscentField altitude={TOP} {...HERO_STARS} />
 
-      <div ref={body} style={{ maxWidth: 420, width: '100%', position: 'relative', zIndex: 1 }}>
+      {/* One line, before anything is asked of anyone. It is the only borrowed
+          voice in the product and it is attributed, because an unattributed
+          quotation read as a line we had written about ourselves. Small and
+          muted: it sets the ground for the screen, it is not the screen's
+          claim. */}
+      <div
+        ref={epigraph}
+        data-epigraph=""
+        style={{ maxWidth: 420, width: '100%', position: 'relative', zIndex: 1, opacity: 0 }}
+      >
+        <p
+          style={{
+            margin: 0,
+            fontFamily: 'var(--sv-font)',
+            fontWeight: 300,
+            fontSize: 15,
+            lineHeight: 1.7,
+            color: 'rgba(251,250,247,0.72)',
+          }}
+        >
+          &ldquo;The privilege of a lifetime is to become who you truly are.&rdquo;
+        </p>
+        <p
+          style={{
+            margin: '10px 0 0',
+            fontFamily: 'var(--sv-font)',
+            fontWeight: 400,
+            fontSize: 12,
+            letterSpacing: '0.14em',
+            textTransform: 'uppercase',
+            color: 'rgba(251,250,247,0.42)',
+          }}
+        >
+          Carl Jung
+        </p>
+      </div>
+
+      <div
+        ref={body}
+        style={{ maxWidth: 420, width: '100%', position: 'relative', zIndex: 1, opacity: 0, marginTop: 38 }}
+      >
         {/* No heading. It was the hero's line word for word, so arriving here
             meant reading the same sentence twice — once on the way out and once
             on the way in. This screen's job is the disclosure and the choice. */}
         <p
           style={{
-            marginTop: 30,
+            marginTop: 0,
             fontFamily: 'var(--sv-font)',
             fontWeight: 300,
             fontSize: 16,

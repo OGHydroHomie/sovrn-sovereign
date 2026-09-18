@@ -1169,3 +1169,58 @@ the fold on an iPhone SE. `DEMO_VIDEO` is still null — the empty 16:9 frame is
 gone rather than held, since a proof-shaped box with no proof in it on a page
 arguing for rigour reads as something that did not ship. Not deployed. The
 trial cards still have no `-freed` art.
+
+## The lie, the epigraph, and two claims checked
+
+What shipped. Block two of the front page is no longer an attack on the
+competing products — it is a contradiction of the belief that actually keeps the
+reader still. "You were told a lie. / Not that you couldn't have the life you
+wanted. / That you had to become someone else, better, readier, further along,
+before you're allowed to claim it." Set in four groups with its line breaks
+written in, because each pair is a claim and its reversal and running them as
+prose buries the turn mid-paragraph; the harness now asserts the four groups and
+the 0/2/2/2 line split, since reflowed into prose the copy still reads and
+nothing else would have caught it. The lead lost an em-dash for a comma. On the
+threshold, one line before anything is asked of anyone — "The privilege of a
+lifetime is to become who you truly are." — Carl Jung — held on its own for a
+beat and then joined by the disclosure. Opacity only, never display: the button
+underneath stays in the DOM and clickable throughout, so nobody who already
+knows this screen is made to wait out a quotation.
+
+Both claims the page makes about time are now checked rather than asserted.
+`isDue` is bundled out of the real `api/morning.ts` and run against seven zones
+including a half-hour offset, a 45-minute offset and a DST crossing: each fires
+on its own 06:00 and none fire on Central's, 22/22. Then the same rule against a
+real cold signup — browser clock set to Asia/Tokyo and to Europe/Berlin, full
+intake, and the timezone read back off the row rather than trusted from the
+client. Both stored their own zone. The intake floor with a machine typing and
+voice off is 48s to 96s depending on generation latency, so "five minutes" holds
+with roughly three and a half minutes left for a person to actually write three
+answers. That is the floor, not a person's number; I cannot measure how long
+someone takes to answer what belief is standing in their way.
+
+What broke. `scripts/lib/journey.mjs` still walked to the root for the door,
+which stopped being the door when the marketing site took that route — so it was
+clicking for an `h1` that is not on the front page and waiting thirty seconds
+for a button that was never coming. Every harness that starts a journey was
+broken by it, not just the new one: `probe-trials` and `verify-trials-live` too.
+Fixed in `journey.mjs` rather than at three call sites, which is the entire
+reason that file exists. I also wrote the new verification against a bundle in
+`/tmp` and got `ERR_MODULE_NOT_FOUND` on first import, then hand-rolled the
+esbuild call — while `scripts/lib/bundle.mjs` already existed to do exactly this
+correctly, including the reason the bundle cannot live in the system temp dir.
+Both checks are on the helper now. And I passed the emulated timezone as a
+nested `contextOptions` key, which `probe()` spreads straight into
+`newContext` — so the option was silently dropped and the first run measured
+Central while claiming Tokyo. It only surfaced because the script asserts the
+browser's own reported zone before trusting the run.
+
+Open. Desktop review found one real defect and it is the field, not the copy:
+the reading band is 0.86% dense at 1440 against 0.36% at 375, because star
+density is per-area and the viewport is nearly four times wider. The last group
+of the lie — the two lines the block exists to deliver — sits under a visible
+scatter at desktop. The threshold does not have this problem because it runs
+HERO_STARS; the marketing reading band is the outlier. Left alone, since art
+direction is tomorrow's pass. `index.html` still carries the old claim as title
+and meta description. 375×667 still does not fit the hero. `DEMO_VIDEO` is null
+and its section is gone rather than held. Not deployed.

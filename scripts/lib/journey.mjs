@@ -12,9 +12,18 @@ import { settles } from './probe.mjs';
 
 const FAILED = /didn.t go through/i;
 
+/* The door is at /begin. It lived at the root until the marketing site took
+   that, and this file kept walking to the root — where there is no h1 to click
+   and no "i create my fate" to press, so every harness that starts a journey
+   was waiting thirty seconds for a door that had moved. Normalised here rather
+   than at each call site, which is the entire reason this file exists. */
+export function door(url) {
+  return /\/begin\/?$/.test(url) ? url : `${url.replace(/\/$/, '')}/begin`;
+}
+
 /** Walk the quiz. Leaves the page on the reveal, generated. */
 export async function toReveal(page, url, { email }) {
-  await page.goto(url, { waitUntil: 'networkidle' });
+  await page.goto(door(url), { waitUntil: 'networkidle' });
   await page.locator('h1').first().click();
   await page.waitForTimeout(2300);
   await page.getByRole('button', { name: /i create my fate/i }).click();
