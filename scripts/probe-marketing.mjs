@@ -1,5 +1,5 @@
 /**
- * The front page, at 375px.
+ * The front page, at 375px by default and 1440 with W=1440 H=900.
  *
  * The hero is an idle loop, so it is measured in the page rather than judged
  * from a filmstrip: 500ms of film cannot tell a 2.2s spread from a 3s one, and
@@ -13,6 +13,11 @@ import { probe } from './lib/probe.mjs';
 
 const URL_ = process.env.SOVRN_URL ?? 'http://localhost:5173';
 const SHOTS = process.env.SHOTS ?? null;
+/* The page has to hold at both ends. 375 is the phone it was designed to and
+   1440 is the desktop nobody was checking. W/H override rather than a second
+   file, so the two runs cannot drift apart. */
+const W = Number(process.env.W ?? 375);
+const H = Number(process.env.H ?? 800);
 
 let n = 0, bad = 0;
 const check = (label, ok, note = '') => {
@@ -20,7 +25,7 @@ const check = (label, ok, note = '') => {
   console.log(`  ${ok ? '✓' : '✗'} ${label}${note ? `  — ${note}` : ''}`);
 };
 
-await probe({ url: URL_, name: 'marketing' }, async ({ page, url }) => {
+await probe({ url: URL_, name: `marketing-${W}`, viewport: { width: W, height: H } }, async ({ page, url }) => {
   /* Every mark file the page asks for, and when. */
   const fetched = [];
   page.on('request', (r) => {
@@ -74,13 +79,43 @@ await probe({ url: URL_, name: 'marketing' }, async ({ page, url }) => {
   check('the card is a canvas, drawing', true);
 
   const heroText = (await page.locator('[data-hero]').innerText()).replace(/\s+/g, ' ').trim();
-  /* Everything above the fold, with the one line and the one control removed.
-     Whatever is left is what should not be there. */
+  /* Everything above the fold, with the head, the lead, the control and the
+     three facts removed. Whatever is left is what should not be there. */
   const leftover = heroText
-    .replace(/You already know the thing you.{1,3}ve been avoiding\./i, '')
-    .replace(/find out who you.{1,3}re becoming/i, '')
+    .replace(/Everything else tells you who you could be\./i, '')
+    .replace(/This one makes you find out\./i, '')
+    .replace(/Three questions and your birth details name who you.{1,3}re becoming .{1,3} and the loop you.{1,3}ve been running instead\./i, '')
+    .replace(/Then it stops describing you, and starts asking\./i, '')
+    .replace(/get today.{1,3}s act/i, '')
+    .replace(/Three questions\. Five minutes\. Free\./i, '')
     .trim();
-  check('one line and one control, and nothing else', leftover === '', JSON.stringify(leftover.slice(0, 90)));
+  check('the head, the lead, the control, and nothing else', leftover === '', JSON.stringify(leftover.slice(0, 90)));
+
+  /* The inversion, asserted rather than assumed: the head carries the thing
+     nothing else in the field does, and the worn claim — "who you're becoming"
+     — is held back for the lead. A head that drifts back onto the claim is the
+     exact regression this page was rebuilt to undo. */
+  const head = (await page.locator('[data-hero] [data-head]').innerText()).replace(/\s+/g, ' ').trim();
+  const lead = (await page.locator('[data-hero] [data-lead]').allInnerTexts()).join(' ').replace(/\s+/g, ' ');
+  check('the head does not lead on the worn claim', !/becoming/i.test(head), JSON.stringify(head));
+  check('and the claim is restated in the lead', /who you.{1,3}re becoming/i.test(lead));
+
+  /* The first screen is the whole ask now, not a line and a button. If the
+     control falls below the fold on the smallest phone, the page asks for the
+     sale somewhere the reader cannot see. */
+  const fold = await page.evaluate(() => {
+    const el = document.querySelector('[data-hero] [data-call]');
+    if (!el) return null;
+    return { bottom: el.getBoundingClientRect().bottom, vh: window.innerHeight };
+  });
+  check('the control is above the fold', fold !== null && fold.bottom <= fold.vh,
+    `control bottom ${Math.round(fold?.bottom ?? -1)}px of ${fold?.vh}px`);
+  const spill = await page.evaluate(() => {
+    const h = document.querySelector('[data-hero]');
+    return { h: Math.round(h.getBoundingClientRect().height), vh: window.innerHeight };
+  });
+  check('and the hero does not outgrow the screen', spill.h <= spill.vh + 1,
+    `${spill.h}px in ${spill.vh}px`);
 
   /* Against the actual thirteen, not a pattern. "THE THING YOU'VE BEEN
      AVOIDING" matches /THE [A-Z]+/ and is the copy. */
@@ -148,8 +183,38 @@ await probe({ url: URL_, name: 'marketing' }, async ({ page, url }) => {
   // ── Below the fold ───────────────────────────────────────────────────────
   const body = (await page.locator('body').innerText()).replace(/\s+/g, ' ');
   check('the wound is there, unheadered', /Knowing was never the problem/.test(body));
-  check('what happens is four plain lines', /Three questions and your birth details/.test(body)
-    && /reads what you actually did/.test(body));
+  check('the field is answered before we promise anything',
+    /Nothing was ever built to catch it/.test(body));
+  check('the mechanism is stated in full',
+    /Tomorrow at six, it asks what happened/.test(body)
+    && /Either answer is the input/.test(body));
+  check('the birth details are answered rather than left hanging',
+    /an input, not a prophecy/.test(body) && /the record wins/.test(body));
+
+  /* Order is the argument here, not decoration: the proof has to land one block
+     after the mechanism claim rather than at the foot of the page, and the
+     thirteen have to come after belief rather than opening the ad. Read off the
+     rendered document so a reshuffle in the JSX cannot pass silently. */
+  const order = await page.evaluate(() => {
+    const at = (re) => {
+      const el = [...document.querySelectorAll('[data-reveal] p, [data-reveal] [data-count]')]
+        .find((n) => re.test(n.innerText));
+      return el ? Math.round(el.getBoundingClientRect().top + window.scrollY) : Infinity;
+    };
+    return {
+      wound: at(/Knowing was never the problem/),
+      kill: at(/Nothing was ever built to catch it/),
+      mechanism: at(/Either answer is the input/),
+      proof: at(/Every act\. Every miss\./),
+      thirteen: at(/No card is ahead of another/),
+      birth: at(/an input, not a prophecy/),
+      close: at(/something will ask whether you did it/),
+    };
+  });
+  const seq = ['wound', 'kill', 'mechanism', 'proof', 'thirteen', 'birth', 'close'];
+  check('the page runs wound → kill → mechanism → proof → thirteen → birth → close',
+    seq.every((k, i) => i === 0 || order[seq[i - 1]] < order[k]),
+    seq.map((k) => `${k}:${order[k] === Infinity ? 'missing' : order[k]}`).join('  '));
   const figures = await page.locator('[data-figure]').count();
   check('all thirteen figures', figures === 13, `${figures}`);
   check('no card is ahead of another', /No card is ahead of another/.test(body));
@@ -179,13 +244,24 @@ await probe({ url: URL_, name: 'marketing' }, async ({ page, url }) => {
       return cs.borderTopWidth === '0px' && /rgba\(0, 0, 0, 0\)/.test(cs.backgroundColor);
     })));
 
+  /* The film, when there is one. An empty bordered 16:9 hole on a page arguing
+     that this is the one that checks reads as something that did not ship — a
+     proof-shaped container with no proof in it. So the slot is absent until
+     there is footage, and 16:9 is asserted only when it is actually there. */
   const slot = page.locator('[data-video]');
-  check('the video slot holds its shape while empty', await slot.getAttribute('data-video') === 'empty');
-  const ratio = await slot.evaluate((el) => {
-    const r = el.getBoundingClientRect();
-    return r.width / r.height;
-  });
-  check('and it is 16:9', Math.abs(ratio - 16 / 9) < 0.05, ratio.toFixed(3));
+  const slots = await slot.count();
+  if (slots === 0) {
+    check('with no footage, no empty frame is drawn', true, 'slot absent');
+  } else {
+    check('the slot only exists when it is filled',
+      await slot.getAttribute('data-video') === 'ready'
+      && await page.locator('[data-video] video').count() === 1);
+    const ratio = await slot.evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      return r.width / r.height;
+    });
+    check('and it is 16:9', Math.abs(ratio - 16 / 9) < 0.05, ratio.toFixed(3));
+  }
 
   /* The numbers are the wall's own, asked of the wall — so the assertion is
      the contract between them rather than an assumption about either. Locally
@@ -210,12 +286,23 @@ await probe({ url: URL_, name: 'marketing' }, async ({ page, url }) => {
   }
   check('and nothing is invented either way',
     !/\b(join|thousands|everyone|people are|so far)\b/i.test(count));
+  /* The unflattering half is the asset, and it is a claim about the record
+     rather than about a rate — "most of them" would be a number we do not
+     have. */
+  check('the record admits the misses',
+    /the days nothing happened are on there too/i.test(body));
 
   check('the record points at the wall',
     (await page.getByRole('link', { name: /see the wall/i }).getAttribute('href')) === '/wall');
 
   const calls = await page.locator('[data-call]').count();
   check('the same control closes the page', calls === 2, `${calls}`);
+  /* The line that used to be the headline is now the close, where a page of
+     belief has been spent on it — and it is never above the fold. */
+  const heroHas = /You already know the thing/.test(
+    (await page.locator('[data-hero]').innerText()));
+  check('the recognition line closes rather than opens',
+    !heroHas && /You already know the thing/.test(body));
 
   // ── Constraints ──────────────────────────────────────────────────────────
   check('no pricing, testimonials or borrowed credibility',
@@ -313,12 +400,12 @@ await probe({ url: URL_, name: 'marketing' }, async ({ page, url }) => {
 
   await page.goto(`${url}/begin`, { waitUntil: 'networkidle' });
   const begun = await page.locator('body').innerText();
-  check('/begin is the door', /ascend|i create my fate|sovrn/i.test(begun) && !/You already know the thing/.test(begun));
+  check('/begin is the door', /ascend|i create my fate|sovrn/i.test(begun) && !/Everything else tells you/.test(begun));
 
   await page.goto(`${url}/nonsense-path`, { waitUntil: 'networkidle' });
   check('an unknown path lands on the front page',
-    /You already know the thing/.test(await page.locator('body').innerText()));
+    /Everything else tells you who you could be/.test(await page.locator('body').innerText()));
 });
 
-console.log(`\n  ${n - bad}/${n}\n`);
+console.log(`\n  ${W}\u00d7${H}: ${n - bad}/${n}\n`);
 process.exit(bad ? 1 : 0);

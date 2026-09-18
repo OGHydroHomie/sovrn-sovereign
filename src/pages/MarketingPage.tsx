@@ -27,12 +27,58 @@ const MUTED = 'rgba(251,250,247,0.66)';
 const FAINT = 'rgba(251,250,247,0.38)';
 const RULE = 'rgba(251,250,247,0.14)';
 
-const LINE = 'You already know the thing you’ve been avoiding.';
-const CALL = 'Find out who you’re becoming';
+/* The head.
+ *
+ * Two lines, because the contrast is the headline. The market has been told
+ * "find out who you are" by every personality test, birth-chart app and
+ * archetype quiz it has ever seen, so leading on that claim buys nothing — it
+ * is measured against a dozen things the reader has already stopped believing.
+ * What nothing else in that field does is come back the next morning and check.
+ * So the first line concedes the field and the second one takes it.
+ *
+ * The first line is set muted and the second in paper: the recession is the
+ * argument, and it costs no new type size, weight or face to make it. */
+const HEAD = ['Everything else tells you who you could be.', 'This one makes you find out.'];
+
+/* The claim, in full, one beat after the head rather than in it. It is safe to
+   state plainly here because the head has already bought a fresh hearing for
+   it; at the top of the page it is just the twelfth version of a sentence the
+   reader has learned to skip. Then straight back out to the mechanism, so the
+   claim never stands alone long enough to be compared against the field. */
+const LEAD = [
+  'Three questions and your birth details name who you’re becoming — and the loop you’ve been running instead.',
+  'Then it stops describing you, and starts asking.',
+];
+
+/* The control names what you leave with, not what you are promised. The old
+   one — "Find out who you’re becoming" — was the worn claim verbatim, asking
+   for the sale in the same words as everything the reader has already
+   abandoned. Under it, the three facts that answer price, time and effort
+   before any of them can be raised as an objection. */
+const CALL = 'Get today’s act';
+const CALL_SUB = 'Three questions. Five minutes. Free.';
+
+/* The close. The old headline, which is a line about recognition and works
+   once the page has earned it, set against the mechanism so that recognising
+   yourself now has a consequence attached to it. */
+const CLOSE = [
+  'You already know the thing you’ve been avoiding.',
+  'Tomorrow at six, something will ask whether you did it.',
+];
+const CLOSE_SUB = 'Three questions. Five minutes. Free. Nothing to cancel.';
 
 const LABEL: React.CSSProperties = {
   margin: 0, fontSize: 11, fontWeight: 700, letterSpacing: '0.22em',
   textTransform: 'uppercase', color: FAINT,
+};
+
+/* Display type, unchanged from the line it replaces: same clamp, same weight,
+   same face. The head got longer; it did not get louder. */
+const DISPLAY: React.CSSProperties = {
+  margin: 0, maxWidth: 360, textAlign: 'center',
+  fontFamily: 'var(--sv-font)', fontWeight: 300,
+  fontSize: 'clamp(19px, 5.2vw, 23px)', lineHeight: 1.4,
+  letterSpacing: '-0.01em', color: PAPER,
 };
 
 const BODY: React.CSSProperties = {
@@ -225,7 +271,7 @@ function Hero() {
         position: 'relative', minHeight: '100svh',
         display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center',
-        padding: '64px 22px 40px', gap: 0,
+        padding: 'clamp(40px, 7svh, 64px) 22px clamp(28px, 5svh, 40px)', gap: 0,
       }}
     >
       <div
@@ -242,7 +288,13 @@ function Hero() {
         <div
           data-idle={reduced ? 'static' : 'looping'}
           data-showing={current}
-          style={{ width: 'min(58vw, 236px)' }}
+          /* The third term is the height cap. The mark is 1080×1620, so its
+             height is 1.5× whatever width it is given — at 58vw on a phone that
+             was 326px, forty percent of the screen, which was fine when the
+             hero was one line and a button and is not now that it carries a
+             two-line head, a two-line lead and the three facts. 25svh of width
+             is 38svh of card, and the control stays on the first screen. */
+          style={{ width: 'min(58vw, 236px, 25svh)' }}
         >
           <Crystallization
             key={`${current}-${at}`}
@@ -254,18 +306,18 @@ function Hero() {
           />
         </div>
 
-        <p
-          style={{
-            margin: '38px 0 0', maxWidth: 360, textAlign: 'center',
-            fontFamily: 'var(--sv-font)', fontWeight: 300,
-            fontSize: 'clamp(19px, 5.2vw, 23px)', lineHeight: 1.4,
-            letterSpacing: '-0.01em', color: PAPER,
-          }}
-        >
-          {LINE}
+        <p data-head="" style={{ ...DISPLAY, marginTop: 'clamp(20px, 3.4svh, 34px)' }}>
+          <span style={{ display: 'block', color: MUTED }}>{HEAD[0]}</span>
+          <span style={{ display: 'block' }}>{HEAD[1]}</span>
         </p>
 
-        <Call />
+        {LEAD.map((line, i) => (
+          <p key={i} data-lead="" style={{ ...BODY, marginTop: i === 0 ? 'clamp(12px, 2svh, 20px)' : 'clamp(8px, 1.2svh, 12px)', maxWidth: 360, textAlign: 'center' }}>
+            {line}
+          </p>
+        ))}
+
+        <Ask sub={CALL_SUB} />
       </div>
     </section>
   );
@@ -362,7 +414,7 @@ function Call() {
       data-call=""
       className="sv-label"
       style={{
-        marginTop: 26, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        marginTop: 'clamp(16px, 2.6svh, 26px)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
         width: '100%', maxWidth: 360, minHeight: 56,
         background: PAPER, color: '#0C0C0B',
         border: 'none', borderRadius: 2, padding: '18px 22px',
@@ -372,6 +424,26 @@ function Call() {
     >
       {CALL}
     </a>
+  );
+}
+
+/* The control and the three facts under it, as one unit — the facts are part
+   of the ask, not a footnote to it, and they are the same at both ends of the
+   page except for the guarantee, which only the close has earned. */
+function Ask({ sub }: { sub: string }) {
+  return (
+    <>
+      <Call />
+      <p
+        data-rise=""
+        style={{
+          margin: 'clamp(9px, 1.4svh, 14px) 0 0', textAlign: 'center',
+          fontSize: 13, lineHeight: 1.6, color: MUTED,
+        }}
+      >
+        {sub}
+      </p>
+    </>
   );
 }
 
@@ -402,8 +474,9 @@ function Below() {
           maxWidth: 560, margin: '0 auto', padding: '0 22px 96px',
         }}
       >
-        {/* The wound. No header — a label over this would frame it as a section
-            of a sales page, and the point is that it is simply true. */}
+        {/* 1 — The wound. No header: a label over this would frame it as a
+               section of a sales page, and the point is that it is simply true.
+               It opens the stream of acceptances the rest of the page spends. */}
         <Section>
           <p data-rise="" style={BODY}>
             You&rsquo;ve read the books. You know the pattern. You can name it better than
@@ -415,67 +488,103 @@ function Below() {
 
         <Break />
 
-        <Section label="What happens">
-          <p data-rise="" style={BODY}>Three questions and your birth details.</p>
+        {/* 2 — Why it didn't take.
+               New. The page had no account of why the reader's last four
+               attempts failed, which left every promise after it competing
+               against a memory of being disappointed by something that sounded
+               the same. No competitor is named: we do not dominate this field,
+               and naming one spends our own space buying it recognition. The
+               verdict — it was the tool, not you — arrives inside the
+               indictment rather than after it, because an attack without its
+               remedy in the same breath reads as a pitch. */}
+        <Section>
+          <p data-rise="" style={BODY}>Here&rsquo;s what every one of them did.</p>
           <p data-rise="" style={BODY}>
-            It names who you&rsquo;re becoming and the loop you&rsquo;re running instead.
+            It described you. Accurately, sometimes. You recognised yourself on the screen
+            and something loosened, and for a few days you were different.
           </p>
-          <p data-rise="" style={BODY}>One act today. Small enough to do, big enough to matter.</p>
           <p data-rise="" style={BODY}>
-            Tomorrow at six it reads what you actually did &mdash; including if you
-            didn&rsquo;t &mdash; and writes the next one from that.
+            Then it asked nothing. It never came back to see. It had no way of knowing
+            whether you&rsquo;d moved an inch, so it kept describing &mdash; the same
+            person, the same pattern, in slightly different words.
+          </p>
+          <p data-rise="" style={BODY}>And when you stopped, nothing noticed.</p>
+          <p data-rise="" style={BODY}>
+            That&rsquo;s not a discipline problem. Nothing was ever built to catch it.
           </p>
         </Section>
 
         <Break />
 
-        {/* The film, or the shape it will occupy. */}
-        <section data-reveal="">
-          <div
-            data-rise=""
-            data-video={DEMO_VIDEO ? 'ready' : 'empty'}
-            style={{
-              aspectRatio: '16 / 9', width: '100%',
-              border: `1px solid ${RULE}`,
-              background: 'rgba(251,250,247,0.03)',
-            }}
-          >
-            {DEMO_VIDEO && (
-              <video
-                src={DEMO_VIDEO}
-                controls
-                playsInline
-                preload="none"
-                style={{ width: '100%', height: '100%', display: 'block', objectFit: 'cover' }}
-              />
-            )}
-          </div>
-        </section>
-
-        <Break />
-
-        {/* The thirteen. Names only — no loops beside them.
-            The becoming and the loop are chosen independently, so printing a
-            pair here would teach a stranger a correspondence that does not
-            exist, and they would carry it into their own reading. */}
-        <Section label="The thirteen">
-          <div
-            data-thirteen=""
-            style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '18px 12px' }}
-          >
-            {BECOMINGS.map((name, i) => (
-              <Figure key={name} name={name} index={i} />
-            ))}
-          </div>
-          <p data-rise="" style={{ margin: 0, fontSize: 14, lineHeight: 1.6, color: MUTED }}>
-            No card is ahead of another.
+        {/* 3 — The mechanism, which is the only thing here the field does not
+               already have. It used to be four flat lines under the label
+               "What happens", with the part that matters arriving fourth. It is
+               the block now, and the miss is named as an input rather than a
+               failure, which is the sentence the rest of the page leans on. */}
+        <Section label="What actually happens">
+          <p data-rise="" style={BODY}>
+            Three questions and your birth details. It names one of thirteen &mdash; who
+            you&rsquo;re becoming &mdash; and the loop you run instead of becoming it.
+          </p>
+          <p data-rise="" style={BODY}>
+            Then it gives you one act. Today. Small enough that you&rsquo;ll do it, big
+            enough that doing it costs you something.
+          </p>
+          <p data-rise="" style={BODY}>Tomorrow at six, it asks what happened.</p>
+          <p data-rise="" style={BODY}>
+            You tell it you did it, or you tell it you didn&rsquo;t. Either answer is the
+            input. It writes tomorrow&rsquo;s act from what you actually did &mdash; not
+            from what you meant to do, and not from the person the first reading said you
+            were.
+          </p>
+          <p data-rise="" style={BODY}>
+            That&rsquo;s the whole machine. It&rsquo;s the only part that matters, and
+            it&rsquo;s the part nothing else has.
           </p>
         </Section>
 
         <Break />
 
-        {/* The record. The wall's own numbers, asked of the wall. */}
-        <Section label="The record">
+        {/* The film, when there is one. It sits here because it is evidence for
+            the mechanism above, and evidence belongs where the question it
+            answers has just been asked.
+
+            The empty slot used to render regardless: a bordered 16:9 hole on a
+            page whose entire argument is that this is the one that checks. A
+            proof-shaped container that contains no proof creates the demand and
+            fails it in the same second. The section is gone until there is
+            footage; `data-video` stays for the harness. */}
+        {DEMO_VIDEO && (
+          <>
+            <section data-reveal="">
+              <div
+                data-rise=""
+                data-video="ready"
+                style={{
+                  aspectRatio: '16 / 9', width: '100%',
+                  border: `1px solid ${RULE}`,
+                  background: 'rgba(251,250,247,0.03)',
+                }}
+              >
+                <video
+                  src={DEMO_VIDEO}
+                  controls
+                  playsInline
+                  preload="none"
+                  style={{ width: '100%', height: '100%', display: 'block', objectFit: 'cover' }}
+                />
+              </div>
+            </section>
+            <Break />
+          </>
+        )}
+
+        {/* 4 — The proof, moved up from the foot of the page. Proof lands where
+               the reader demands it, and he demands it one block after a
+               mechanism claim, not four. The unflattering half is the asset: a
+               record that publishes its own misses is a claim nobody can copy
+               without actually doing it. */}
+        <Section label="Everyone’s, in the open">
           <p data-count="" data-rise="" style={{ ...BODY, fontSize: 'clamp(19px, 5.2vw, 23px)', lineHeight: 1.35 }}>
             {today ? (
               <>
@@ -489,29 +598,74 @@ function Below() {
             )}
           </p>
           <p data-rise="" style={{ margin: 0, fontSize: 15, lineHeight: 1.65, color: MUTED }}>
-            Every act. Every miss. Public, anonymous, unedited.{' '}
+            Every act. Every miss. Public, anonymous, unedited. Nobody&rsquo;s record is
+            cleaned up &mdash; the days nothing happened are on there too.{' '}
             <a href="/wall" style={{ color: PAPER, textDecoration: 'underline', textUnderlineOffset: 3 }}>
               See the wall
             </a>
           </p>
         </Section>
 
-        {/* The close. The same line and the same control. */}
         <Break />
 
-        <section data-reveal="" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <p
-            data-rise=""
-            style={{
-              margin: 0, maxWidth: 360, textAlign: 'center',
-              fontFamily: 'var(--sv-font)', fontWeight: 300,
-              fontSize: 'clamp(19px, 5.2vw, 23px)', lineHeight: 1.4,
-              letterSpacing: '-0.01em', color: PAPER,
-            }}
+        {/* 5 — The thirteen, moved down one. These are a role the reader can
+               want to occupy, and a role is offered after belief, never as the
+               claim that opens the ad. Names only — no loops beside them. The
+               becoming and the loop are chosen independently, so printing a
+               pair here would teach a stranger a correspondence that does not
+               exist, and they would carry it into their own reading. */}
+        <Section label="The thirteen">
+          <div
+            data-thirteen=""
+            style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '18px 12px' }}
           >
-            {LINE}
+            {BECOMINGS.map((name, i) => (
+              <Figure key={name} name={name} index={i} />
+            ))}
+          </div>
+          <p data-rise="" style={{ margin: 0, fontSize: 14, lineHeight: 1.6, color: MUTED }}>
+            No card is ahead of another. There&rsquo;s no rank, no score, and nothing here
+            is better than anything else here.
           </p>
-          <Call />
+          <p data-rise="" style={{ margin: 0, fontSize: 14, lineHeight: 1.6, color: MUTED }}>
+            You&rsquo;ll be given one. What you do with it is the only part that&rsquo;s up
+            to you.
+          </p>
+        </Section>
+
+        <Break />
+
+        {/* 6 — The objection most likely to lose a reader who came here for
+               rigour, answered rather than avoided. The page asks a stranger
+               for their birth details and then argues for evidence; saying
+               nothing about that gap leaves him arguing with the page instead
+               of reading it. It sits here, after the mechanism and the proof,
+               because leading with it starts the argument before he wants
+               anything. Verified against api/morning.ts: the next act is
+               written from the archetype and the record, and no chart data is
+               read after the first reading. */}
+        <Section label="About the birth details">
+          <p data-rise="" style={BODY}>
+            They&rsquo;re an input, not a prophecy. They set which of the thirteen you
+            start from &mdash; nothing after that comes from the sky.
+          </p>
+          <p data-rise="" style={BODY}>
+            From tomorrow on, the only thing it has to work with is what you did. If the
+            first reading flattered you and the record says otherwise, the record wins.
+          </p>
+        </Section>
+
+        <Break />
+
+        {/* 7 — The close. The old headline comes home here, where a page of
+               belief has been spent and recognition is legitimate, and it is
+               set directly against the mechanism so that recognising yourself
+               finally has a consequence attached to it. Neither line is strong
+               alone; adjacent, the first one costs something. */}
+        <section data-reveal="" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <p data-rise="" style={DISPLAY}>{CLOSE[0]}</p>
+          <p data-rise="" style={{ ...DISPLAY, marginTop: 14, color: MUTED }}>{CLOSE[1]}</p>
+          <Ask sub={CLOSE_SUB} />
         </section>
 
         {/* The way back in, for somebody who already has a reading. Same rule as

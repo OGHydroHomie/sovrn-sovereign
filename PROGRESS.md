@@ -1122,3 +1122,50 @@ assertion had already scrolled to the grid and the reveals are once-only.
 Production stands at 16 accounts after sweeping three empty anonymous rows.
 Open: `DEMO_VIDEO` is still null with its slot holding 16:9, and the trial cards
 still have no `-freed` art.
+
+## Front page rebuilt to its market
+
+What shipped. The front page was diagnosed against Schwartz's two scales and
+rebuilt to the result. The reader arrives desire-aware and product-unaware, into
+a field whose claim — "find out who you really are" — has been made by every
+personality test, birth-chart app and archetype quiz he has seen; the one thing
+nothing else in that field does is come back the next morning and check. So the
+head now leads on that and the worn claim is held for the lead paragraph:
+"Everything else tells you who you could be. / This one makes you find out."
+Below the fold the page runs wound → why nothing took → the mechanism in full →
+the record → the thirteen → the birth details → the close. Two blocks are new.
+The first answers why his last four attempts failed, with the verdict — it was
+the tool, not him — inside the indictment rather than after it, because an
+attack with no remedy beside it reads as a pitch. The second answers the birth
+details outright, which the page had never done while asking a stranger for them
+and arguing for evidence in the same breath; verified against `api/morning.ts`
+that no chart data is read after the first reading, so "nothing after that comes
+from the sky" is a true sentence and not a nice one. The record moved up three
+positions to sit one block after the mechanism claim instead of at the foot of
+the page, and it now says the misses are on the wall too. The old headline is
+the close, where a page of belief has been spent on it.
+
+What broke. The hero outgrew the screen the moment the head went from one line
+to five: 833px of content in an 800px viewport at 375, with the control 7px
+below the fold — the page asking for the sale somewhere the reader could not
+see. The card was the cost, 326px of it, because the mark is 1080×1620 and 58vw
+on a phone is 40% of the screen in height. Capped the card at 25svh of width and
+moved every gap in the hero onto svh clamps, so the rhythm is a function of the
+screen rather than a number tuned to one phone. 766px of 800 now. I also wrote
+`label="Everyone&rsquo;s, in the open"` and it typechecked and built and would
+have shipped the literal string `&rsquo;` into the page, because JSX entities do
+not decode inside attribute values — caught by reading the rendered text, not by
+the compiler. And the harness asserted the old copy in seven places including
+two route checks keyed on the old headline, so it had to be rewritten before it
+could verify anything; it now takes W/H so one file covers both widths instead
+of two files that drift.
+
+Open. Stars land inside the lead text at 1440 — the hero's type used to be one
+line in that band and is now five, and this is the only surface in the product
+with type over the field that does not pass `clearFor`. Legible, but it is the
+anomaly. `index.html` still carries the old claim as its title and meta
+description. 375×667 does not fit the hero; the control sits about 50px under
+the fold on an iPhone SE. `DEMO_VIDEO` is still null — the empty 16:9 frame is
+gone rather than held, since a proof-shaped box with no proof in it on a page
+arguing for rigour reads as something that did not ship. Not deployed. The
+trial cards still have no `-freed` art.
