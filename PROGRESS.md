@@ -1224,3 +1224,41 @@ HERO_STARS; the marketing reading band is the outlier. Left alone, since art
 direction is tomorrow's pass. `index.html` still carries the old claim as title
 and meta description. 375×667 still does not fit the hero. `DEMO_VIDEO` is null
 and its section is gone rather than held. Not deployed.
+
+## The field keeps out of the words
+
+What shipped. The front page was the only surface in the product with type over
+the field that never asked for a clearing, and it had been getting away with it:
+at 375 the column is nearly the whole screen, so there is barely anywhere for a
+star to land. Desktop is the other case. Measured rather than guessed — the
+density is flat across widths (0.72% at 375, 0.80% at 1440, 0.88% at 1920), so
+the earlier "2.4x denser at desktop" reading was wrong; it was two probe runs
+with different sampling compared against each other. What actually changes is
+the count: 135 lit pixels at 375 against 651 at 1440 and 1138 at 1920, over a
+column that stays 560px wide however wide the viewport gets. Every block of
+prose now registers a ref and the field clears them. The grid of thirteen
+deliberately does not: those are pictures on their own tiles, and clearing
+behind them would punch a viewport-sized hole in the middle of the page. Zero
+lit pixels inside any block of type at 375, 1440 and 1920, asserted in the probe
+from now on.
+
+What broke. Two things, both caught by measuring instead of looking. Unioning
+all seven blocks cleared the entire field, because six of them are off screen at
+any moment and the union was taller than the document — AscentField now unions
+only the rects currently on screen and clamps them to the viewport, which is a
+no-op for the six callers that pass a single always-visible block. Then the
+first fix over-corrected the other way: `clearHalf` is a full-width horizontal
+plateau, which is right for a screen built around one centred question and wrong
+for a 560px column on a 1920px viewport. It took the page from 0.72% to 0.11%
+and flattened the ground either side of the text as well. AscentField grew a
+`clearShape` prop: 'band' stays the default and every existing caller keeps it,
+'box' drops the plateau and keeps the punched rect. The reading band is back at
+0.65-0.92% with the words clean. I also had to fix the probe's own thinning
+assertion, which compared one fixed sample against the foot of the page — now
+that the type is cleared, whichever sample lands on a block of prose reads near
+zero, and the check was measuring the clearing working and calling it a
+regression.
+
+Open. `index.html` still carries the old claim as title and meta description.
+375x667 still does not fit the hero. `DEMO_VIDEO` is null and its section is
+absent. The trial cards still have no `-freed` art.

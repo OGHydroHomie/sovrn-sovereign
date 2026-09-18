@@ -42,6 +42,16 @@ interface Props {
   /* Where the paper starts from. The same point the ink enters at, so the two
      are one event: the ground turning to paper behind the drop as it spreads. */
   dissolveFrom?: React.RefObject<HTMLElement | null>;
+  /* How the clearing is shaped.
+     'band' is a full-width horizontal plateau and is what every screen built
+     around a single centred question wants — there, the words ARE the width of
+     the screen, so clearing the width costs nothing. A long scrolling page is
+     the other case: its column is 560px on a viewport that can be 1920, and a
+     full-width band takes the field out either side of the text as well, which
+     on measurement flattened the whole page from 0.72% to 0.11%. 'box' keeps
+     the punched rect and drops the plateau, so the ground survives beside the
+     column it is clearing. */
+  clearShape?: 'band' | 'box';
   /** Star rarity and ambient level. Left alone, the field is the quiz's. */
   starCut?: number;
   starBase?: number;
@@ -90,7 +100,7 @@ function easeInOut(t: number): number {
  * the function is tuned at.
  */
 export default function AscentField({
-  altitude, onSettled, clearFor, progress: quizProgress = 0,
+  altitude, onSettled, clearFor, clearShape = 'band', progress: quizProgress = 0,
   forceDrift = false, settling = false, settleSeconds = 6, onStill,
   initialPhase, dissolve = false, dissolveSeconds = 2.2, dissolveFrom, starCut, starBase,
 }: Props) {
@@ -222,22 +232,43 @@ export default function AscentField({
       /* The union of everything that has to stay readable. The question number
          is positioned outside the column it belongs to, so it was the one piece
          of type the hole did not cover and it disappeared into the grain. */
+      const vhNow = window.innerHeight || 1;
       const rects = (clearFor ?? [])
         .map((ref) => ref.current?.getBoundingClientRect())
-        .filter((b): b is DOMRect => !!b && b.width > 0 && b.height > 0);
+        .filter((b): b is DOMRect => !!b && b.width > 0 && b.height > 0)
+        /* Only what is actually on screen.
+           Every caller until now handed over a single block that is always in
+           view, so the union was that block and nothing else. A scrolling page
+           cannot do that: it has seven blocks of type and six of them are off
+           screen at any moment, and unioning all seven gives a band taller than
+           the document — which clears the entire field rather than the words
+           being read. Off-screen rects are not part of what anybody is looking
+           at, so they are not part of the union. */
+        .filter((b) => b.bottom > 0 && b.top < vhNow);
       if (rects.length) {
-        const vh = window.innerHeight || 1;
+        const vh = vhNow;
         const vw = window.innerWidth || 1;
         const left = Math.min(...rects.map((b) => b.left));
         const right = Math.max(...rects.map((b) => b.right));
-        const topPx = Math.min(...rects.map((b) => b.top));
-        const bottomPx = Math.max(...rects.map((b) => b.bottom));
+        /* Clamped to the screen for the same reason: a block taller than the
+           viewport would otherwise set a half-height of more than half a screen
+           and take the whole field with it. */
+        const topPx = Math.max(0, Math.min(...rects.map((b) => b.top)));
+        const bottomPx = Math.min(vh, Math.max(...rects.map((b) => b.bottom)));
         const pad = 28;                       // a little air above and below the words
         const top = (topPx - pad) / vh;
         const bottom = (bottomPx + pad) / vh;
-        r.clearCentre = (top + bottom) / 2;
-        /* A floor, so a one-line question still gets a band worth reading on. */
-        r.clearHalf = Math.max(0.18, (bottom - top) / 2);
+        if (clearShape === 'box') {
+          /* No plateau. A half-height of zero puts every pixel outside the
+             clearing, so the sampler leaves the field alone and the only thing
+             that removes stars is the punched rect below. */
+          r.clearCentre = (top + bottom) / 2;
+          r.clearHalf = 0;
+        } else {
+          r.clearCentre = (top + bottom) / 2;
+          /* A floor, so a one-line question still gets a band worth reading on. */
+          r.clearHalf = Math.max(0.18, (bottom - top) / 2);
+        }
         /* The hole itself sits just inside the cleared band, so the thinning
            around it hides the edge. */
         r.hole = {

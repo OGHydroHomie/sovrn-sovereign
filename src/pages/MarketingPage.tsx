@@ -101,6 +101,30 @@ function shuffled(after?: string): string[] {
 
 export default function MarketingPage() {
   const reduced = prefersReducedMotion();
+  /* The type the field has to keep out of.
+
+     This was the only surface in the product with words over the field that
+     never asked for a clearing. It got away with it while the hero was one line
+     and the sections were three: at 375 the column is nearly the whole screen
+     and there is barely anywhere for a star to land. At 1440 the column is
+     still 560px and the field is four times the area — 651 lit pixels against
+     135 at the same density — so the scatter lands on type with nothing
+     protecting it, worst over the two lines the lie exists to deliver.
+
+     Every block of prose is registered. The grid of thirteen deliberately is
+     not: those are pictures on their own tiles, and clearing behind them would
+     punch a hole the size of the viewport in the middle of the page. The field
+     unions only the rects currently on screen, so what gets cleared is whatever
+     is being read. */
+  const prose = [
+    useRef<HTMLElement | null>(null),   // 0 the hero's words, not its card
+    useRef<HTMLElement | null>(null),   // 1 the wound
+    useRef<HTMLElement | null>(null),   // 2 the lie
+    useRef<HTMLElement | null>(null),   // 3 what actually happens
+    useRef<HTMLElement | null>(null),   // 4 the record
+    useRef<HTMLElement | null>(null),   // 5 the birth details
+    useRef<HTMLElement | null>(null),   // 6 the close
+  ];
   /* The field's density, in forty steps.
      Quantised so a scroll does not cost a render a frame: the field redraws
      five times a second at rest, forty steps across the page is finer than it
@@ -159,10 +183,10 @@ export default function MarketingPage() {
           tall is the whole document and therefore the whole screen. The door
           and the threshold both run this exact configuration — one sparse
           field, uncleared — and this page is what they open from. */}
-      <AscentField altitude={TOP} starCut={HERO_STARS.starCut} starBase={starBase} />
+      <AscentField altitude={TOP} starCut={HERO_STARS.starCut} starBase={starBase} clearFor={prose} clearShape="box" />
       <SiteHeader here="/" />
-      <Hero />
-      <Below />
+      <Hero type={prose[0]} />
+      <Below prose={prose} />
     </div>
   );
 }
@@ -224,7 +248,7 @@ function useReveal(root: React.RefObject<HTMLElement | null>, reduced: boolean) 
    One card assembling itself out of noise, on loop, and nothing else moving.
    No name on the card: the name belongs to the reveal, and putting it here
    would spend the only thing the reveal has to give. */
-function Hero() {
+function Hero({ type }: { type: React.RefObject<HTMLElement | null> }) {
   const reduced = prefersReducedMotion();
   const [order, setOrder] = useState<string[]>(() => shuffled());
   const [at, setAt] = useState(0);
@@ -306,7 +330,15 @@ function Hero() {
           />
         </div>
 
-        <p data-head="" style={{ ...DISPLAY, marginTop: 'clamp(20px, 3.4svh, 34px)' }}>
+        {/* The card is left out of this on purpose: it is a picture, and
+            flattening the ground behind it would take away the field the
+            crystallization is read against. */}
+        <div
+          ref={(el) => { type.current = el; }}
+          data-hero-type=""
+          style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+        >
+          <p data-head="" style={{ ...DISPLAY, marginTop: 'clamp(20px, 3.4svh, 34px)' }}>
           <span style={{ display: 'block', color: MUTED }}>{HEAD[0]}</span>
           <span style={{ display: 'block' }}>{HEAD[1]}</span>
         </p>
@@ -317,7 +349,8 @@ function Hero() {
           </p>
         ))}
 
-        <Ask sub={CALL_SUB} />
+          <Ask sub={CALL_SUB} />
+        </div>
       </div>
     </section>
   );
@@ -447,9 +480,13 @@ function Ask({ sub }: { sub: string }) {
   );
 }
 
-function Section({ label, children }: { label?: string; children: React.ReactNode }) {
+function Section({ label, children, innerRef }: {
+  label?: string;
+  children: React.ReactNode;
+  innerRef?: React.RefObject<HTMLElement | null>;
+}) {
   return (
-    <section data-reveal="">
+    <section data-reveal="" ref={(el) => { if (innerRef) innerRef.current = el; }}>
       {label && <p className="sv-label" data-rise="" style={LABEL}>{label}</p>}
       <div style={{ marginTop: label ? 22 : 0, display: 'grid', gap: 20 }}>{children}</div>
     </section>
@@ -458,7 +495,7 @@ function Section({ label, children }: { label?: string; children: React.ReactNod
 
 /* ── Below the fold ────────────────────────────────────────────────────────
    Type on the field. No cards, no containers, no boxes drawn around ideas. */
-function Below() {
+function Below({ prose }: { prose: Array<React.RefObject<HTMLElement | null>> }) {
   const [today, setToday] = useState<Today | null>(null);
   const root = useRef<HTMLDivElement | null>(null);
   const reduced = prefersReducedMotion();
@@ -477,7 +514,7 @@ function Below() {
         {/* 1 — The wound. No header: a label over this would frame it as a
                section of a sales page, and the point is that it is simply true.
                It opens the stream of acceptances the rest of the page spends. */}
-        <Section>
+        <Section innerRef={prose[1]}>
           <p data-rise="" style={BODY}>
             You&rsquo;ve read the books. You know the pattern. You can name it better than
             most therapists can.
@@ -500,7 +537,7 @@ function Below() {
                and running them as prose would bury the turn in the middle of a
                paragraph. Lines inside a group sit on the body leading; the
                groups get their own air. */}
-        <section data-reveal="">
+        <section data-reveal="" ref={(el) => { prose[2].current = el; }}>
           <div style={{ display: 'grid', gap: 30 }}>
             <p data-rise="" style={BODY}>You were told a lie.</p>
 
@@ -533,7 +570,7 @@ function Below() {
                "What happens", with the part that matters arriving fourth. It is
                the block now, and the miss is named as an input rather than a
                failure, which is the sentence the rest of the page leans on. */}
-        <Section label="What actually happens">
+        <Section label="What actually happens" innerRef={prose[3]}>
           <p data-rise="" style={BODY}>
             Three questions and your birth details. It names one of thirteen &mdash; who
             you&rsquo;re becoming &mdash; and the loop you run instead of becoming it.
@@ -596,7 +633,7 @@ function Below() {
                mechanism claim, not four. The unflattering half is the asset: a
                record that publishes its own misses is a claim nobody can copy
                without actually doing it. */}
-        <Section label="Everyone’s, in the open">
+        <Section label="Everyone’s, in the open" innerRef={prose[4]}>
           <p data-count="" data-rise="" style={{ ...BODY, fontSize: 'clamp(19px, 5.2vw, 23px)', lineHeight: 1.35 }}>
             {today ? (
               <>
@@ -656,7 +693,7 @@ function Below() {
                anything. Verified against api/morning.ts: the next act is
                written from the archetype and the record, and no chart data is
                read after the first reading. */}
-        <Section label="About the birth details">
+        <Section label="About the birth details" innerRef={prose[5]}>
           <p data-rise="" style={BODY}>
             They&rsquo;re an input, not a prophecy. They set which of the thirteen you
             start from &mdash; nothing after that comes from the sky.
@@ -674,7 +711,11 @@ function Below() {
                set directly against the mechanism so that recognising yourself
                finally has a consequence attached to it. Neither line is strong
                alone; adjacent, the first one costs something. */}
-        <section data-reveal="" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <section
+          data-reveal=""
+          ref={(el) => { prose[6].current = el; }}
+          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+        >
           <p data-rise="" style={DISPLAY}>{CLOSE[0]}</p>
           <p data-rise="" style={{ ...DISPLAY, marginTop: 14, color: MUTED }}>{CLOSE[1]}</p>
           <Ask sub={CLOSE_SUB} />

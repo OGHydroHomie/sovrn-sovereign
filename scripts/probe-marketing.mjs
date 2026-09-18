@@ -388,8 +388,39 @@ await probe({ url: URL_, name: `marketing-${W}`, viewport: { width: W, height: H
     }));
   }
   console.log(`      field: ${density.map((x) => (x * 100).toFixed(2) + '%').join(' → ')}`);
-  check('the field thins as the page goes down', density[1] > density[3] * 1.5,
+  /* Against the densest point of the reading, not against one fixed sample.
+     The type is cleared now, so whichever of the two middle samples happens to
+     land on a block of prose reads near zero — which says the clearing works,
+     not that the field has stopped thinning. */
+  check('the field thins as the page goes down',
+    Math.max(density[1], density[2]) > density[3] * 1.5,
     density.map((x) => (x * 100).toFixed(2)).join(' → '));
+
+  /* The thing this page was losing: stars landing inside the words. The canvas
+     is the viewport over the field's scale, so a block's screen rect maps onto
+     it directly. Nothing lit inside a block of prose, at any width. */
+  const inType = await page.evaluate(() => {
+    const c = document.querySelector('canvas[data-ascent-field]');
+    const ctx = c.getContext('2d', { willReadFrequently: true });
+    const sx = c.width / innerWidth, sy = c.height / innerHeight;
+    const out = [];
+    for (const el of document.querySelectorAll('[data-hero-type], [data-reveal]')) {
+      if (el.querySelector('[data-thirteen]')) continue;      // pictures, not type
+      const b = el.getBoundingClientRect();
+      if (b.bottom <= 0 || b.top >= innerHeight || b.width <= 0) continue;
+      const x0 = Math.max(0, Math.floor(b.left * sx)), x1 = Math.min(c.width, Math.ceil(b.right * sx));
+      const y0 = Math.max(0, Math.floor(b.top * sy)), y1 = Math.min(c.height, Math.ceil(b.bottom * sy));
+      if (x1 <= x0 || y1 <= y0) continue;
+      const d = ctx.getImageData(x0, y0, x1 - x0, y1 - y0).data;
+      let on = 0;
+      for (let i = 0; i < d.length; i += 4) if (d[i] > 128) on++;
+      out.push(on);
+    }
+    return out;
+  });
+  check('and no star lands inside the words',
+    inType.length > 0 && inType.every((n) => n === 0),
+    `${inType.length} blocks on screen, lit: ${inType.join('/')}`);
   check('and never turns the page to paper', density.every((x) => x < 0.25),
     `${(Math.max(...density) * 100).toFixed(1)}% at its densest`);
 
